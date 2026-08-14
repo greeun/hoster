@@ -39,16 +39,55 @@ function makeCf(config: HosterConfig): Cloudflare {
 const program = new Command();
 program.name('hoster').description('홈서버 배포 도구');
 
+// 설정값은 옵션 → 환경변수 → 기존 ~/.hoster/config.json → 프롬프트 순으로 채운다.
+// Cloudflare API 토큰과 GHCR PAT은 셸 히스토리와 `ps` 출력에 남지 않도록 옵션으로 받지
+// 않는다 — 환경변수(HOSTER_CF_API_TOKEN/HOSTER_GHCR_PAT)나 숨김 프롬프트로만 입력받는다.
 program
   .command('init')
   .description('hoster 스택을 NAS에 설치합니다')
   .option('--dry-run', '실행하지 않고 계획만 표시')
   .option('--stack-dir <dir>', 'stack 디렉터리 경로', 'stack/')
   .option('--reuse-tunnel <id>', '기존 Cloudflare 터널 ID 재사용 (지정하면 조회/선택 프롬프트를 건너뜀)')
+  .option('--nas-host <host>', 'NAS 호스트 (환경변수 HOSTER_NAS_HOST)')
+  .option('--nas-port <port>', 'NAS SSH 포트 (환경변수 HOSTER_NAS_PORT, 기본 22)')
+  .option('--nas-user <user>', 'NAS 사용자 (환경변수 HOSTER_NAS_USER)')
+  .option('--base-domain <domain>', '기본 도메인 (환경변수 HOSTER_BASE_DOMAIN)')
+  .option('--cf-account-id <id>', 'Cloudflare Account ID (환경변수 HOSTER_CF_ACCOUNT_ID)')
+  .option('--cf-zone-id <id>', 'Cloudflare Zone ID (환경변수 HOSTER_CF_ZONE_ID)')
+  .option('--non-interactive', '프롬프트 없이 실행 (값이 없으면 에러). CI에서 사용')
+  .option('--rotate-hmac', 'HMAC_SECRET을 새로 생성 (등록된 레포마다 hoster add 재실행 필요)')
   .action(
-    wrapAction(async (opts: { dryRun?: boolean; stackDir: string; reuseTunnel?: string }) => {
-      await runInit({ dryRun: Boolean(opts.dryRun), stackDir: opts.stackDir, reuseTunnelId: opts.reuseTunnel });
-    })
+    wrapAction(
+      async (opts: {
+        dryRun?: boolean;
+        stackDir: string;
+        reuseTunnel?: string;
+        nasHost?: string;
+        nasPort?: string;
+        nasUser?: string;
+        baseDomain?: string;
+        cfAccountId?: string;
+        cfZoneId?: string;
+        nonInteractive?: boolean;
+        rotateHmac?: boolean;
+      }) => {
+        await runInit({
+          dryRun: Boolean(opts.dryRun),
+          stackDir: opts.stackDir,
+          reuseTunnelId: opts.reuseTunnel,
+          cli: {
+            nasHost: opts.nasHost,
+            nasPort: opts.nasPort,
+            nasUser: opts.nasUser,
+            baseDomain: opts.baseDomain,
+            cfAccountId: opts.cfAccountId,
+            cfZoneId: opts.cfZoneId,
+            nonInteractive: Boolean(opts.nonInteractive),
+            rotateHmac: Boolean(opts.rotateHmac),
+          },
+        });
+      }
+    )
   );
 
 program

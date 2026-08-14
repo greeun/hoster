@@ -3,6 +3,10 @@ import { runInit, type NasLike, type LocalExecResult } from '../src/commands/ini
 
 const input = { baseDomain: 'example.com', nas: { host: '192.168.1.100', port: 2222, user: 'admin' } };
 
+// Cloudflare Account/Zone ID는 32자리 hex만 통과하므로 테스트도 실제 형식을 쓴다.
+const TEST_ACCOUNT_ID = 'a54f0650d84bb7ee5e3f487265c0a045';
+const TEST_ZONE_ID = 'de062dc550085f373d78aeaadcb7042c';
+
 function makeFakeNas(execImpl?: (cmd: string) => Promise<string>) {
   const calls: string[] = [];
   const transferCalls: Array<{ localDir: string; remoteParent: string }> = [];
@@ -54,17 +58,22 @@ function baseDeps() {
   const deps = {
     input,
     nas,
+    // 설정값 해석이 실행 환경의 HOSTER_* 변수나 실제 ~/.hoster/config.json에
+    // 영향받지 않도록 둘 다 비운다 — 값은 프롬프트 목에서만 나와야 한다.
+    env: {} as NodeJS.ProcessEnv,
+    loadExistingConfig: (() => undefined) as () => undefined,
     makeCloudflare: vi.fn(() => cf),
     runLocal: vi.fn(okLocal),
-    ask: vi.fn(async (q: string) => (q.includes('Account') ? 'acc-id' : 'zone-id')),
+    ask: vi.fn(async (q: string) => (q.includes('Account') ? TEST_ACCOUNT_ID : TEST_ZONE_ID)),
     askHidden: vi.fn(async (q: string) => (q.includes('GHCR') ? 'ghcr-pat-value' : 'cf-api-token-value')),
     randomHex: vi.fn(() => 'hmac-secret-hex-value'),
     saveConfig: vi.fn((cfg: unknown) => savedConfigs.push(cfg)),
     log: vi.fn((m: string) => logs.push(m)),
     warn: vi.fn((m: string) => warns.push(m)),
     sleep: vi.fn(async () => {}),
-    // 기본은 비대화형 — 프롬프트를 검증하는 테스트만 명시적으로 true로 바꾼다.
-    isInteractive: (() => false) as () => boolean,
+    // 기본은 대화형 — 값이 없을 때 프롬프트로 채우는 경로가 기본 동작이다.
+    // 비대화형 동작(프롬프트 금지)을 검증하는 테스트만 명시적으로 false로 바꾼다.
+    isInteractive: (() => true) as () => boolean,
     // 진행 표시는 비-TTY 경로로 검증한다 — 제어 문자 없이 logs에 줄 단위로 남는다.
     progressIo: {
       write: () => {},
@@ -165,7 +174,12 @@ describe('runInit — 전체 실행', () => {
       deployerUrl: 'https://hoster.example.com',
       hmacSecret: 'hmac-secret-hex-value',
       ghcrPat: 'ghcr-pat-value',
-      cloudflare: { apiToken: 'cf-api-token-value', accountId: 'acc-id', zoneId: 'zone-id', tunnelId: 'tunnel-123' },
+      cloudflare: {
+        apiToken: 'cf-api-token-value',
+        accountId: TEST_ACCOUNT_ID,
+        zoneId: TEST_ZONE_ID,
+        tunnelId: 'tunnel-123',
+      },
     });
   });
 
@@ -380,8 +394,8 @@ describe('runInit — 기존 터널 대화형 처리 (대시보드 방문 불필
   function scriptedAsk(answers: string[]) {
     const asked: string[] = [];
     const ask = vi.fn(async (q: string) => {
-      if (q.includes('Account')) return 'acc-id';
-      if (q.includes('Zone')) return 'zone-id';
+      if (q.includes('Account')) return TEST_ACCOUNT_ID;
+      if (q.includes('Zone')) return TEST_ZONE_ID;
       if (q.includes('기본 도메인')) return 'example.com';
       asked.push(q);
       return answers.shift() ?? '';
@@ -509,6 +523,13 @@ describe('runInit — 기존 터널 대화형 처리 (대시보드 방문 불필
     const { ask, asked } = scriptedAsk([]);
     deps.ask = ask;
     deps.isInteractive = () => false;
+    // 비대화형에서는 프롬프트가 금지되므로 인증정보는 환경변수로 들어와야 한다.
+    deps.env = {
+      HOSTER_CF_API_TOKEN: 'cf-api-token-value',
+      HOSTER_CF_ACCOUNT_ID: TEST_ACCOUNT_ID,
+      HOSTER_CF_ZONE_ID: TEST_ZONE_ID,
+      HOSTER_GHCR_PAT: 'ghcr-pat-value',
+    };
 
     await runInit({ dryRun: false, stackDir: '/tmp/stack', deps });
 
@@ -537,6 +558,91 @@ describe('runInit — 기존 터널 대화형 처리 (대시보드 방문 불필
     expect(cf.findTunnelByName).not.toHaveBeenCalled();
     expect(asked).toEqual([]);
     expect(cf.getTunnelToken).toHaveBeenCalledWith('flag-tid');
+  });
+});
+
+describe('runInit — 설정값 해석 (옵션/환경변수/기존 설정/프롬프트)', () => {
+  // 접속 정보까지 해석 경로를 태우려면 테스트 우회 경로(deps.input)를 비워야 한다.
+  function depsWithoutPreset() {
+    const ctx = baseDeps();
+    delete (ctx.deps as { input?: unknown }).input;
+    return ctx;
+  }
+
+  const existing = {
+    nas: { host: '192.168.10.11', port: 20022, user: 'super' },
+    cloudflare: { apiToken: 'old-token', accountId: TEST_ACCOUNT_ID, zoneId: TEST_ZONE_ID, tunnelId: 'old-tunnel' },
+    baseDomain: 'tlog.net',
+    deployerUrl: 'https://hoster.tlog.net',
+    hmacSecret: 'old-hmac-secret',
+    ghcrPat: 'old-ghcr-pat',
+  };
+
+  it('CLI 옵션으로 준 NAS 접속 정보가 계획의 ssh 명령에 반영된다', async () => {
+    const { deps, logs } = depsWithoutPreset();
+
+    await runInit({
+      dryRun: true,
+      stackDir: '/tmp/stack',
+      cli: { nasHost: '10.0.0.5', nasPort: '2200', nasUser: 'deploy', baseDomain: 'cli.example.com' },
+      deps,
+    });
+
+    const joined = logs.join('\n');
+    expect(joined).toContain("ssh -p '2200' 'deploy@10.0.0.5'");
+    expect(joined).toContain('hoster.cli.example.com');
+  });
+
+  it('dry-run은 시크릿과 Cloudflare 인증정보를 묻지 않는다', async () => {
+    const { deps } = depsWithoutPreset();
+
+    await runInit({
+      dryRun: true,
+      stackDir: '/tmp/stack',
+      cli: { nasHost: '10.0.0.5', nasPort: '2200', nasUser: 'deploy', baseDomain: 'cli.example.com' },
+      deps,
+    });
+
+    expect(deps.askHidden).not.toHaveBeenCalled();
+    expect(deps.ask).not.toHaveBeenCalled();
+  });
+
+  it('--non-interactive는 TTY여도 프롬프트 없이 진행하고, 값이 없으면 옵션명을 알려준다', async () => {
+    const { deps } = depsWithoutPreset();
+    deps.isInteractive = () => true;
+
+    await expect(
+      runInit({ dryRun: false, stackDir: '/tmp/stack', cli: { nonInteractive: true }, deps })
+    ).rejects.toThrow(/--nas-host/);
+    expect(deps.ask).not.toHaveBeenCalled();
+    expect(deps.askHidden).not.toHaveBeenCalled();
+  });
+
+  it('재실행 시 기존 설정의 HMAC_SECRET을 유지해 등록된 레포의 시크릿이 어긋나지 않는다', async () => {
+    const { deps, savedConfigs, calls } = depsWithoutPreset();
+    deps.loadExistingConfig = (() => existing) as never;
+    deps.isInteractive = () => false;
+
+    await runInit({ dryRun: false, stackDir: '/tmp/stack', deps });
+
+    expect(savedConfigs[0]).toMatchObject({ hmacSecret: 'old-hmac-secret', baseDomain: 'tlog.net' });
+    // NAS .env에도 같은 값이 쓰여야 GitHub Actions의 서명이 계속 검증된다.
+    expect(calls.find((c) => c.includes('TUNNEL_TOKEN=%s'))).toContain("'old-hmac-secret'");
+    expect(deps.randomHex).not.toHaveBeenCalled();
+  });
+
+  it('--rotate-hmac을 주면 새 시크릿을 만들고 재등록이 필요함을 알린다', async () => {
+    const { deps, savedConfigs, logs } = depsWithoutPreset();
+    deps.loadExistingConfig = (() => existing) as never;
+    deps.isInteractive = () => false;
+
+    await runInit({ dryRun: false, stackDir: '/tmp/stack', cli: { rotateHmac: true }, deps });
+
+    expect(savedConfigs[0]).toMatchObject({ hmacSecret: 'hmac-secret-hex-value' });
+    expect(logs.join('\n')).toMatch(/HOSTER_DEPLOY_SECRET/);
+    // 안내에도 시크릿 값 자체는 실리지 않는다.
+    expect(logs.join('\n')).not.toContain('hmac-secret-hex-value');
+    expect(logs.join('\n')).not.toContain('old-hmac-secret');
   });
 });
 

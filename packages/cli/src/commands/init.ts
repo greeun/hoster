@@ -3,7 +3,8 @@ import { randomBytes } from 'node:crypto';
 import { basename } from 'node:path';
 import { Nas } from '../nas.js';
 import { Cloudflare, type TunnelSummary } from '../cloudflare.js';
-import { saveConfig, defaultNas, type HosterConfig } from '../config.js';
+import { saveConfig, loadConfigIfExists, type HosterConfig } from '../config.js';
+import { resolveInitSettings, type InitCliOptions, type InitSettings } from '../initSettings.js';
 import { ask, askHidden } from '../prompt.js';
 import { shQuote, substitutePlaceholders } from '../shell.js';
 import { ProgressReporter, defaultProgressIo, type ProgressIo } from '../progress.js';
@@ -160,7 +161,12 @@ export interface NasLike {
 export interface InitDeps {
   // 테스트에서 프롬프트 없이 고정된 입력을 주입하기 위한 우회 경로.
   // runInit의 공개 시그니처(opts: { dryRun, stackDir, deps })는 브리핑 계약을 그대로 유지한다.
+  // 지정하면 baseDomain/NAS 접속 정보의 해석(옵션/환경변수/기존 설정/프롬프트)을 건너뛴다.
   input?: InitInput;
+  // 설정값 해석에 쓰는 환경변수 소스. 테스트가 실행 환경의 HOSTER_* 값에 영향받지 않도록 주입한다.
+  env?: NodeJS.ProcessEnv;
+  // 기존 ~/.hoster/config.json 조회 — 재실행 시 프롬프트 기본값/비대화형 폴백으로 쓰인다.
+  loadExistingConfig?: () => HosterConfig | undefined;
   nas?: NasLike;
   makeCloudflare?: (opts: {
     apiToken: string;
@@ -278,15 +284,20 @@ function printRecoveryNote(
   }
   if (progress.envWritten) {
     log('  - .env 파일이 이미 작성되었습니다 (HMAC_SECRET 포함).');
-    log('  재시도하면 HMAC_SECRET이 새로 생성됩니다. 이미 등록된 프로젝트가 있다면 해당');
-    log('  GitHub 저장소의 HOSTER_DEPLOY_SECRET을 새 값으로 갱신하거나, 재시도 전 NAS의');
-    log(`  ${REMOTE_STACK_DIR} 디렉터리를 제거한 뒤 다시 실행하세요.`);
+    if (!progress.configSaved) {
+      // 설정 저장 전에 실패했다면 이 HMAC_SECRET을 되찾을 방법이 없어, 재시도하면 새 값이 생긴다.
+      log('  로컬 설정 저장 전에 중단되었으므로 재시도하면 HMAC_SECRET이 새로 생성됩니다.');
+      log('  이미 등록된 프로젝트가 있다면 재시도 후 각 레포에서 `hoster add`를 다시 실행해');
+      log('  GitHub 저장소의 HOSTER_DEPLOY_SECRET을 갱신하세요.');
+    }
   }
   // IMPORTANT (리뷰 지시): 이 시점 이후 실패(네트워크 진단/healthz)는 로컬 설정이 이미
   // 저장된 뒤이므로, 사용자가 시크릿/터널ID를 다시 확인할 방법이 있다는 점을 알려준다.
   if (progress.configSaved) {
     log('  - ~/.hoster/config.json 파일이 이미 저장되었습니다 — 터널/DNS/.env 설치는');
     log('  대부분 완료된 상태이며, 이 설정을 재시도 없이 그대로 사용할 수 있습니다.');
+    log('  재시도해도 저장된 HMAC_SECRET을 그대로 쓰므로(새로 만들려면 --rotate-hmac),');
+    log('  이미 등록된 레포의 HOSTER_DEPLOY_SECRET을 다시 등록할 필요가 없습니다.');
     log('  DNS 전파를 기다렸다가 `curl https://hoster.<baseDomain>/healthz`로 다시 확인하거나,');
     log('  계속 실패하면 NAS에서 `docker compose logs`로 원인을 확인하세요.');
   }
@@ -335,6 +346,9 @@ export async function runInit(opts: {
   stackDir: string;
   // 기존 'hoster' 터널을 새로 만들지 않고 재사용한다 (이름 충돌 시 안내 메시지가 권하는 경로).
   reuseTunnelId?: string;
+  // NAS 접속 정보/도메인/Cloudflare ID를 명령줄에서 지정하기 위한 옵션.
+  // 지정하지 않은 값은 환경변수 → 기존 설정 → 프롬프트 순으로 채운다.
+  cli?: InitCliOptions;
   deps?: InitDeps;
 }): Promise<void> {
   const deps = opts.deps ?? {};
@@ -342,11 +356,28 @@ export async function runInit(opts: {
 
   const askPlain = deps.ask ?? ask;
   const askSecret = deps.askHidden ?? askHidden;
+  const cli = opts.cli ?? {};
+  const randomHex = deps.randomHex ?? ((n: number) => randomBytes(n).toString('hex'));
+  // --non-interactive는 TTY 여부와 무관하게 프롬프트를 금지한다(CI에서 의도치 않은 대기 방지).
+  const isInteractive = deps.isInteractive ?? (() => Boolean(process.stdin.isTTY));
+  const interactive = !cli.nonInteractive && isInteractive();
 
-  const input: InitInput =
-    deps.input ??
-    ({ baseDomain: await askPlain('기본 도메인 (예: example.com): '), nas: defaultNas() } satisfies InitInput);
+  const settings: InitSettings = await resolveInitSettings({
+    cli,
+    env: deps.env ?? process.env,
+    existing: (deps.loadExistingConfig ?? loadConfigIfExists)(),
+    interactive,
+    // dry-run은 계획만 출력하므로 시크릿과 Cloudflare 인증정보를 요구하지 않는다.
+    includeCredentials: !opts.dryRun,
+    // 테스트 우회 경로(deps.input)가 주어지면 접속 정보/도메인은 그대로 쓴다.
+    preset: deps.input,
+    ask: askPlain,
+    askHidden: askSecret,
+    log,
+    randomHex,
+  });
 
+  const input: InitInput = { baseDomain: settings.baseDomain, nas: settings.nas };
   const plan = planInit(input);
 
   if (opts.dryRun) {
@@ -359,20 +390,15 @@ export async function runInit(opts: {
     return;
   }
 
-  // Step 3: 사용자 입력 수집 (HMAC_SECRET은 자동 생성).
-  const apiToken = await askSecret('Cloudflare API 토큰: ');
-  const accountId = await askPlain('Cloudflare Account ID: ');
-  const zoneId = await askPlain('Cloudflare Zone ID: ');
-  const ghcrPat = await askSecret('GHCR Personal Access Token: ');
-  const randomHex = deps.randomHex ?? ((n: number) => randomBytes(n).toString('hex'));
-  const hmacSecret = randomHex(32);
+  const { apiToken, accountId, zoneId } = settings.cloudflare;
+  const ghcrPat = settings.ghcrPat;
+  const hmacSecret = settings.hmacSecret;
 
   const nas = deps.nas ?? new Nas(input.nas);
   const cf = (deps.makeCloudflare ?? ((o) => new Cloudflare(o)))({ apiToken, accountId, zoneId });
   const runLocal = deps.runLocal ?? defaultRunLocal;
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const warn = deps.warn ?? defaultWarn;
-  const isInteractive = deps.isInteractive ?? (() => Boolean(process.stdin.isTTY));
   const save = deps.saveConfig ?? saveConfig;
 
   // 이미지 빌드·전송처럼 수 분이 걸리는 단계가 있어 아무 출력이 없으면 멈춘 것처럼 보인다.
@@ -471,7 +497,7 @@ export async function runInit(opts: {
                 const choice = await chooseTunnelAction(existing, {
                   ask: askPlain,
                   log,
-                  interactive: isInteractive(),
+                  interactive,
                 });
                 reporter.resume();
                 if (choice === 'abort') {

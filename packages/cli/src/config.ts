@@ -13,21 +13,21 @@ export interface HosterConfig {
 
 const DEFAULT_PATH = join(homedir(), '.hoster', 'config.json');
 
-// NAS 접속 정보는 환경에 따라 다르므로 소스에 고정하지 않는다.
-// HOSTER_NAS_HOST / HOSTER_NAS_PORT / HOSTER_NAS_USER로 지정하고,
-// 없으면 아래 예시값을 기본으로 사용한다 (hoster init에서 확인 후 config.json에 저장됨).
-export function defaultNas(): { host: string; port: number; user: string } {
-  const port = Number(process.env.HOSTER_NAS_PORT ?? 22);
-  return {
-    host: process.env.HOSTER_NAS_HOST ?? '192.168.1.100',
-    port: Number.isFinite(port) && port > 0 ? port : 22,
-    user: process.env.HOSTER_NAS_USER ?? 'admin',
-  };
-}
-
 export function loadConfig(path = DEFAULT_PATH): HosterConfig {
   if (!existsSync(path)) throw new Error(`설정 파일이 없습니다 (${path}). hoster init을 먼저 실행하세요.`);
   return JSON.parse(readFileSync(path, 'utf-8')) as HosterConfig;
+}
+
+// hoster init 재실행용 — 설정이 없으면(최초 실행) undefined, 있으면 프롬프트 기본값과
+// 비대화형 폴백으로 쓴다. 손상된 파일 때문에 최초 설치가 막히지 않도록, 읽거나 파싱하지
+// 못하면 "없음"으로 간주하고 계속 진행한다(값은 다시 입력받게 된다).
+export function loadConfigIfExists(path = DEFAULT_PATH): HosterConfig | undefined {
+  if (!existsSync(path)) return undefined;
+  try {
+    return JSON.parse(readFileSync(path, 'utf-8')) as HosterConfig;
+  } catch {
+    return undefined;
+  }
 }
 
 export function saveConfig(cfg: HosterConfig, path = DEFAULT_PATH): void {

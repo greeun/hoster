@@ -22,7 +22,12 @@ NAS 접속 정보로 각자 환경에 맞게 치환합니다.
 ## init
 
 - [ ] `hoster init --dry-run` — 12단계 실행 계획이 출력되는지 확인 (사전 점검 → compose 확인 → 터널 생성 → 인그레스 설정 → DNS CNAME → `hoster-net` 생성 → stack 전송 → deployer 이미지 buildx 빌드/전송 → `.env` 작성/`compose up` → **config 저장** → 외부 통신 진단 → healthz 확인). config 저장이 외부 통신 진단/healthz보다 먼저인지 확인 — 순서가 다르면 코드와 문서가 어긋난 것이므로 재확인 필요. `--stack-dir` 기본값이 `stack/`인지 확인
-- [ ] `hoster init` 실행 — 프롬프트(기본 도메인, Cloudflare API 토큰/Account ID/Zone ID, GHCR PAT)에 입력 후 완료까지 진행
+- [ ] `hoster init` 실행 — 프롬프트(NAS 호스트/포트/사용자, 기본 도메인, Cloudflare API 토큰/Account ID/Zone ID, GHCR PAT)에 입력 후 완료까지 진행
+  - [ ] CLI 옵션으로 준 값(`--nas-host`/`--nas-port`/`--nas-user`/`--base-domain`/`--cf-account-id`/`--cf-zone-id`)은 다시 묻지 않는지 확인
+  - [ ] 환경변수(`HOSTER_NAS_HOST`/`HOSTER_CF_API_TOKEN`/`HOSTER_GHCR_PAT` 등)로 준 값도 다시 묻지 않는지 확인
+  - [ ] 시크릿(Cloudflare API 토큰, GHCR PAT)에는 CLI 옵션이 없고 숨김 프롬프트로만 입력되는지 확인 (`hoster init --help`)
+  - [ ] 잘못된 값을 주면 실행 전에 거부하는지 확인: `--nas-port 99999`, `--base-domain http://example.com`, `--cf-zone-id nope`
+  - [ ] 비대화형(`hoster init --non-interactive` 또는 파이프)에서 값이 없으면 옵션명·환경변수명을 알려주며 중단하는지 확인
   - [ ] 각 단계가 `⠙ [n/12] <설명> <경과>초` 형태로 표시되고 완료 시 `✓`로 마감되는지 확인 — 특히 8단계(이미지 빌드/전송)와 12단계(healthz)에서 무출력 구간 없이 진행 상황이 보이는지
   - [ ] healthz 재시도 중 `재시도 n/6`이 표시되는지 확인
   - [ ] 프롬프트가 뜰 때 스피너가 입력 줄을 덮어쓰지 않는지 확인
@@ -82,4 +87,4 @@ NAS 접속 정보로 각자 환경에 맞게 치환합니다.
 - **NAS 아키텍처**: deployer 이미지는 `linux/amd64`로 고정 빌드됩니다. NAS가 다른 아키텍처(ARM 등)라면 `hoster init`을 실행하기 전에 `uname -m`으로 반드시 확인해야 합니다.
 - **NAS docker bridge 네트워크 외부 통신 불가 이력**: 과거 세션에서 `hoster-net`(docker bridge)이 외부 HTTP 요청을 하지 못한 사례가 있었습니다. `hoster init`의 11번째 단계가 자동으로 진단하며(`hoster-net`에서 `https://one.one.one.one` 요청), 실패해도 init 자체는 경고만 출력하고 계속 진행합니다 — 하지만 이 실패는 무시해도 되는 게 아닙니다. `hoster-cloudflared` 자체가 `hoster-net` 위에서 실행되며 Cloudflare로 나가는 외부 통신이 반드시 필요하므로, 이 진단이 실패하면 터널이 연결되지 않아 다음 단계(healthz 확인)가 반드시 실패합니다. `hoster doctor`로도 동일한 진단을 init 이후 재실행할 수 있습니다. DSM 방화벽/IP forward 설정을 반드시 해결해야 합니다.
 - **`hoster add`의 브랜치/프로젝트명 제한**: `--branch`는 영숫자와 `. _ / -`만 허용하는 보수적인 부분집합(유니코드, `+`, 공백, 따옴표 등은 거부)으로 검증됩니다 — 워크플로 템플릿에 YAML/셸 문자열로 그대로 삽입되기 때문입니다. 이런 문자를 쓰는 브랜치명이 있다면 `hoster add`가 거부하는 것이 정상 동작입니다.
-- **`hoster init` 재실행 시 `HMAC_SECRET` 재생성**: 재실행할 때마다 새 `HMAC_SECRET`이 생성되어 NAS `.env`와 `~/.hoster/config.json`에 반영됩니다. 이미 `hoster add`로 등록된 레포의 GitHub 시크릿 `HOSTER_DEPLOY_SECRET`은 이전 값 그대로 남아있어 서명 검증에 실패하게 됩니다 — 재실행 후에는 등록된 레포마다 `hoster add`(또는 수동 `gh secret set`)를 다시 실행해 시크릿을 동기화해야 합니다.
+- **`hoster init` 재실행 시 `HMAC_SECRET`**: 재실행하면 `~/.hoster/config.json`에 저장된 기존 `HMAC_SECRET`을 그대로 유지하므로, 이미 등록된 레포의 GitHub 시크릿 `HOSTER_DEPLOY_SECRET`은 계속 유효합니다. 대화형 실행에서는 재생성 여부를 한 번 묻고 기본값(빈 입력)은 유지이며, `--rotate-hmac`을 지정하면 묻지 않고 새로 만듭니다. 새로 만든 경우에는 등록된 레포마다 `hoster add`(또는 수동 `gh secret set`)를 다시 실행해 시크릿을 동기화해야 합니다. 최초 실행이거나 `~/.hoster/config.json` 저장 전에 실패한 재시도는 유지할 값이 없으므로 항상 새로 생성됩니다.

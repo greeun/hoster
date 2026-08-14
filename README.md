@@ -143,26 +143,60 @@ Build output:
 
 Verification: `pnpm test` (vitest, run separately for `packages/cli` and `packages/deployer`).
 
-### Specifying NAS connection details
+### Configuring the first run
 
-`hoster init` reads the NAS SSH connection details from the environment variables below. If they are
-unset, example values (`192.168.1.100`, `22`, `admin`) are used, so specify the real values before
-running it.
+Every `hoster init` setting is resolved through the same chain, and the first source that supplies a
+value wins:
+
+**CLI option → environment variable → existing `~/.hoster/config.json` → interactive prompt.**
+
+If none of them supply a value and the terminal is interactive, `hoster init` asks; if it is not
+interactive (a pipe, CI, or `--non-interactive`), it fails and names the option and environment
+variable that would have supplied the value. There are no example fallback values, so a run never
+proceeds silently against the wrong NAS.
+
+| Setting | CLI option | Environment variable |
+|---|---|---|
+| NAS host | `--nas-host <host>` | `HOSTER_NAS_HOST` |
+| NAS SSH port | `--nas-port <port>` | `HOSTER_NAS_PORT` (defaults to `22`) |
+| NAS user | `--nas-user <user>` | `HOSTER_NAS_USER` |
+| Base domain | `--base-domain <domain>` | `HOSTER_BASE_DOMAIN` |
+| Cloudflare Account ID | `--cf-account-id <id>` | `HOSTER_CF_ACCOUNT_ID` |
+| Cloudflare Zone ID | `--cf-zone-id <id>` | `HOSTER_CF_ZONE_ID` |
+| Cloudflare API token | *(intentionally none)* | `HOSTER_CF_API_TOKEN` |
+| GHCR PAT | *(intentionally none)* | `HOSTER_GHCR_PAT` |
+
+The two secrets have no CLI option on purpose: a flag would leave the token in the shell history and
+in `ps` output. Supply them through the environment variables above or type them at the hidden
+prompt.
 
 ```bash
-export HOSTER_NAS_HOST=<NAS IP or hostname>
-export HOSTER_NAS_PORT=<SSH port>
-export HOSTER_NAS_USER=<SSH account>
+# Interactive — anything you omit is prompted for
+hoster init --nas-host 192.168.1.50 --nas-port 22 --nas-user admin --base-domain example.com
+
+# Non-interactive (CI)
+HOSTER_CF_API_TOKEN=... HOSTER_GHCR_PAT=... \
+  hoster init --non-interactive \
+  --nas-host 192.168.1.50 --nas-port 22 --nas-user admin \
+  --base-domain example.com --cf-account-id <32 hex> --cf-zone-id <32 hex>
 ```
 
+Values are validated before anything runs: the port must be 1–65535, the base domain must look like
+`example.com` (no protocol, path or whitespace; normalized to lowercase), Cloudflare IDs must be 32
+hex characters, and the NAS host and user are restricted to alphanumerics with `. _ -` because they
+are interpolated into shell commands. An invalid value supplied explicitly is reported instead of
+being ignored, even under `--dry-run`.
+
 Once `hoster init` finishes, these values are stored in `~/.hoster/config.json` (mode `0600`), so
-later commands do not need the environment variables.
+later commands need neither the options nor the environment variables. On a re-run that file also
+supplies the prompt defaults, shown in brackets — press Enter to keep them. For the two secrets the
+stored value is never displayed; the prompt only offers to keep it.
 
 ## Commands
 
 | Command | Description | Options |
 |---|---|---|
-| `hoster init` | Installs the hoster stack (cloudflared/traefik/deployer) on the NAS and configures the Cloudflare tunnel, DNS and HMAC secret | `--dry-run`, `--stack-dir <dir>` (default `stack/`), `--reuse-tunnel <id>` |
+| `hoster init` | Installs the hoster stack (cloudflared/traefik/deployer) on the NAS and configures the Cloudflare tunnel, DNS and HMAC secret | `--dry-run`, `--stack-dir <dir>` (default `stack/`), `--reuse-tunnel <id>`, `--nas-host`, `--nas-port`, `--nas-user`, `--base-domain`, `--cf-account-id`, `--cf-zone-id`, `--non-interactive`, `--rotate-hmac` |
 | `hoster add` | Registers the GitHub repository in the current directory. Creates the Dockerfile (generated automatically for Next.js) and workflow file, runs `gh secret set`, sets the DNS CNAME, and registers the project | `--branch <branch>` (default `main`), `--project <name>`, `--dry-run`, `--force` (overwrite an existing workflow file) |
 | `hoster ls` | Lists registered projects and their current images | – |
 | `hoster status <project>` | Shows project details and recent deployment history | – |
@@ -182,7 +216,7 @@ top-level operations (including the two inside the group).
 - **NAS architecture**: the deployer image is always built for `linux/amd64`. Before running `hoster init`, confirm that `uname -m` on the NAS reports `x86_64` (or a compatible architecture).
 - **History of `hoster-net` (docker bridge) losing outbound connectivity**: step 11 of init diagnoses this automatically and only warns on failure, but it is not a failure you can ignore. `hoster-cloudflared` itself runs on `hoster-net` and must reach Cloudflare, so if this diagnosis fails the tunnel will not connect and the step 12 healthz check is guaranteed to fail — you must fix the DSM firewall / IP forwarding settings.
 - **Branch and project name restrictions in `hoster add`**: `--branch` is validated against a conservative subset allowing only alphanumerics and `. _ / -` (Unicode, `+`, whitespace, quotes and so on are rejected) — it is inserted verbatim into the `.github/workflows/hoster-deploy.yml` template both as a YAML string and inside a double-quoted shell string. `--project` is restricted to the same rules the server requires: lowercase letters, digits and hyphens, at most 63 characters, starting with an alphanumeric.
-- **Caution when `HMAC_SECRET` is regenerated**: re-running `hoster init` generates a new `HMAC_SECRET`. The `HOSTER_DEPLOY_SECRET` GitHub secret in repositories already registered with `hoster add` keeps the old value and is therefore invalidated — after a re-run, run `hoster add` again (or `gh secret set` manually) in each repository to resynchronize the secret.
+- **`HMAC_SECRET` on a re-run**: re-running `hoster init` keeps the `HMAC_SECRET` already stored in `~/.hoster/config.json`, so the `HOSTER_DEPLOY_SECRET` GitHub secret in repositories registered with `hoster add` stays valid. An interactive run still asks whether to regenerate it (the default, an empty answer, keeps it); `--rotate-hmac` regenerates it without asking. If you do regenerate it, run `hoster add` again (or `gh secret set` manually) in every registered repository to resynchronize the secret. A first run, or a retry that failed before `~/.hoster/config.json` was written, has no stored secret to keep and always generates a new one.
 - **Cloudflare tunnel name collisions**: on a retry, `hoster init` finds the existing `hoster` tunnel itself and asks whether to reuse it, delete and recreate it, or abort — you never need to look up the tunnel ID in the dashboard. Reuse is the default, and a second `yes` confirmation is required only when deleting a tunnel with active connections. Non-interactive runs (pipes, CI) reuse it without asking. If the lookup fails for lack of permission, it warns and attempts creation; if that hits a name collision, it prints guidance to run `hoster init --reuse-tunnel <tunnelID>`.
 - Deployment/rollback/redeploy failure messages (`hoster rollback`, `hoster env set --redeploy`) show the `error` field from the deployer's JSON response verbatim.
 

@@ -57,6 +57,17 @@ CLI 실행은 빌드 산출물로 한다: `node packages/cli/dist/index.js <comm
   터널·DNS·`.env`(HMAC_SECRET 포함)가 이미 NAS에 있어서, 설정을 저장하지 않으면 재시도할 때 시크릿과
   터널 ID를 되찾을 방법이 없다.
 
+**init 설정값은 한 곳에서만 해석한다.** `resolveInitSettings`(`packages/cli/src/initSettings.ts`)가
+CLI 옵션 → 환경변수 → 기존 `~/.hoster/config.json` → 프롬프트 순으로 값을 확정하고, 검증까지 여기서
+끝낸다. `runInit`은 확정된 값만 받는다. 세 가지 제약:
+- **Cloudflare API 토큰과 GHCR PAT에는 CLI 옵션을 만들지 않는다.** 셸 히스토리와 `ps` 출력에 남기 때문에
+  환경변수(`HOSTER_CF_API_TOKEN`/`HOSTER_GHCR_PAT`)와 숨김 프롬프트로만 받는다.
+- **폴백 예시값을 두지 않는다.** 값이 없고 비대화형이면 옵션명·환경변수명을 담아 실패한다 — 조용히
+  틀린 NAS를 향해 진행하지 않는다(예전 `defaultNas()`의 `192.168.1.100/admin`이 그 사례였다).
+- **재실행은 기존 `HMAC_SECRET`을 유지한다.** 새로 만들면 등록된 레포의 GitHub 시크릿
+  `HOSTER_DEPLOY_SECRET`이 전부 어긋나므로, 재생성은 `--rotate-hmac`이나 프롬프트에서 명시적으로
+  선택했을 때만 한다. 저장된 설정이 없으면(최초 실행) 새로 만든다.
+
 **시크릿은 계획 문자열에 담지 않는다.** 계획의 command에는 `${TUNNEL_TOKEN}` 같은 플레이스홀더만 남기고,
 실행 시점에 `substitutePlaceholders`가 치환한다. 그래서 dry-run 출력과 에러 메시지에 시크릿이 새지 않는다.
 
