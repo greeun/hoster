@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hoster 산출물 — 단지 안내도</title>
+<style>
+  :root{
+    --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+    --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+    --rule:#c7bb9c; --rule-soft:#ded1ac; --rule-strong:#a89877;
+    --state-success:#2f5233; --state-success-bg:#e2e9df;
+    --state-failed:#b83a1f;  --state-failed-bg:#f2e0d8;
+    --state-pending:#8b8577; --state-pending-bg:#e6e2d6;
+    --state-rolledback:#8a5a2c; --state-rolledback-bg:#ecdfcb;
+    --state-skipped:#aca493; --state-skipped-bg:#eae5da;
+    --accent:#241f16; --accent-ink:#241f16; --accent-soft:#e7ddc3; --accent-line:#241f16;
+    --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+    --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+    --ff-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --ff-title: "AppleMyungjo", "Apple SD Gothic Neo", "Batang", "New Batang", "Noto Serif KR", serif;
+    --ff-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "D2Coding", monospace;
+    --fs-doctitle: clamp(1.7rem, 1.35rem + 1.4vw, 2.3rem);
+    --fs-section: clamp(1.2rem, 1.05rem + .6vw, 1.5rem);
+    --fs-sub: 1.08rem;
+    --fs-body: 1rem;
+    --fs-caption: .8125rem;
+    --fs-code: .875rem;
+    --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2rem; --sp-7:3rem; --sp-8:4rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--ff-body);
+    font-size:var(--fs-body); line-height:1.62; overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-attachment:local;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 var(--sp-5);}
+  a{color:var(--accent-ink)}
+  a:not(.tab):not(.crumb-link){text-underline-offset:2px}
+  h1,h2,h3{font-family:var(--ff-title); font-weight:700; margin:0 0 var(--sp-3); color:var(--ink)}
+  p{margin:0 0 var(--sp-4)}
+  code, pre, .mono{font-family:var(--ff-mono)}
+  svg text{font-family:var(--ff-body)}
+  :focus-visible{outline:3px solid var(--ink); outline-offset:2px;}
+
+  .site-header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:2px solid var(--ink);}
+  .header-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);padding:var(--sp-4) var(--sp-5) var(--sp-2);flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:var(--sp-3);}
+  .brand-mark{width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--ff-title);font-size:1.1rem;flex:none;}
+  .brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+  .brand-title{margin:0;font-size:1.15rem;}
+  .doc-meta-chip{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);white-space:nowrap;}
+  .index-tabs{max-width:1180px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;scrollbar-width:thin;}
+  .tab{--tab-ac:var(--ink);flex:none;font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);padding:var(--sp-2) var(--sp-3) var(--sp-2);background:var(--paper-deep);border:1px solid var(--rule-strong);border-bottom:none;clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);transform:translateY(3px);transition:transform .12s ease;white-space:nowrap;}
+  .tab:hover{transform:translateY(0);color:var(--ink);}
+  .tab--current{background:var(--paper);color:var(--ink);border-color:var(--ink);border-bottom:3px solid var(--tab-ac);transform:translateY(0);font-weight:800;}
+  .tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+  .doc-hero{padding:var(--sp-6) 0 var(--sp-5); border-bottom:1px dashed var(--rule);}
+  .doc-kicker{font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; margin-bottom:6px;}
+  .doc-title{font-size:var(--fs-doctitle); margin-bottom:var(--sp-2); line-height:1.25;}
+  .doc-anchor{font-size:var(--fs-sub); color:var(--ink-soft); max-width:70ch; margin-bottom:var(--sp-3)}
+  .meta-line{font-size:var(--fs-caption); color:var(--ink-faint); border-top:1px solid var(--rule-soft); padding-top:var(--sp-2); display:flex; flex-wrap:wrap; gap:4px 14px;}
+  .meta-line code{color:var(--ink-soft)}
+
+  main{padding-bottom:var(--sp-8)}
+  section.doc-section{padding:var(--sp-7) 0; border-bottom:1px dashed var(--rule-soft);}
+  section.doc-section:last-of-type{border-bottom:none}
+  .section-num{display:inline-block; font-family:var(--ff-mono); font-size:var(--fs-caption); color:var(--paper); background:var(--ink); padding:2px 7px; border-radius:2px; margin-right:8px; vertical-align:2px;}
+  .section-title{font-size:var(--fs-section);}
+  .lede{font-size:var(--fs-sub); color:var(--ink-soft); max-width:74ch; margin-bottom:var(--sp-5); position:relative; padding-left:16px; border-left:3px solid var(--ink);}
+  .lede b{color:var(--ink)}
+
+  details.layer2{margin-top:var(--sp-4); border:1px solid var(--rule); border-radius:4px; background:var(--paper-card);}
+  details.layer2>summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:var(--fs-caption); font-weight:700; color:var(--accent-ink); display:flex; align-items:center; gap:8px; user-select:none;}
+  details.layer2>summary::-webkit-details-marker{display:none}
+  details.layer2>summary:before{content:"▸"; display:inline-block; transition:transform .15s;}
+  details.layer2[open]>summary:before{transform:rotate(90deg);}
+  details.layer2>summary .layer2-label{text-transform:uppercase; letter-spacing:.05em; font-size:.72rem; color:var(--ink-faint); font-weight:700;}
+  .layer2-body{padding:0 16px 16px; font-size:.94rem; color:var(--ink-soft);}
+  .cite{display:inline-block; font-family:var(--ff-mono); font-size:.72rem; color:var(--ink-faint); background:var(--paper-deep); padding:1px 6px; border-radius:3px; margin-top:6px;}
+
+  figure{margin:0}
+  figcaption{font-size:var(--fs-caption); color:var(--ink-faint); margin-top:6px;}
+  .diagram-wrap{overflow-x:auto; overflow-y:visible; padding:4px 2px 10px;}
+  .diagram-wrap svg{display:block; min-width:600px; width:100%; height:auto;}
+
+  /* ---------- hub map ---------- */
+  .hub-map-figure{border:1px solid var(--rule); border-radius:6px; padding:var(--sp-4); background:var(--paper);}
+  .hub-zone{cursor:pointer;}
+  .hub-zone rect, .hub-zone circle{transition:filter .12s;}
+  .hub-zone:hover rect, .hub-zone:hover circle, .hub-zone:focus rect, .hub-zone:focus circle{filter:brightness(0.94);}
+  .hub-zone:focus{outline:none;}
+  .hub-zone:focus rect, .hub-zone:focus circle{stroke-width:3;}
+
+  /* ---------- 4-cluster document index ---------- */
+  .cluster-board{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-5);}
+  .cluster{border:1px solid var(--rule); border-radius:6px; background:var(--paper-card); padding:var(--sp-4);}
+  .cluster h3{font-size:.98rem; margin:0 0 4px;}
+  .cluster .cluster-note{font-size:.78rem; color:var(--ink-faint); margin-bottom:10px;}
+  .doc-card{
+    display:flex; gap:10px; align-items:flex-start; text-decoration:none; color:var(--ink);
+    padding:8px 10px; border-radius:4px; border:1px solid transparent; margin-bottom:4px;
+  }
+  .doc-card:hover{background:var(--paper); border-color:var(--rule);}
+  .doc-card__tab{flex:none; width:.5rem; align-self:stretch; border-radius:2px;}
+  .doc-card__num{font-family:var(--ff-mono); font-weight:800; font-size:.78rem; color:var(--ink-faint); flex:none; width:1.6rem;}
+  .doc-card__body{flex:1;}
+  .doc-card__title{font-weight:700; font-size:.9rem;}
+  .doc-card__desc{font-size:.78rem; color:var(--ink-soft);}
+  .doc-card__sig{font-size:.72rem; color:var(--ink-faint); font-style:italic;}
+
+  /* ---------- reading paths ---------- */
+  .paths-wrap{display:grid; gap:var(--sp-4);}
+  .path-row{border:1px solid var(--rule); border-radius:5px; padding:10px 12px; background:var(--paper-card); display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .path-row .path-label{font-family:var(--ff-mono); font-size:.74rem; font-weight:700; color:var(--ink-soft); flex:none; min-width:8.5rem;}
+  .path-step{display:inline-flex; align-items:center; gap:6px;}
+  .path-chip{font-family:var(--ff-mono); font-size:.8rem; font-weight:700; border:1.6px solid var(--ink); border-radius:50%; width:1.9rem; height:1.9rem; display:flex; align-items:center; justify-content:center; background:var(--paper);}
+  .path-arrow{color:var(--ink-faint); font-weight:700;}
+
+  .site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+  .footer-inner{max-width:1180px;margin:0 auto;}
+  .footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+  .footer-prevnext{display:flex;gap:var(--sp-4);}
+  .footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+  .footer-source{margin-top:var(--sp-3);font-family:var(--ff-mono);font-size:0.76rem;color:var(--ink-faint);}
+  .footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+  @media (max-width:760px){
+    .cluster-board{grid-template-columns:1fr;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 var(--sp-4)}
+    .path-row{flex-direction:column; align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">색인 · 문서 허브 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <div class="doc-kicker">단지 입구의 안내도 · 시리즈 기본 먹빛 잉크</div>
+    <h1 class="doc-title">hoster 산출물 — 단지 안내도</h1>
+    <p class="doc-anchor">hoster는 Synology NAS를 개인용 Vercel처럼 쓰게 해 주는 셀프호스팅 배포 시스템이다. GitHub에 <code>git push</code>를 하면 GitHub Actions가 <span class="gloss" tabindex="0">이미지<span class="gloss-note">내용물이 무엇이든 규격이 같아 어디서든 그대로 실어 나를 수 있는 표준 상자</span></span>를 빌드해 <code>ghcr.io</code>(이미지 창고)에 올리고, 정문을 열지 않고 미리 뚫어 둔 전용 통로(Cloudflare Tunnel)를 거쳐 NAS 안의 관리사무소(deployer)가 도장(서명)을 확인한 뒤 새 <span class="gloss" tabindex="0">컨테이너<span class="gloss-note">그 표준 상자를 실제로 열어 실행 중인 상태</span></span>로 교체한다. 이 안내도는 아래 10개 문서로 가는 입구이며, 각 문서는 같은 단지·택배·관리사무소 서식의 세계에서 서로 다른 방을 보여준다.</p>
+    <div class="meta-line">
+      <span>근거: <code>README.md</code> + 01~10 전체 문서</span>
+      <span>버전 1.0</span>
+      <span>작성일 2026-08-13</span>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ================= 1. 단지 안내도 허브(시그니처) ================= -->
+  <section class="doc-section" id="hub-map">
+    <h2 class="section-title"><span class="section-num">1</span>단지 안내도 — 영역을 눌러 해당 문서로</h2>
+    <p class="lede"><b>1층.</b> 02번 문서가 확립한 단지 배치도의 축소판이다. 영역을 누르면(또는 키보드로 이동 후 Enter) 그 영역을 자세히 다루는 문서로 이동한다.</p>
+
+    <figure class="hub-map-figure">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 420" role="img" aria-labelledby="hubmaptitle">
+          <title id="hubmaptitle">hoster 단지 안내도 — 영역을 누르면 해당 문서로 이동</title>
+          <defs>
+            <marker id="hubarrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/></marker>
+          </defs>
+
+          <a class="hub-zone" href="09-설치-운영-매뉴얼.html" aria-label="로컬 Mac — 09. 설치·운영 매뉴얼로 이동">
+            <rect x="20" y="30" width="150" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-09)" stroke-width="1.8"/>
+            <text x="95" y="58" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">로컬 Mac</text>
+            <text x="95" y="75" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">hoster CLI 실행 → 09</text>
+          </a>
+
+          <a class="hub-zone" href="06-인터페이스-정의서.html" aria-label="GitHub Actions — 06. 인터페이스 정의서로 이동">
+            <rect x="210" y="30" width="160" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-06)" stroke-width="1.8"/>
+            <text x="290" y="58" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">GitHub Actions</text>
+            <text x="290" y="75" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">이미지 빌드·서명 → 06</text>
+          </a>
+
+          <a class="hub-zone" href="02-아키텍처-설계서.html" aria-label="ghcr.io — 02. 아키텍처 설계서로 이동">
+            <rect x="420" y="30" width="120" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-02)" stroke-width="1.8"/>
+            <text x="480" y="58" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">ghcr.io</text>
+            <text x="480" y="75" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">이미지 창고 → 02</text>
+          </a>
+
+          <a class="hub-zone" href="02-아키텍처-설계서.html" aria-label="Cloudflare — 02. 아키텍처 설계서로 이동">
+            <rect x="590" y="30" width="140" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-02)" stroke-width="1.8"/>
+            <text x="660" y="58" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">Cloudflare</text>
+            <text x="660" y="75" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">터널·DNS → 02</text>
+          </a>
+
+          <a class="hub-zone" href="10-사용자-매뉴얼.html" aria-label="브라우저 방문객 — 10. 사용자 매뉴얼로 이동">
+            <rect x="770" y="30" width="110" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-10)" stroke-width="1.8"/>
+            <text x="825" y="58" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">브라우저</text>
+            <text x="825" y="75" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">방문객 → 10</text>
+          </a>
+
+          <rect x="120" y="150" width="700" height="250" rx="14" fill="none" stroke="var(--rule)" stroke-width="2" stroke-dasharray="3 4"/>
+          <text x="144" y="174" font-size="11.5" font-weight="700" fill="var(--ink-soft)">NAS 단지 담장 안쪽</text>
+          <a class="hub-zone" href="07-보안-설계서.html" aria-label="NAS 담장 안쪽 경계 — 07. 보안 설계서로 이동">
+            <rect x="700" y="152" width="110" height="24" rx="3" fill="var(--ac-07)" opacity="0.12" stroke="var(--ac-07)" stroke-width="1.4"/>
+            <text x="755" y="168" text-anchor="middle" font-size="9.5" fill="var(--ac-07)" font-weight="700">경계 전체 → 07</text>
+          </a>
+
+          <a class="hub-zone" href="02-아키텍처-설계서.html" aria-label="cloudflared 터널실 — 02. 아키텍처 설계서로 이동">
+            <rect x="440" y="200" width="180" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-02)" stroke-width="1.8"/>
+            <text x="530" y="228" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">cloudflared</text>
+            <text x="530" y="245" text-anchor="middle" font-size="9" fill="var(--ink-faint)">터널실(후문 지기) → 02</text>
+          </a>
+
+          <a class="hub-zone" href="04-API-명세서.html" aria-label="관리사무소 deployer — 04. API 명세서로 이동">
+            <rect x="160" y="290" width="190" height="72" rx="4" fill="var(--paper)" stroke="var(--ac-04)" stroke-width="1.8"/>
+            <text x="255" y="318" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">관리사무소(deployer)</text>
+            <text x="255" y="335" text-anchor="middle" font-size="9" fill="var(--ink-faint)">접수 창구(API) → 04</text>
+            <text x="255" y="349" text-anchor="middle" font-size="8.5" fill="var(--ink-faint)">장부실(DB) → 05 · 협약서(접점) → 06</text>
+          </a>
+
+          <a class="hub-zone" href="02-아키텍처-설계서.html" aria-label="경비실 traefik — 02. 아키텍처 설계서로 이동">
+            <rect x="600" y="290" width="180" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-02)" stroke-width="1.8"/>
+            <text x="690" y="318" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">경비실(traefik)</text>
+            <text x="690" y="335" text-anchor="middle" font-size="9" fill="var(--ink-faint)">팻말 보고 배달 → 02</text>
+          </a>
+
+          <a class="hub-zone" href="03-상세-설계서.html" aria-label="각 동 앱 컨테이너 — 03. 상세 설계서로 이동">
+            <rect x="380" y="290" width="180" height="66" rx="4" fill="var(--paper)" stroke="var(--ac-03)" stroke-width="1.8"/>
+            <text x="470" y="318" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">각 동(앱 컨테이너)</text>
+            <text x="470" y="335" text-anchor="middle" font-size="9" fill="var(--ink-faint)">교체 절차(swap) → 03</text>
+          </a>
+
+          <g stroke="var(--ink-faint)" stroke-width="1.4" fill="none" opacity=".7">
+            <path d="M170,63 H210" marker-end="url(#hubarrow)"/>
+            <path d="M370,63 H420" marker-end="url(#hubarrow)"/>
+            <path d="M540,63 H590" marker-end="url(#hubarrow)"/>
+            <path d="M480,96 V150" marker-end="url(#hubarrow)"/>
+            <path d="M660,96 V200" marker-end="url(#hubarrow)"/>
+            <path d="M530,266 V290 H470" marker-end="url(#hubarrow)"/>
+            <path d="M620,323 H600" marker-end="url(#hubarrow)"/>
+            <path d="M350,323 H380" marker-end="url(#hubarrow)"/>
+            <path d="M780,63 C 800,150 800,280 780,300" stroke-dasharray="4 3" marker-end="url(#hubarrow)"/>
+          </g>
+        </svg>
+      </div>
+      <figcaption>단지 입구에 걸린 안내판과 같다 — 어디가 무엇인지 미리 보여 주고, 자세한 이야기는 각 영역에 적힌 문서가 이어받는다. (01·05·08은 물리적 "영역"이 아니라 문서 전체를 관통하는 주제라 아래 §2 색인에서 연결한다.)</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 2. 10개 문서 색인(4묶음) ================= -->
+  <section class="doc-section" id="doc-index">
+    <h2 class="section-title"><span class="section-num">2</span>10개 문서 색인 — 무엇을 알 수 있는가</h2>
+    <p class="lede"><b>1층.</b> 똑같은 카드 10개를 늘어놓지 않는다. "무엇을 정했나 / 무엇을 주고받나 / 무엇을 지키고 확인했나 / 어떻게 쓰나" 네 다발로 묶어 놓았다 — 묶음 자체가 그 문서들의 성격을 말한다.</p>
+
+    <div class="cluster-board">
+      <div class="cluster">
+        <h3>무엇을 정했나</h3>
+        <p class="cluster-note">해주기로 한 일과 그 이유·구조를 확정한 문서 3편</p>
+        <a class="doc-card" href="01-요구사항-정의서.html"><span class="doc-card__tab" style="background:var(--ac-01)"></span><span class="doc-card__num">01</span><span class="doc-card__body"><span class="doc-card__title">요구사항 정의서</span><br><span class="doc-card__desc">FR 28건 + NFR 17건, 미구현 3건</span><br><span class="doc-card__sig">시그니처: 요구사항 검인 보드</span></span></a>
+        <a class="doc-card" href="02-아키텍처-설계서.html"><span class="doc-card__tab" style="background:var(--ac-02)"></span><span class="doc-card__num">02</span><span class="doc-card__body"><span class="doc-card__title">아키텍처 설계서</span><br><span class="doc-card__desc">단지 배치도, 포트 없음 원칙</span><br><span class="doc-card__sig">시그니처: 단지 배치도 1장 + 두 경로 오버레이</span></span></a>
+        <a class="doc-card" href="03-상세-설계서.html"><span class="doc-card__tab" style="background:var(--ac-03)"></span><span class="doc-card__num">03</span><span class="doc-card__body"><span class="doc-card__title">상세 설계서</span><br><span class="doc-card__desc">모듈 구조, 큐, 정규식 5종</span><br><span class="doc-card__sig">시그니처: swapContainer 교체 절차 스크러버</span></span></a>
+      </div>
+
+      <div class="cluster">
+        <h3>무엇을 주고받나</h3>
+        <p class="cluster-note">서식과 규격이 오가는 접점 3편</p>
+        <a class="doc-card" href="04-API-명세서.html"><span class="doc-card__tab" style="background:var(--ac-04)"></span><span class="doc-card__num">04</span><span class="doc-card__body"><span class="doc-card__title">API 명세서</span><br><span class="doc-card__desc">엔드포인트 9종, 서명 규칙</span><br><span class="doc-card__sig">시그니처: 민원 서식 왕복도</span></span></a>
+        <a class="doc-card" href="05-DB-설계서.html"><span class="doc-card__tab" style="background:var(--ac-05)"></span><span class="doc-card__num">05</span><span class="doc-card__body"><span class="doc-card__title">DB 설계서</span><br><span class="doc-card__desc">projects/deployments, FK 없음</span><br><span class="doc-card__sig">시그니처: 두 권의 장부 펼침면</span></span></a>
+        <a class="doc-card" href="06-인터페이스-정의서.html"><span class="doc-card__tab" style="background:var(--ac-06)"></span><span class="doc-card__num">06</span><span class="doc-card__body"><span class="doc-card__title">인터페이스 정의서</span><br><span class="doc-card__desc">외부 접점 4종의 계약</span><br><span class="doc-card__sig">시그니처: 접점 계약 매트릭스</span></span></a>
+      </div>
+
+      <div class="cluster">
+        <h3>무엇을 지키고 확인했나</h3>
+        <p class="cluster-note">보안과 검증의 정직한 기록 2편</p>
+        <a class="doc-card" href="07-보안-설계서.html"><span class="doc-card__tab" style="background:var(--ac-07)"></span><span class="doc-card__num">07</span><span class="doc-card__body"><span class="doc-card__title">보안 설계서</span><br><span class="doc-card__desc">HMAC, 취약점 14건, 잔여 위험 4건</span><br><span class="doc-card__sig">시그니처: 도장 실습기(조작형)</span></span></a>
+        <a class="doc-card" href="08-테스트-결과-보고서.html"><span class="doc-card__tab" style="background:var(--ac-08)"></span><span class="doc-card__num">08</span><span class="doc-card__body"><span class="doc-card__title">테스트 결과 보고서</span><br><span class="doc-card__desc">167개 전부 통과, 미검증 5건</span><br><span class="doc-card__sig">시그니처: 준공 점검표(비례 격자)</span></span></a>
+      </div>
+
+      <div class="cluster">
+        <h3>어떻게 쓰나</h3>
+        <p class="cluster-note">설치·운영과 일상 사용을 잇는 2편</p>
+        <a class="doc-card" href="09-설치-운영-매뉴얼.html"><span class="doc-card__tab" style="background:var(--ac-09)"></span><span class="doc-card__num">09</span><span class="doc-card__body"><span class="doc-card__title">설치·운영 매뉴얼</span><br><span class="doc-card__desc">개통 12단계, 장애 대응</span><br><span class="doc-card__sig">시그니처: 개통 12단계 진행 띠 + 결정 트리</span></span></a>
+        <a class="doc-card" href="10-사용자-매뉴얼.html"><span class="doc-card__tab" style="background:var(--ac-10)"></span><span class="doc-card__num">10</span><span class="doc-card__body"><span class="doc-card__title">사용자 매뉴얼</span><br><span class="doc-card__desc">push→공개 URL, 무응답 구간</span><br><span class="doc-card__sig">시그니처: push→공개 URL 여정 지도(시간 비례)</span></span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. 읽는 순서 안내 ================= -->
+  <section class="doc-section" id="reading-paths">
+    <h2 class="section-title"><span class="section-num">3</span>읽는 순서 안내 — 두 가지 길</h2>
+    <p class="lede"><b>1층.</b> 같은 10개 문서 위에 서로 다른 두 경로선이 지나간다. 비개발 이해관계자는 그림으로, 개발자는 코드로 완결되게 읽을 수 있는 순서다.</p>
+
+    <div class="paths-wrap">
+      <div class="path-row">
+        <span class="path-label">비개발 이해관계자</span>
+        <span class="path-step"><a class="path-chip" href="10-사용자-매뉴얼.html" style="border-color:var(--ac-10); color:var(--ac-10)">10</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="02-아키텍처-설계서.html" style="border-color:var(--ac-02); color:var(--ac-02)">02</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="01-요구사항-정의서.html" style="border-color:var(--ac-01); color:var(--ac-01)">01</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="09-설치-운영-매뉴얼.html" style="border-color:var(--ac-09); color:var(--ac-09)">09</a></span>
+      </div>
+      <div class="path-row">
+        <span class="path-label">개발자/팀</span>
+        <span class="path-step"><a class="path-chip" href="02-아키텍처-설계서.html" style="border-color:var(--ac-02); color:var(--ac-02)">02</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="03-상세-설계서.html" style="border-color:var(--ac-03); color:var(--ac-03)">03</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="04-API-명세서.html" style="border-color:var(--ac-04); color:var(--ac-04)">04</a></span>
+        <span class="path-step"><a class="path-chip" href="05-DB-설계서.html" style="border-color:var(--ac-05); color:var(--ac-05)">05</a></span>
+        <span class="path-step"><a class="path-chip" href="06-인터페이스-정의서.html" style="border-color:var(--ac-06); color:var(--ac-06)">06</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="07-보안-설계서.html" style="border-color:var(--ac-07); color:var(--ac-07)">07</a></span>
+        <span class="path-arrow">→</span>
+        <span class="path-step"><a class="path-chip" href="08-테스트-결과-보고서.html" style="border-color:var(--ac-08); color:var(--ac-08)">08</a></span>
+      </div>
+    </div>
+    <figcaption style="margin-top:10px">같은 색인 위를 지나가는 두 개의 경로선이다 — 04·05·06은 나란히 묶여 "무엇을 주고받나"를 한 번에 훑고 지나간다는 뜻.</figcaption>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: README.md + docs/deliverables/01~10 전체 · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 문서들입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="10-사용자-매뉴얼.html">← 10 사용자 매뉴얼</a>
+        <a href="01-요구사항-정의서.html">01 요구사항 정의서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

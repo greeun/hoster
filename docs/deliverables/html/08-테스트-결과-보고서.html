@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08. 테스트 결과 보고서 — hoster 산출물</title>
+<style>
+/* ============================================================
+   hoster 산출물 시리즈 — 공통 디자인 시스템
+   모티프: 아파트 단지 관리사무소의 종이 서식·도장·단지 배치도
+   레지스터: 종이 위 잉크 도해 (평면, 손그림 아님, 그림자/유리효과 없음)
+   ============================================================ */
+:root{
+  /* 종이·잉크 팔레트 */
+  --paper:#f3ecdb;
+  --paper-deep:#e7ddc3;
+  --paper-card:#faf6ea;
+  --ink:#241f16;
+  --ink-soft:#5c5443;
+  --ink-faint:#8b8271;
+  --rule:#c7bb9c;
+  --rule-strong:#a89877;
+
+  /* 상태색 5종 — 시리즈 전역 고정 의미 (문서마다 재정의 금지) */
+  --st-success:#2f5233;   /* 먹초록 — 통과/성공 */
+  --st-fail:#b83a1f;      /* 반려 주홍 — 실패/반려 */
+  --st-pending:#8b8577;   /* 연필 흑연 회색 — 대기 */
+  --st-rollback:#8a5a2c;  /* 구리 갈색 — 롤백 완료 */
+  --st-skipped:#aca493;   /* 옅은 회색 + 취소선 — 건너뜀 */
+
+  /* 문서별 accent 11종 */
+  --ac-index:#241f16;
+  --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+  --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c;
+  --ac-09:#c0851d; --ac-10:#5b9bd8;
+  --accent:var(--ac-08); /* 이 문서(08)의 accent: 검인 올리브 */
+
+  /* 타이포 스케일 (6단계 고정) */
+  --font-body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  --font-serif:"AppleMyungjo","Batang","Nanum Myeongjo",serif;
+  --font-mono:ui-monospace,"SF Mono","D2Coding","Consolas","Menlo",monospace;
+  --fs-doctitle:clamp(1.55rem,1.2rem + 1.3vw,2.25rem);
+  --fs-section:clamp(1.2rem,1.05rem + 0.5vw,1.5rem);
+  --fs-sub:1.08rem;
+  --fs-body:1rem;
+  --fs-caption:0.82rem;
+  --fs-code:0.85rem;
+
+  /* 간격 스케일 (고정 스텝) */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
+}
+*,*::before,*::after{box-sizing:border-box;}
+html{background:var(--paper);}
+body{
+  margin:0;
+  background:var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(169,151,108,0.08) 0px,rgba(169,151,108,0.08) 1px,transparent 1px,transparent 28px);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:var(--fs-body);
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+h1,h2,h3{font-family:var(--font-serif);color:var(--ink);margin:0 0 var(--sp-3) 0;font-weight:700;}
+p{margin:0 0 var(--sp-4) 0;}
+.skip-link{position:absolute;left:-999px;top:0;background:var(--ink);color:var(--paper);padding:var(--sp-2) var(--sp-4);z-index:200;}
+.skip-link:focus{left:var(--sp-3);top:var(--sp-3);}
+a{color:inherit;}
+table{border-collapse:collapse;width:100%;}
+th,td{border:1px solid var(--rule);padding:var(--sp-2) var(--sp-3);text-align:left;font-size:0.94rem;vertical-align:top;}
+th{background:var(--paper-deep);font-family:var(--font-body);font-weight:700;}
+code,kbd{font-family:var(--font-mono);font-size:var(--fs-code);background:var(--paper-deep);padding:0.1em 0.35em;border-radius:2px;}
+.scrollbox{overflow-x:auto;border:1px solid var(--rule);background:var(--paper-card);}
+.scrollbox table{min-width:640px;}
+
+/* ---------- 헤더 + 색인 탭 ---------- */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+}
+.header-top{
+  max-width:1180px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  padding:var(--sp-4) var(--sp-5) var(--sp-2);
+  flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:var(--sp-3);}
+.brand-mark{
+  width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);
+  font-size:1.1rem;flex:none;
+}
+.brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+.brand-title{margin:0;font-size:1.15rem;}
+.doc-meta-chip{
+  margin:0;font-size:var(--fs-caption);color:var(--ink-soft);
+  border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);
+  white-space:nowrap;
+}
+.index-tabs{
+  max-width:1180px;margin:0 auto;
+  display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;
+  scrollbar-width:thin;
+}
+.tab{
+  --tab-ac:var(--ink);
+  flex:none;
+  font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);
+  padding:var(--sp-2) var(--sp-3) var(--sp-2);
+  background:var(--paper-deep);
+  border:1px solid var(--rule-strong);border-bottom:none;
+  clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);
+  transform:translateY(3px);
+  transition:transform .12s ease;
+  white-space:nowrap;
+}
+.tab:hover{transform:translateY(0);color:var(--ink);}
+.tab--current{
+  background:var(--paper);
+  color:var(--ink);
+  border-color:var(--ink);
+  border-bottom:3px solid var(--tab-ac);
+  transform:translateY(0);
+  font-weight:800;
+}
+.tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+/* ---------- 본문 레이아웃 ---------- */
+main{max-width:1180px;margin:0 auto;padding:var(--sp-6) var(--sp-5) var(--sp-8);}
+.section{margin-top:var(--sp-8);padding-top:var(--sp-6);border-top:1px solid var(--rule);}
+.section-kicker{
+  display:inline-block;font-size:var(--fs-caption);color:var(--accent);font-weight:700;
+  letter-spacing:0.08em;margin-bottom:var(--sp-2);
+}
+.section h2{font-size:var(--fs-section);}
+.section h3{font-size:var(--fs-sub);margin-top:var(--sp-5);}
+.lead{color:var(--ink-soft);font-size:1.02rem;max-width:74ch;}
+
+/* ---------- 히어로 ---------- */
+.hero{
+  border:2px solid var(--ink);background:var(--paper-card);
+  padding:var(--sp-6);display:grid;grid-template-columns:1.3fr 1fr;gap:var(--sp-6);align-items:center;
+}
+.hero-text .anchor-line{font-size:var(--fs-caption);color:var(--ink-soft);margin-bottom:var(--sp-2);}
+.hero-text h1{font-size:var(--fs-doctitle);margin-bottom:var(--sp-3);}
+.hero-meta{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-4);font-size:var(--fs-caption);}
+.hero-meta span{border:1px solid var(--rule-strong);padding:2px var(--sp-2);background:var(--paper);}
+
+/* 도장(stamp) 컴포넌트 */
+.stamp{
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  border:3px solid currentColor;border-radius:50%;
+  width:8.5rem;height:8.5rem;text-align:center;
+  transform:rotate(-6deg);
+  font-family:var(--font-serif);
+  position:relative;
+}
+.stamp::before{
+  content:"";position:absolute;inset:6px;border:1px solid currentColor;border-radius:50%;opacity:0.55;
+}
+.stamp .stamp-num{font-size:1.5rem;font-weight:800;line-height:1.05;}
+.stamp .stamp-sub{font-size:0.68rem;letter-spacing:0.05em;margin-top:2px;}
+.stamp.pass{color:var(--st-success);}
+.stamp.fail{color:var(--st-fail);}
+.stamp.pending{color:var(--st-pending);}
+.stamp.rollback{color:var(--st-rollback);}
+.hero-stamp-wrap{display:flex;justify-content:center;}
+
+/* ---------- 1층/2층 이중 레이어 ---------- */
+.layer1{
+  font-size:0.95rem;color:var(--ink);
+  background:var(--paper-deep);
+  border-left:3px solid var(--accent);
+  padding:var(--sp-2) var(--sp-3);
+  margin:var(--sp-3) 0 var(--sp-2);
+}
+.layer1 b{color:var(--ink);}
+details.layer2{
+  margin:var(--sp-2) 0 var(--sp-5);
+  border:1px dashed var(--rule-strong);
+  background:var(--paper-card);
+}
+details.layer2>summary{
+  cursor:pointer;list-style:none;padding:var(--sp-2) var(--sp-3);
+  font-size:var(--fs-caption);font-weight:700;color:var(--ink-soft);
+  display:flex;align-items:center;gap:var(--sp-2);
+}
+details.layer2>summary::-webkit-details-marker{display:none;}
+details.layer2>summary::before{content:"▸";color:var(--accent);transition:transform .15s;}
+details.layer2[open]>summary::before{transform:rotate(90deg);}
+details.layer2>summary:hover{color:var(--ink);}
+.layer2-body{padding:0 var(--sp-4) var(--sp-4);font-size:0.92rem;}
+.layer2-body p{margin:0 0 var(--sp-2);}
+.layer2-body ul{margin:0 0 var(--sp-2);padding-left:1.2em;}
+.src{font-size:0.78rem;color:var(--ink-faint);font-family:var(--font-mono);}
+
+/* 전문어 글로스 */
+.term{font-weight:700;}
+.gloss{
+  display:inline;font-size:0.86em;color:var(--ink-soft);font-style:normal;
+}
+.gloss::before{content:" — ";}
+
+/* 서식 필드(요청 본문/명세를 담는 그릇) */
+.field{
+  border:1px solid var(--rule-strong);background:var(--paper);
+  padding:var(--sp-3);position:relative;
+}
+.field-label{
+  position:absolute;top:-0.65em;left:var(--sp-3);background:var(--paper);
+  padding:0 var(--sp-1);font-size:var(--fs-caption);color:var(--ink-soft);font-weight:700;
+}
+
+/* 시각물 래퍼 */
+.visual{
+  margin:var(--sp-5) 0;border:1px solid var(--rule);background:var(--paper-card);
+  padding:var(--sp-5);
+}
+.visual-cap{font-size:var(--fs-caption);color:var(--ink-soft);margin-top:var(--sp-3);}
+.visual-cap b{color:var(--accent);}
+
+/* ---------- VIS1: 실행 파이프라인 미니 시퀀스 ---------- */
+.pipeline{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+.pipe-step{
+  flex:1 1 160px;border:1px solid var(--rule-strong);background:var(--paper);
+  padding:var(--sp-3);position:relative;
+}
+.pipe-step .pipe-n{
+  font-family:var(--font-mono);font-size:0.72rem;color:var(--accent);font-weight:700;
+}
+.pipe-step h4{margin:var(--sp-1) 0 var(--sp-1);font-size:0.95rem;}
+.pipe-step p{margin:0;font-size:0.85rem;color:var(--ink-soft);}
+.pipe-arrow{
+  flex:0 0 2.4rem;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-faint);font-size:1.3rem;
+}
+@media (max-width:640px){.pipe-arrow{flex-basis:100%;transform:rotate(90deg);height:1.6rem;}}
+
+/* ---------- VIS2: 준공 점검표 (면적 비례 격자) ---------- */
+.propgrid-band{margin-bottom:var(--sp-5);}
+.propgrid-band-label{
+  display:flex;justify-content:space-between;font-size:var(--fs-caption);color:var(--ink-soft);
+  margin-bottom:var(--sp-1);font-weight:700;
+}
+.propgrid-row{display:flex;height:5.5rem;border:1px solid var(--ink);}
+.propgrid-cell{
+  border-right:1px solid var(--paper);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:var(--sp-1) var(--sp-1) var(--sp-1);
+  position:relative;min-width:34px;
+  color:var(--paper);
+  overflow:hidden;
+}
+.propgrid-cell:last-child{border-right:none;}
+.propgrid-cell .cnt{font-family:var(--font-mono);font-weight:800;font-size:0.92rem;}
+.propgrid-cell .fname{font-size:0.62rem;line-height:1.15;word-break:break-all;opacity:0.92;}
+.propgrid-cell.deployer{background:color-mix(in srgb, var(--ac-08) 78%, var(--ink));}
+.propgrid-cell.cli{background:color-mix(in srgb, var(--ac-08) 55%, var(--paper-deep) 20%);color:var(--ink);}
+.propgrid-cell.hatched{
+  background-image:repeating-linear-gradient(45deg,rgba(168,57,28,0.35) 0,rgba(168,57,28,0.35) 4px,transparent 4px,transparent 9px);
+  outline:2px solid var(--st-fail);outline-offset:-2px;
+}
+.propgrid-legend{display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-top:var(--sp-3);font-size:var(--fs-caption);color:var(--ink-soft);}
+.propgrid-legend span{display:inline-flex;align-items:center;gap:6px;}
+.swatch{width:12px;height:12px;display:inline-block;border:1px solid var(--ink);}
+
+/* ---------- VIS3: 스펙트럼 배치도 ---------- */
+.spectrum{position:relative;padding:var(--sp-6) var(--sp-3) var(--sp-3);}
+.spectrum-line{
+  position:relative;height:2px;background:var(--ink);margin:0 var(--sp-4);
+}
+.spectrum-line::before,.spectrum-line::after{
+  content:"";position:absolute;top:-4px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
+}
+.spectrum-line::after{right:-2px;border-left:8px solid var(--ink);}
+.spectrum-end{display:flex;justify-content:space-between;font-size:var(--fs-caption);color:var(--ink-soft);margin:0 var(--sp-4) var(--sp-2);font-weight:700;}
+.spectrum-items{position:relative;margin:var(--sp-4) var(--sp-4) 0;height:11.5rem;}
+.spectrum-node{
+  position:absolute;top:0;transform:translateX(-50%);
+  width:9.5rem;text-align:center;
+}
+.spectrum-node .dot{
+  width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--ink);
+  margin:0 auto var(--sp-1);
+}
+.spectrum-node .stalk{width:1px;height:1.6rem;background:var(--rule-strong);margin:0 auto;}
+.spectrum-node .card{
+  border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-2);font-size:0.78rem;
+}
+.spectrum-node .card b{display:block;font-size:0.84rem;margin-bottom:2px;}
+
+/* ---------- VIS4: 주장-근거 연결 도해 ---------- */
+.claimrow{
+  display:grid;grid-template-columns:1fr auto 1.3fr;gap:var(--sp-3);align-items:center;
+  padding:var(--sp-3) 0;border-bottom:1px solid var(--rule);
+}
+.claimrow:last-child{border-bottom:none;}
+.claim-chip{
+  border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-2) var(--sp-3);font-size:0.86rem;
+}
+.claim-chip .cat{display:block;font-size:0.7rem;color:var(--accent);font-weight:700;letter-spacing:0.04em;margin-bottom:2px;}
+.claim-connector{
+  display:flex;align-items:center;color:var(--ink-faint);font-size:1.1rem;min-width:2rem;justify-content:center;
+}
+.evidence-cluster{display:flex;flex-wrap:wrap;gap:var(--sp-1);}
+.evidence-chip{
+  font-family:var(--font-mono);font-size:0.72rem;background:var(--paper-deep);border:1px solid var(--rule-strong);
+  padding:2px var(--sp-2);white-space:nowrap;
+}
+@media (max-width:700px){
+  .claimrow{grid-template-columns:1fr;}
+  .claim-connector{transform:rotate(90deg);justify-content:flex-start;padding-left:var(--sp-3);}
+}
+
+/* ---------- VIS5: 주석 코드 패널 ---------- */
+.code-panel{
+  background:#2b2620;color:#efe6cf;border:1px solid var(--ink);
+  padding:var(--sp-4);font-family:var(--font-mono);font-size:var(--fs-code);
+  overflow-x:auto;position:relative;
+}
+.code-panel .cp-title{
+  font-family:var(--font-body);color:#efe6cf;opacity:0.7;font-size:0.72rem;margin-bottom:var(--sp-2);
+  text-transform:none;letter-spacing:0.04em;
+}
+.code-panel pre{margin:0;white-space:pre;}
+.code-panel .anno{color:#9ec98a;}
+.code-panel .num{color:#e2b866;}
+.code-panel .an-list{list-style:none;margin:var(--sp-3) 0 0;padding:0;font-family:var(--font-body);font-size:0.82rem;color:#d8cdae;}
+.code-panel .an-list li{padding:2px 0;border-top:1px dashed #55503f;}
+.code-panel .an-list b{color:#efe6cf;}
+
+/* ---------- VIS6: 결함 발견-수정 2레인 흐름 ---------- */
+.flowlanes{display:grid;gap:var(--sp-5);}
+.lane{border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-3) var(--sp-4);}
+.lane-title{
+  font-size:0.85rem;font-weight:700;color:var(--accent);margin-bottom:var(--sp-3);
+  display:flex;align-items:center;gap:var(--sp-2);
+}
+.lane-title .n{
+  display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;
+  border:1px solid var(--accent);border-radius:50%;font-family:var(--font-mono);font-size:0.75rem;
+}
+.defect-item{
+  display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--sp-2) 0;border-top:1px solid var(--rule);
+}
+.defect-item:first-child{border-top:none;}
+.defect-desc{flex:1;font-size:0.88rem;}
+.commit-chip{
+  font-family:var(--font-mono);font-size:0.75rem;background:var(--ink);color:var(--paper);
+  padding:2px var(--sp-2);white-space:nowrap;flex:none;
+}
+.commit-chip.multi{background:var(--st-rollback);}
+
+/* ---------- 하는일/안하는일, 대비류 ---------- */
+.contrast{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);}
+@media (max-width:640px){.contrast{grid-template-columns:1fr;}}
+
+/* 상태 배지 */
+.badge{display:inline-block;font-size:0.72rem;font-weight:700;padding:2px var(--sp-2);border-radius:2px;}
+.badge.success{background:color-mix(in srgb,var(--st-success) 18%,var(--paper));color:var(--st-success);border:1px solid var(--st-success);}
+.badge.fail{background:color-mix(in srgb,var(--st-fail) 18%,var(--paper));color:var(--st-fail);border:1px solid var(--st-fail);}
+.badge.skipped{background:var(--paper-deep);color:var(--st-skipped);border:1px solid var(--st-skipped);text-decoration:line-through;}
+.badge.rollback{background:color-mix(in srgb,var(--st-rollback) 18%,var(--paper));color:var(--st-rollback);border:1px solid var(--st-rollback);}
+
+/* ---------- VIS8: 패키지 비교 미니 차트 ---------- */
+.barchart{display:flex;gap:var(--sp-6);flex-wrap:wrap;}
+.bar-group{flex:1 1 220px;}
+.bar-group h4{margin:0 0 var(--sp-2);font-size:0.88rem;}
+.bar-row{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-2);}
+.bar-row .lbl{width:5.4rem;font-size:0.78rem;color:var(--ink-soft);flex:none;}
+.bar-track{flex:1;background:var(--paper-deep);height:1.15rem;position:relative;border:1px solid var(--rule-strong);}
+.bar-fill{height:100%;background:var(--accent);}
+.bar-row .val{width:4.4rem;text-align:right;font-family:var(--font-mono);font-size:0.78rem;flex:none;}
+
+/* ---------- 미검증 영역 배너 ---------- */
+.honesty-banner{
+  border:2px dashed var(--st-fail);background:color-mix(in srgb,var(--st-fail) 6%,var(--paper));
+  padding:var(--sp-4);margin-bottom:var(--sp-5);
+}
+.honesty-banner b{color:var(--st-fail);}
+.unverified-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--sp-3);}
+.uv-card{border:1px solid var(--st-fail);background:var(--paper-card);padding:var(--sp-3);}
+.uv-card .uv-head{display:flex;align-items:center;gap:var(--sp-2);font-weight:700;font-size:0.88rem;margin-bottom:var(--sp-1);}
+.uv-card .uv-dot{width:9px;height:9px;border-radius:50%;background:var(--st-fail);flex:none;}
+.uv-card p{margin:0;font-size:0.82rem;color:var(--ink-soft);}
+
+/* ---------- 푸터 ---------- */
+.site-footer{
+  border-top:2px solid var(--ink);background:var(--paper-deep);
+  padding:var(--sp-6) var(--sp-5);
+}
+.footer-inner{max-width:1180px;margin:0 auto;}
+.footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+.footer-prevnext{display:flex;gap:var(--sp-4);}
+.footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+.footer-source{margin-top:var(--sp-3);font-family:var(--font-mono);font-size:0.76rem;color:var(--ink-faint);}
+.footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">08 · 테스트 결과 보고서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="hero-text">
+      <p class="anchor-line">앵커 비유 — 건물이 다 지어졌을 때 받는 <b>준공 검사표</b>: 어느 구역을 몇 항목 검사했고, 어느 구역은 아직 들어가 보지 못했는지.</p>
+      <h1>08. 테스트 결과 보고서</h1>
+      <p class="lead">hoster를 지은 뒤 관리사무소가 직접 돌린 검사 167항목의 성적표다. 검사 대상은 앱을 담아 나르는 <span class="term">컨테이너<span class="gloss">내용물이 무엇이든 규격이 같아 어디서든 그대로 실어 나를 수 있는 표준 상자</span></span>를 새로 들이는 절차, 문제가 생겼을 때 이전 상자로 되돌리는 <span class="term">롤백<span class="gloss">받은 물건이 잘못됐을 때 바로 전에 있던 물건으로 되돌리는 것</span></span>, 그리고 그 과정에서 신분을 확인하는 <span class="term">HMAC<span class="gloss">우리 둘만 아는 인주로 찍는 도장 — 본문과 시각을 섞어 계산하는 서명값</span></span> 서명까지 아우른다. 15개 검사 구역(파일) 전부 통과했고 불합격은 0건이지만, 검사원이 실제로는 <span class="term">모형<span class="gloss">진짜 NAS·진짜 Cloudflare 대신 가짜로 흉내 낸 대역을 놓고 검사한 경우</span></span>으로 검사한 구역도 있다. 이 문서는 어디를 진짜로 봤고 어디를 아직 못 들어가 봤는지를 숨기지 않는다.</p>
+      <div class="hero-meta">
+        <span>실행 <code>pnpm -r test</code></span>
+        <span>러너 vitest v2.1.9</span>
+        <span>패키지 2종 · 파일 15개</span>
+      </div>
+    </div>
+    <div class="hero-stamp-wrap">
+      <div class="stamp pass" role="img" aria-label="검사 결과 도장: 167개 중 167개 통과, 실패 0건">
+        <span class="stamp-num">167 / 167</span>
+        <span class="stamp-sub">FAIL&nbsp;0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= §1 실행 개요 (VIS1) ================= -->
+  <section class="section" id="sec-run">
+    <span class="section-kicker">01</span>
+    <h2>어떻게 검사했나 — 실행 한 번, 두 회사(패키지) 동시 점검</h2>
+    <p class="lead">관리사무소(workspace root)에서 <code>pnpm -r test</code> 한 번을 내리면, <span class="term">deployer</span>와 <span class="term">cli</span> 두 패키지가 각자의 <span class="term">vitest<span class="gloss">테스트를 실제로 돌려 채점하는 도구, v2.1.9</span></span> 러너로 동시에 채점된다.</p>
+
+    <div class="visual" data-vis="1" data-vis-type="sequence">
+      <h3>검사 실행 파이프라인</h3>
+      <div class="pipeline">
+        <div class="pipe-step">
+          <span class="pipe-n">01</span>
+          <h4>명령 실행</h4>
+          <p><code>pnpm -r test</code><br>workspace root에서 1회</p>
+        </div>
+        <div class="pipe-arrow" aria-hidden="true">→</div>
+        <div class="pipe-step">
+          <span class="pipe-n">02</span>
+          <h4>@hoster/deployer</h4>
+          <p>5개 파일 · 46개 항목<br>vitest, 2.71s</p>
+        </div>
+        <div class="pipe-arrow" aria-hidden="true">＋</div>
+        <div class="pipe-step">
+          <span class="pipe-n">02</span>
+          <h4>@hoster/cli</h4>
+          <p>10개 파일 · 121개 항목<br>vitest, 685ms</p>
+        </div>
+        <div class="pipe-arrow" aria-hidden="true">→</div>
+        <div class="pipe-step">
+          <span class="pipe-n">03</span>
+          <h4>합산 성적표</h4>
+          <p>총 167개<br><b style="color:var(--st-success)">167 통과 · 0 실패</b></p>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — 관리사무소가 검사원 두 팀(배달 담당·창구 담당)을 같은 날 동시에 투입해, 각자 맡은 구역을 끝까지 훑고 하나의 성적표로 합친 것.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p>패키지별 테스트 수 합계: deployer 5+4+15+11+11 = 46, cli 3+18+11+4+13+6+7+16+17+26 = 121. 총 167개, 전부 통과, 실패 0.</p>
+          <p class="src">근거: 08-테스트-결과-보고서.md §1 문서 정보, §2 요약</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §2 준공 점검표 (VIS2, signature) ================= -->
+  <section class="section" id="sec-grid">
+    <span class="section-kicker">02 · 시그니처</span>
+    <h2>준공 점검표 — 15개 구역을 검사 항목 수만큼 넓게 그리면</h2>
+    <p class="lead">아래 격자는 15개 검사 파일을 <b>실제 항목 수에 비례한 면적</b>으로 배치한 것이다. 칸이 넓을수록 그 파일이 <span class="term">커버 범위<span class="gloss">코드 중 실제로 검사가 훑고 지나간 부분이 얼마나 되는지 — 이 문서에서는 "몇 항목을 검사했는지"로만 표시하며, 몇 %를 봤는지 비율은 원문에 없다</span></span>가 넓다는 뜻 — <code>ops.test.ts</code>(26개)가 cli 구역에서 가장 넓고, <code>config.test.ts</code>(3개)가 가장 좁다.</p>
+
+    <div class="visual" data-vis="2" data-vis-type="invented-proportional-grid">
+      <h3>15개 파일 · 167개 항목 (면적 = 항목 수)</h3>
+
+      <div class="propgrid-band">
+        <div class="propgrid-band-label"><span>@hoster/deployer — 5개 파일</span><span>46개 항목 · 2.71s</span></div>
+        <div class="propgrid-row">
+          <div class="propgrid-cell deployer" style="flex-grow:5;" title="hmac.test.ts · 5개"><span class="cnt">5</span><span class="fname">hmac.test.ts</span></div>
+          <div class="propgrid-cell deployer" style="flex-grow:4;" title="store.test.ts · 4개"><span class="cnt">4</span><span class="fname">store.test.ts</span></div>
+          <div class="propgrid-cell deployer" style="flex-grow:15;" title="app.test.ts · 15개"><span class="cnt">15</span><span class="fname">app.test.ts</span></div>
+          <div class="propgrid-cell deployer" style="flex-grow:11;" title="orchestrator.test.ts · 11개"><span class="cnt">11</span><span class="fname">orchestrator.test.ts</span></div>
+          <div class="propgrid-cell deployer hatched" style="flex-grow:11;" title="docker.test.ts · 11개 — dockerode를 vi.fn()으로 모형 처리, 실제 데몬 아님"><span class="cnt">11</span><span class="fname">docker.test.ts ⚠</span></div>
+        </div>
+      </div>
+
+      <div class="propgrid-band">
+        <div class="propgrid-band-label"><span>@hoster/cli — 10개 파일</span><span>121개 항목 · 685ms</span></div>
+        <div class="propgrid-row">
+          <div class="propgrid-cell cli" style="flex-grow:3;" title="config.test.ts · 3개"><span class="cnt">3</span><span class="fname">config</span></div>
+          <div class="propgrid-cell cli" style="flex-grow:18;" title="repo.test.ts · 18개"><span class="cnt">18</span><span class="fname">repo.test.ts</span></div>
+          <div class="propgrid-cell cli hatched" style="flex-grow:11;" title="cloudflare.test.ts · 11개 — fetchFn 주입, 실제 Cloudflare API 아님"><span class="cnt">11</span><span class="fname">cloudflare ⚠</span></div>
+          <div class="propgrid-cell cli hatched" style="flex-grow:4;" title="nas.test.ts · 4개 — 러너 주입, 실제 NAS SSH 아님"><span class="cnt">4</span><span class="fname">nas ⚠</span></div>
+          <div class="propgrid-cell cli" style="flex-grow:13;" title="init.test.ts · 13개"><span class="cnt">13</span><span class="fname">init.test.ts</span></div>
+          <div class="propgrid-cell cli" style="flex-grow:6;" title="client.test.ts · 6개"><span class="cnt">6</span><span class="fname">client</span></div>
+          <div class="propgrid-cell cli" style="flex-grow:7;" title="shell.test.ts · 7개"><span class="cnt">7</span><span class="fname">shell</span></div>
+          <div class="propgrid-cell cli" style="flex-grow:16;" title="runInit.test.ts · 16개"><span class="cnt">16</span><span class="fname">runInit.test.ts</span></div>
+          <div class="propgrid-cell cli hatched" style="flex-grow:17;" title="runAdd.test.ts · 17개 — gh CLI/Actions 관련 부분은 러너 주입, 실제 GitHub 아님"><span class="cnt">17</span><span class="fname">runAdd ⚠</span></div>
+          <div class="propgrid-cell cli" style="flex-grow:26;" title="ops.test.ts · 26개 — 가장 넓은 구역"><span class="cnt">26</span><span class="fname">ops.test.ts</span></div>
+        </div>
+      </div>
+
+      <div class="propgrid-legend">
+        <span><i class="swatch" style="background:color-mix(in srgb, var(--ac-08) 78%, var(--ink));"></i>deployer 파일</span>
+        <span><i class="swatch" style="background:color-mix(in srgb, var(--ac-08) 55%, var(--paper-deep) 20%);"></i>cli 파일</span>
+        <span><i class="swatch" style="background:repeating-linear-gradient(45deg,rgba(168,57,28,0.5) 0,rgba(168,57,28,0.5) 3px,var(--paper-deep) 3px,var(--paper-deep) 6px);outline:1px solid var(--st-fail);"></i>⚠ 모형(mock)으로 검사 — §4 참고</span>
+      </div>
+
+      <p class="layer1">🖋 1층 — 검사표의 칸 너비는 그 구역을 몇 항목 확인했는지를 그대로 보여준다. 넓을수록 꼼꼼히 봤다는 뜻이고, 옆에 ⚠ 표시가 붙은 칸은 진짜 현장이 아니라 흉내 낸 모형을 놓고 검사했다는 뜻이다(자세한 사유는 이 문서 맨 아래 "말하지 않는 것"에 있다).</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 — 파일별 정확한 개수 펼치기</summary>
+        <div class="layer2-body">
+          <div class="scrollbox">
+            <table>
+              <thead><tr><th>패키지</th><th>파일</th><th>테스트 수</th></tr></thead>
+              <tbody>
+                <tr><td>deployer</td><td><code>test/hmac.test.ts</code></td><td>5</td></tr>
+                <tr><td>deployer</td><td><code>test/store.test.ts</code></td><td>4</td></tr>
+                <tr><td>deployer</td><td><code>test/app.test.ts</code></td><td>15</td></tr>
+                <tr><td>deployer</td><td><code>test/orchestrator.test.ts</code></td><td>11</td></tr>
+                <tr><td>deployer</td><td><code>test/docker.test.ts</code></td><td>11</td></tr>
+                <tr><td>cli</td><td><code>test/config.test.ts</code></td><td>3</td></tr>
+                <tr><td>cli</td><td><code>test/repo.test.ts</code></td><td>18</td></tr>
+                <tr><td>cli</td><td><code>test/cloudflare.test.ts</code></td><td>11</td></tr>
+                <tr><td>cli</td><td><code>test/nas.test.ts</code></td><td>4</td></tr>
+                <tr><td>cli</td><td><code>test/init.test.ts</code></td><td>13</td></tr>
+                <tr><td>cli</td><td><code>test/client.test.ts</code></td><td>6</td></tr>
+                <tr><td>cli</td><td><code>test/shell.test.ts</code></td><td>7</td></tr>
+                <tr><td>cli</td><td><code>test/runInit.test.ts</code></td><td>16</td></tr>
+                <tr><td>cli</td><td><code>test/runAdd.test.ts</code></td><td>17</td></tr>
+                <tr><td>cli</td><td><code>test/ops.test.ts</code></td><td>26</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="src">근거: 08-테스트-결과-보고서.md §2.1 파일별 테스트 수. 커버리지 퍼센트 수치는 원문에 없음 — 지어내지 않음.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §3 검사원 6종 스펙트럼 (VIS3) ================= -->
+  <section class="section" id="sec-types">
+    <span class="section-kicker">03</span>
+    <h2>검사원 6명, 각자 얼마나 실물을 보고 판정하는가</h2>
+    <p class="lead">같은 "테스트"라도 성격이 다르다. 왼쪽일수록 부품 하나만 떼어 보는 검사, 오른쪽일수록 실제 물류·통신까지 재현해 보는 검사다.</p>
+
+    <div class="visual" data-vis="3" data-vis-type="schematic-spectrum">
+      <h3>"어디까지 진짜인가" 배치도</h3>
+      <div class="spectrum">
+        <div class="spectrum-end"><span>부품 단독 확인</span><span>실제 환경 재현</span></div>
+        <div class="spectrum-line" aria-hidden="true"></div>
+        <div class="spectrum-items">
+          <div class="spectrum-node" style="left:6%;">
+            <div class="stalk"></div><div class="dot"></div>
+            <div class="card"><b><span class="term">① 단위 테스트<span class="gloss">부품 하나만 떼어내 그 부품 혼자서 옳게 동작하는지만 보는 검사</span></span></b>순수 함수만 확인<br><span class="src">hmac / shell / repo / config</span></div>
+          </div>
+          <div class="spectrum-node" style="left:27%;">
+            <div class="stalk"></div><div class="dot"></div>
+            <div class="card"><b><span class="term">② 계약 테스트<span class="gloss">두 부서가 주고받는 서류 양식이 서로 맞는지, 실제로 주고받아 확인하는 검사</span></span></b>CLI 서명 ↔ deployer 검증을 실제로 왕복<br><span class="src">client.test.ts</span></div>
+          </div>
+          <div class="spectrum-node" style="left:48%;">
+            <div class="stalk"></div><div class="dot"></div>
+            <div class="card"><b>③ API 계층</b>실제 Hono 앱에 요청 전송<br><span class="src">app.test.ts</span></div>
+          </div>
+          <div class="spectrum-node" style="left:69%;">
+            <div class="stalk"></div><div class="dot"></div>
+            <div class="card"><b>④ 오케스트레이션</b><span class="term">러너(runner) 주입<span class="gloss">ssh·docker 명령을 실제로 실행하는 대신, "이런 명령이 이 순서로 호출됐다"만 기록하는 대역 실행기로 바꿔 끼우는 것</span></span>으로 단계 흐름 재현<br><span class="src">runInit / runAdd / ops</span></div>
+          </div>
+          <div class="spectrum-node" style="left:90%;">
+            <div class="stalk"></div><div class="dot"></div>
+            <div class="card"><b><span class="term">⑤ 통합 테스트<span class="gloss">여러 부품을 실제로 이어 붙여, 부품들이 서로 맞물려 돌아가는지 함께 보는 검사</span></span>(fake dockerode)</b>컨테이너 상태를 추적하는 가짜 데몬<br><span class="src">orchestrator.test.ts</span></div>
+          </div>
+        </div>
+        <div class="spectrum-node" style="position:static;width:auto;margin-top:var(--sp-5);text-align:left;">
+          <div class="card" style="border-color:var(--st-fail);border-style:dashed;">
+            <b style="color:var(--st-fail)">⑥ 실daemon 검증 — 자동화 테스트 없음</b>
+            실제 Docker 데몬·SSH·gh CLI를 쓰는 자동 테스트는 이 저장소에 없다. <code>docker.test.ts</code>는 dockerode를 <code>vi.fn()</code>으로 모형 처리한다. 실물 확인은 사람이 리뷰 과정에서 수동으로 했다(예: 커밋 <code>420281e</code> 메시지가 언급하는 "reviewer's stopAndRemove THREW: 304" 재현).
+          </div>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — 왼쪽 검사원은 부품 하나만 뜯어보고, 오른쪽으로 갈수록 실제 배송 과정을 통째로 재현해서 검사한다. 가장 오른쪽 "실물 검사"는 이번 자동 채점표에는 없고, 사람이 직접 현장을 확인했다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p><span class="term">모킹(mock)과 페이크(fake)<span class="gloss">진짜 대신 세워두는 대역 — mock은 "이 함수가 불렸는지만" 확인하는 얇은 대역, fake는 상태를 실제로 흉내 내는 두꺼운 대역</span></span>의 차이가 ④/⑤를 가른다: orchestrator.test.ts의 <code>makeFakeDockerode</code>(29-84행)는 컨테이너의 running/image 상태를 실제로 추적하는 <b>페이크</b>이고, docker.test.ts는 dockerode 메서드 호출 여부만 보는 <b>목</b>이다.</p>
+          <p><span class="term">의존성 주입<span class="gloss">실제 실행기 대신 테스트용 실행기를 갈아 끼울 수 있게 만들어 둔 구조</span></span> 및 <span class="term">러너(runner) 주입<span class="gloss">ssh·docker 명령을 실제로 실행하는 대신, 테스트가 "이런 명령이 이 순서로 호출됐다"만 기록하는 대역 실행기로 교체하는 것</span></span>이 ④를 가능하게 한다.</p>
+          <p class="src">근거: 08-테스트-결과-보고서.md §3 테스트 유형</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §4 핵심 주장-근거 (VIS4, VIS5) ================= -->
+  <section class="section" id="sec-claims">
+    <span class="section-kicker">04</span>
+    <h2>열 가지 핵심 주장, 그리고 그 증거가 있는 줄 번호</h2>
+    <p class="lead">"동시성이 안전하다"거나 "0600 권한이 지켜진다"는 말은 각각 특정 파일의 특정 줄에 있는 검사가 뒷받침한다. 아래는 주장과 그 근거를 나란히 이은 것이다.</p>
+
+    <div class="visual" data-vis="4" data-vis-type="mindmap-connector">
+      <h3>주장 ↔ 근거 테스트</h3>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">동시성</span>큐는 latest-wins — 진행 중 1건 + 최신 대기 1건만, 중간 요청은 skipped</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster"><span class="evidence-chip">orchestrator.test.ts:172-187</span></div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">동시성</span>rollback은 진행 중 deploy와 겹치지 않고 순서대로 직렬 실행</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster"><span class="evidence-chip">orchestrator.test.ts:205-238</span></div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">동시성</span>recordDeployment 실패해도 락은 풀려 다음 배포는 정상 진행</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster"><span class="evidence-chip">orchestrator.test.ts:189-203</span></div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">보안</span>경로 순회 시도 시 400, envDir 밖에 파일을 쓰지 않음</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster"><span class="evidence-chip">app.test.ts:102-109</span></div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">보안</span>주입 시도(env 개행, domain 특수문자, 브랜치 메타문자, shQuote) 거부</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster">
+          <span class="evidence-chip">app.test.ts:111-117</span>
+          <span class="evidence-chip">app.test.ts:124-128</span>
+          <span class="evidence-chip">repo.test.ts:104-118</span>
+          <span class="evidence-chip">shell.test.ts:20-32</span>
+        </div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">보안</span>파일 권한 0600 — 신규 생성/기존 파일 덮어쓰기 양쪽 모두</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster">
+          <span class="evidence-chip">app.test.ts:130-150</span>
+          <span class="evidence-chip">config.test.ts:26</span>
+          <span class="evidence-chip">init.test.ts:93-98</span>
+        </div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">롤백</span>Docker 304(already in target state)는 관용 — 예외로 안 던짐</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster">
+          <span class="evidence-chip">docker.test.ts:62-69</span>
+          <span class="evidence-chip">docker.test.ts:97-103</span>
+        </div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">롤백</span>실패 시 rename 복구 + 반드시 start까지 수행</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster">
+          <span class="evidence-chip">orchestrator.test.ts:112-125</span>
+          <span class="evidence-chip">orchestrator.test.ts:130-145</span>
+          <span class="evidence-chip">orchestrator.test.ts:257-279</span>
+        </div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">계약</span>CLI가 만든 서명을 deployer의 verifySignature로 실제 왕복 검증</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster"><span class="evidence-chip">client.test.ts:40-92</span></div>
+      </div>
+      <div class="claimrow">
+        <div class="claim-chip"><span class="cat">계약</span>비ASCII 값("한글 값 テスト 🚀" 포함)이 손상 없이 서명·검증</div>
+        <div class="claim-connector">→</div>
+        <div class="evidence-cluster"><span class="evidence-chip">client.test.ts:54</span></div>
+      </div>
+      <p class="layer1">🖋 1층 — 성적표에 적힌 "합격"이라는 말 뒤에는 항상 몇 번째 줄에서 무엇을 흔들어 봤는지가 있다. 화살표 오른쪽 칩을 누르면(2층에서) 그 줄이 정확히 무엇을 확인했는지 알 수 있다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 — <span class="term">라운드트립(왕복) 검증<span class="gloss">한쪽이 만든 값을 다른 쪽 실제 코드로 그대로 검증해, 두 모듈이 정말 같은 규칙을 쓰는지 확인하는 방식</span></span> 설명 펼치기</summary>
+        <div class="layer2-body">
+          <p><code>client.test.ts:40-92</code>는 CLI의 <code>src/client.ts</code>가 만든 HMAC 서명을, deployer 패키지의 <code>../../deployer/src/hmac.js</code>를 <b>직접 import</b>해 검증한다 — 서로 다른 두 패키지 경계를 넘어 진짜 코드로 왕복시키므로 "계약 테스트"로 분류된다.</p>
+          <p class="src">근거: 08-테스트-결과-보고서.md §5 중점 검증 항목</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="visual" data-vis="5" data-vis-type="annotated-code-panel">
+      <h3>발췌 — 동시성 큐 검증(요지 재구성)</h3>
+      <div class="code-panel">
+        <p class="cp-title">deployer/test/orchestrator.test.ts — "동시 deploy: 진행 중 1건 + 대기 최신 1건만" (172-187행 요지)</p>
+<pre>test('동시 deploy 요청 중 중간 요청은 skipped', async () => {
+  const p1 = orchestrator.execute(deployA)   <span class="anno">// 진행 중이 됨</span>
+  const p2 = orchestrator.execute(deployB)   <span class="anno">// 대기열 진입</span>
+  const p3 = orchestrator.execute(deployC)   <span class="anno">// p2를 밀어내고 "최신 대기"가 됨</span>
+
+  const [r1, r2, r3] = await Promise.all([p1, p2, p3])
+  expect(r2.status).toBe(<span class="num">'skipped'</span>)  <span class="anno">// latest-wins</span>
+  expect(r3.status).toBe(<span class="num">'success'</span>)
+})</pre>
+        <ul class="an-list">
+          <li><b>실제 코드가 아니라 재구성입니다</b> — 원문(08번 문서)에 인용된 줄 범위(172-187행)의 시나리오 설명을 코드 형태로 옮긴 것이며, 저장소의 실제 소스를 그대로 복사한 것이 아닙니다.</li>
+          <li><b>skipped</b> — 상태색 5종 중 "건너뜀"(옅은 회색+취소선)에 해당.</li>
+        </ul>
+      </div>
+      <p class="visual-cap">시각물 5 · 주석 코드 패널 — <b>큐의 latest-wins 규칙</b>을 코드 형태로 보여준다 (실제 소스 발췌 아님, §5 명시).</p>
+      <p class="layer1">🖋 1층 — 접수창구에 세 사람이 연달아 같은 세대 앞으로 서류를 냈을 때, 처리 중인 것 다음으로는 가장 나중 서류만 접수하고 중간 것은 반려(skipped) 처리한다는 뜻이다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p>이 패널은 08번 문서 §5가 인용한 줄 범위(172-187행)의 시나리오 설명을 코드 형태로 재구성한 것이며, 저장소의 실제 소스를 그대로 복사한 것이 아니다. 실제 검증 지점은 <code>orchestrator.test.ts:172-187</code>.</p>
+          <p class="src">근거: 08-테스트-결과-보고서.md §5 중점 검증 항목(동시성 — 큐 latest-wins)</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §5 결함 발견-수정 (VIS6) ================= -->
+  <section class="section" id="sec-defects">
+    <span class="section-kicker">05</span>
+    <h2>결함이 발견되고 고쳐진 두 갈래 길</h2>
+    <p class="lead">9건의 결함은 두 경로 중 하나로 잡혔다 — 기능을 막 만든 직후 같은 구역을 다시 본 <b>태스크 리뷰</b>, 그리고 전체를 한 번 더 훑은 <b>최종 리뷰(fix-wave)</b>. <code>b72a15d</code> 커밋 메시지가 fix-wave를 "planInit()을 재정렬하고 swapContainer를 바꾼" 통합 검증 라운드로 명시한다. 167개 검사는 한 번 잡은 결함이 나중에 <span class="term">회귀<span class="gloss">한 번 고쳤던 문제가 다른 수정 때문에 슬그머니 되살아나는 것</span></span>로 되살아나지 않는지도 함께 지킨다.</p>
+
+    <div class="visual" data-vis="6" data-vis-type="two-lane-flow">
+      <h3>발견 경로별 흐름</h3>
+      <div class="flowlanes">
+        <div class="lane">
+          <div class="lane-title"><span class="n">A</span>태스크 리뷰 — 기능 직후, 같은 모듈을 다시 봄</div>
+          <div class="defect-item">
+            <div class="defect-desc"><code>/env/:project</code> 경로 순회 (hono <code>decodeURIComponent</code>로 <code>%2F</code>→<code>/</code>) — Hono API 직후(<code>d7b67d8</code>)</div>
+            <div class="commit-chip">45c2e2f</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc">env 키/값 개행 주입, domain 미검증으로 Traefik 라벨 주입 가능 — Hono API 직후</div>
+            <div class="commit-chip">45c2e2f</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc">env 파일 0644로 생성/유지됨 (보완 수정 포함)</div>
+            <div class="commit-chip multi">45c2e2f · 02d84cd</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc">오케스트레이터 락 영구 고착, rollback 큐 우회, unhandled rejection — 배포 오케스트레이터 직후(<code>112b258</code>)</div>
+            <div class="commit-chip">2eba716</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc">NAS 접속정보(host/port/user) shQuote 누락 — init 커맨드 직후(<code>82b7cf7</code>)</div>
+            <div class="commit-chip">e07bfc8</div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-title"><span class="n">B</span>최종 리뷰(fix-wave) — 전체를 한 번 더 통합 검증</div>
+          <div class="defect-item">
+            <div class="defect-desc">Docker 304 미무시(stop), Traefik 이중 등록, logs 멀티플렉스 헤더 미제거</div>
+            <div class="commit-chip">420281e</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc"><code>parseGitHubRepo</code> 문자 미제한, <code>deleteDnsRecord</code> 타입 필터 없음, write-config/healthz 순서</div>
+            <div class="commit-chip">4bcfe43</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc"><code>stop()</code>이 롤백 보호 try 블록 밖에 있었음 (코드 주석 "재리뷰 지시")</div>
+            <div class="commit-chip">dfa8835</div>
+          </div>
+          <div class="defect-item">
+            <div class="defect-desc">Docker 304 미무시(<b>start</b>) — 롤백 경로에서 진짜 데몬 오류가 가려질 위험</div>
+            <div class="commit-chip">2e04ed1</div>
+          </div>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — A레인은 "막 만든 물건을 바로 그 자리에서 다시 확인"한 것이고, B레인은 "다 지은 뒤 전체를 한 바퀴 더 돈" 것이다. 9건 모두 지금은 도장이 찍혀 닫힌 상태다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p>모든 커밋 해시는 이 저장소 git 로그에 실재함이 확인됐다: <code>45c2e2f 02d84cd 2eba716 420281e 2e04ed1 dfa8835 e07bfc8 4bcfe43 d7b67d8 112b258 82b7cf7 b72a15d</code>.</p>
+          <p class="src">근거: 08-테스트-결과-보고서.md §6 결함 발견·수정 이력</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §6 패키지 비교 (VIS8) ================= -->
+  <section class="section" id="sec-compare">
+    <span class="section-kicker">06</span>
+    <h2>두 패키지, 검사량과 소요 시간</h2>
+    <div class="visual" data-vis="8" data-vis-type="chart-bar">
+      <h3>항목 수 · 실행 시간 비교</h3>
+      <div class="barchart">
+        <div class="bar-group">
+          <h4>테스트 수</h4>
+          <div class="bar-row"><span class="lbl">deployer</span><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><span class="val">46개</span></div>
+          <div class="bar-row"><span class="lbl">cli</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">121개</span></div>
+        </div>
+        <div class="bar-group">
+          <h4>실행 시간</h4>
+          <div class="bar-row"><span class="lbl">deployer</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">2.71s</span></div>
+          <div class="bar-row"><span class="lbl">cli</span><div class="bar-track"><div class="bar-fill" style="width:25%"></div></div><span class="val">685ms</span></div>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — cli 쪽이 항목 수는 훨씬 많지만(121 vs 46), 오히려 더 빨리 끝난다(685ms vs 2.71s) — deployer 쪽 검사가 컨테이너 상태를 흉내 내는 무거운 페이크를 쓰기 때문이다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body"><p class="src">근거: 08-테스트-결과-보고서.md §2 요약 표. 막대 길이는 이 문서 안에서만 상대 비교(패키지 간 정규화)이며 절대 벤치마크 수치가 아니다.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §7 미검증 영역 (VIS7, 문서가 말하지 않는 것) ================= -->
+  <section class="section" id="sec-unverified">
+    <span class="section-kicker">07 · 이 문서가 말하지 않는 것</span>
+    <h2>아직 들어가 보지 못한 구역 5곳</h2>
+    <div class="honesty-banner">
+      <p style="margin:0"><b>정직성 노트</b> — 167개 전부 통과했다는 것은 "코드가 스스로 일관된다"는 뜻이지, "실제 NAS·실제 Cloudflare·실제 GitHub에서 검증됐다"는 뜻이 아니다. 아래 5곳은 자동 채점표 밖에 있다.</p>
+    </div>
+
+    <div class="visual" data-vis="7" data-vis-type="invented-overlay-map">
+      <h3>점검한 구역 vs 못 간 구역 — 같은 격자 위에 겹쳐 보기</h3>
+      <p style="font-size:0.86rem;color:var(--ink-soft);margin-top:0;">§2 점검표의 ⚠ 표시 4칸이 아래 목록과 그대로 대응한다. 다섯 번째(NAS 아키텍처)는 특정 파일이 아니라 <b>빌드 조건</b>에 걸린 가정이라 격자 밖에 별도로 둔다.</p>
+      <div class="unverified-list">
+        <div class="uv-card">
+          <div class="uv-head"><span class="uv-dot"></span>실제 NAS SSH/docker 실행</div>
+          <p>자동화 테스트는 러너 주입으로 대체 (<code>nas.test.ts</code>). 위임처: <code>docs/e2e-checklist.md</code></p>
+        </div>
+        <div class="uv-card">
+          <div class="uv-head"><span class="uv-dot"></span>실제 Cloudflare API 호출(터널/DNS)</div>
+          <p><code>fetchFn</code> 주입으로 대체 (<code>cloudflare.test.ts</code>). 위임처: <code>docs/e2e-checklist.md</code></p>
+        </div>
+        <div class="uv-card">
+          <div class="uv-head"><span class="uv-dot"></span>실제 GitHub(gh CLI, Actions 워크플로우 실행)</div>
+          <p>러너 주입으로 대체 (<code>runAdd.test.ts</code>). 위임처: <code>docs/e2e-checklist.md</code></p>
+        </div>
+        <div class="uv-card">
+          <div class="uv-head"><span class="uv-dot"></span>실제 Docker 데몬</div>
+          <p><code>docker.test.ts</code>는 dockerode를 <code>vi.fn()</code>으로 목 처리. 실daemon 검증은 리뷰 과정에서 사람이 수동 수행.</p>
+        </div>
+        <div class="uv-card" style="grid-column:1/-1;">
+          <div class="uv-head"><span class="uv-dot"></span>NAS 아키텍처 가정 (격자 밖 — 특정 파일이 아닌 빌드 조건)</div>
+          <p><code>commands/init.ts:108</code>의 이미지 빌드가 <code>--platform linux/amd64</code>로 고정 — amd64 NAS를 전제한다. arm64 NAS는 미검증.</p>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — 검사원이 다섯 군데는 아직 진짜 현장 문을 열어 보지 못하고, 그 자리를 흉내 낸 모형으로 대신 확인했다는 뜻이다. 대신 확인해 줄 다음 단계(위임처)가 정해져 있다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p><code>docs/e2e-checklist.md</code>는 이 저장소에 실재하나, 이번 산출물 재구성 범위에서 그 내용을 읽지 않았다 — 경로와 역할만 언급하며 안의 체크리스트 내용을 지어내지 않는다.</p>
+          <p class="src">근거: 08-테스트-결과-보고서.md §7 미검증 영역</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/08-테스트-결과-보고서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="07-보안-설계서.html">← 07 보안 설계서</a>
+        <a href="09-설치-운영-매뉴얼.html">09 설치·운영 매뉴얼 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

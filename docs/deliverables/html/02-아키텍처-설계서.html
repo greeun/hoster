@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 아키텍처 설계서 — hoster 산출물</title>
+<style>
+/* ===== 시리즈 공통 디자인 시스템 (11개 파일 동일) ===== */
+:root{
+  --paper:#f3ecdb;
+  --paper-raised:#faf6ea;
+  --paper-card:#faf6ea;
+  --paper-deep:#e7ddc3;
+  --ink:#241f16;
+  --ink-soft:#5c5443;
+  --ink-faint:#8b8271;
+  --rule:#c7bb9c;
+  --rule-strong:#a89877;
+  --accent-01:#d9541f;
+  --accent-02:#2b5d88;
+  /* 시리즈 정본 accent 로스터(spec.md 부록B) — 문서 간 색 참조용, 11개 파일 공통 */
+  --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+  --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+  --status-success:#2f5233;
+  --status-fail:#b83a1f;
+  --status-pending:#8b8577;
+  --status-rolled:#8a5a2c;
+  --status-skipped:#aca493;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;--sp-7:48px;--sp-8:64px;
+  --radius:4px;
+  --font-body:"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:ui-monospace,"D2Coding","Nanum Gothic Coding","SFMono-Regular","Consolas","Menlo",monospace;
+  --font-serif:"AppleMyungjo","Batang","Nanum Myeongjo",serif;
+  --fs-doctitle:2rem;
+  --fs-section:1.45rem;
+  --fs-sub:1.1rem;
+  --fs-body:0.97rem;
+  --fs-caption:0.78rem;
+  --fs-code:0.85rem;
+}
+*{box-sizing:border-box;}
+html{background:var(--paper);}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--font-body);font-size:var(--fs-body);line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{font-weight:700;line-height:1.3;margin:0 0 var(--sp-3);color:var(--ink);}
+p{margin:0 0 var(--sp-3);}
+a{color:var(--doc-accent,var(--accent-02));}
+code,.mono{font-family:var(--font-mono);font-size:var(--fs-code);}
+table{border-collapse:collapse;width:100%;min-width:560px;}
+th,td{border:1px solid var(--rule-strong);padding:var(--sp-2) var(--sp-3);text-align:left;vertical-align:top;font-size:var(--fs-body);}
+th{background:var(--paper-deep);font-weight:700;}
+img,svg{max-width:100%;}
+
+/* ---------- 헤더 + 색인 탭 (시리즈 공통 — 08~10/index와 동일) ---------- */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+}
+.header-top{
+  max-width:1180px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  padding:var(--sp-4) var(--sp-5) var(--sp-2);
+  flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:var(--sp-3);}
+.brand-mark{
+  width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);
+  font-size:1.1rem;flex:none;
+}
+.brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+.brand-title{margin:0;font-size:1.15rem;}
+.doc-meta-chip{
+  margin:0;font-size:var(--fs-caption);color:var(--ink-soft);
+  border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);
+  white-space:nowrap;
+}
+.index-tabs{
+  max-width:1180px;margin:0 auto;
+  display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;
+  scrollbar-width:thin;
+}
+.tab{
+  --tab-ac:var(--ink);
+  flex:none;
+  font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);
+  padding:var(--sp-2) var(--sp-3) var(--sp-2);
+  background:var(--paper-deep);
+  border:1px solid var(--rule-strong);border-bottom:none;
+  clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);
+  transform:translateY(3px);
+  transition:transform .12s ease;
+  white-space:nowrap;
+}
+.tab:hover{transform:translateY(0);color:var(--ink);}
+.tab--current{
+  background:var(--paper);
+  color:var(--ink);
+  border-color:var(--ink);
+  border-bottom:3px solid var(--tab-ac);
+  transform:translateY(0);
+  font-weight:800;
+}
+.tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+/* ---- 본문 컨테이너 ---- */
+.page{max-width:1180px;margin:0 auto;padding:var(--sp-6) var(--sp-5) var(--sp-8);}
+.doc-hero{
+  border:2px solid var(--ink);background:var(--paper-raised);
+  padding:var(--sp-5);margin-bottom:var(--sp-7);border-radius:var(--radius);
+  position:relative;
+}
+.doc-hero::before{
+  content:"";position:absolute;top:10px;left:10px;right:10px;bottom:10px;
+  border:1px solid var(--rule);pointer-events:none;
+}
+.doc-kicker{font-size:var(--fs-caption);letter-spacing:.08em;color:var(--doc-accent);font-weight:700;text-transform:uppercase;}
+.doc-title{font-size:var(--fs-doctitle);margin:var(--sp-1) 0 var(--sp-2);}
+.doc-lede{font-size:1.02rem;color:var(--ink-soft);max-width:64ch;}
+.meta-block{
+  display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-top:var(--sp-4);
+  font-size:var(--fs-caption);color:var(--ink-faint);
+}
+.meta-block b{color:var(--ink-soft);}
+
+section.doc-section{margin:var(--sp-7) 0;}
+.section-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.7em;height:1.7em;border:2px solid var(--doc-accent,var(--accent-02));
+  border-radius:50%;font-size:.85rem;font-weight:800;color:var(--doc-accent,var(--accent-02));
+  margin-right:var(--sp-2);flex:0 0 auto;
+}
+.section-title{font-size:var(--fs-section);display:flex;align-items:center;border-bottom:1px solid var(--rule-strong);padding-bottom:var(--sp-2);}
+.section-anchor{font-size:var(--fs-body);color:var(--ink-soft);font-weight:400;max-width:70ch;margin:var(--sp-2) 0 var(--sp-4) 2.3em;font-style:italic;}
+h3.sub{font-size:var(--fs-sub);margin-top:var(--sp-5);}
+.caption-note{font-size:var(--fs-caption);color:var(--ink-faint);}
+
+/* ---- 시각물 공통 (figure + 이중 레이어) ---- */
+figure.visual{
+  margin:var(--sp-5) 0 var(--sp-5) 2.3em;background:var(--paper-raised);
+  border:1px solid var(--rule-strong);border-radius:var(--radius);
+  padding:var(--sp-4);
+}
+figure.visual .viz-caption{
+  font-size:.92rem;color:var(--ink);font-weight:600;margin:0 0 var(--sp-3);
+  padding-bottom:var(--sp-2);border-bottom:1px dashed var(--rule);
+}
+figure.visual .viz-caption::before{content:"☞ ";color:var(--doc-accent,var(--accent-02));}
+.viz-body{overflow-x:auto;padding-bottom:var(--sp-2);}
+.viz-body svg{display:block;min-width:560px;}
+details.viz-detail{margin-top:var(--sp-3);border-top:1px solid var(--rule);padding-top:var(--sp-2);}
+details.viz-detail summary{
+  cursor:pointer;font-size:var(--fs-caption);font-weight:700;color:var(--ink-soft);
+  list-style:none;display:flex;align-items:center;gap:var(--sp-1);
+}
+details.viz-detail summary::-webkit-details-marker{display:none;}
+details.viz-detail summary::before{content:"▸";color:var(--doc-accent,var(--accent-02));}
+details.viz-detail[open] summary::before{content:"▾";}
+.viz-detail-body{font-size:.85rem;color:var(--ink-soft);padding:var(--sp-2) 0 0 var(--sp-3);line-height:1.6;}
+.viz-detail-body code{background:var(--paper-deep);padding:1px 4px;border-radius:2px;}
+.viz-detail-body ul{margin:var(--sp-1) 0;padding-left:1.2em;}
+
+/* ---- 서식 필드 (라벨+밑줄 칸) ---- */
+.field{display:inline-block;margin:0 var(--sp-1) var(--sp-1) 0;}
+.field-label{font-size:.7rem;color:var(--ink-faint);display:block;}
+.field-blank{border-bottom:1px solid var(--ink-soft);padding:0 var(--sp-2) 2px;font-family:var(--font-mono);font-size:.82rem;}
+
+/* ---- 라벨 칩 ---- */
+.chip{
+  display:inline-flex;align-items:center;gap:3px;font-size:.72rem;
+  padding:2px 7px;border:1px solid var(--rule-strong);border-radius:10px;
+  background:var(--paper);color:var(--ink-soft);font-family:var(--font-mono);white-space:nowrap;
+}
+.chip.chip-accent{border-color:var(--doc-accent,var(--accent-02));color:var(--doc-accent,var(--accent-02));font-weight:700;}
+
+/* ---- 도장/검인 ---- */
+.stamp{
+  display:inline-flex;align-items:center;justify-content:center;
+  border:2px solid currentColor;border-radius:6px;padding:3px 9px;
+  font-weight:800;font-size:.68rem;letter-spacing:.04em;transform:rotate(-2.5deg);
+  position:relative;
+}
+.stamp::after{
+  content:"";position:absolute;inset:2px;border:1px solid currentColor;border-radius:3px;opacity:.5;
+}
+.stamp.s-success{color:var(--status-success);}
+.stamp.s-fail{color:var(--status-fail);}
+.stamp.s-pending{color:var(--status-pending);}
+.stamp.s-rolled{color:var(--status-rolled);}
+.stamp.s-skipped{color:var(--status-skipped);text-decoration:line-through;transform:rotate(0);border-style:dashed;}
+.stamp.s-blank{color:var(--ink-faint);border-style:dashed;background:transparent;font-weight:600;transform:rotate(0);}
+.stamp.s-blank::after{display:none;}
+
+/* ---- 괘선 격자 ---- */
+.ruled{
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 26px,var(--rule) 27px,transparent 28px),
+    repeating-linear-gradient(90deg,transparent,transparent 46px,var(--rule) 47px,transparent 48px);
+  background-color:var(--paper);
+}
+
+/* ---- 토글/필터 (라디오+CSS, JS 불필요) ---- */
+.toggle-input{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;}
+.toggle-group{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-bottom:var(--sp-3);}
+.toggle-btn{
+  font-size:.78rem;padding:5px 12px;border:1px solid var(--rule-strong);border-radius:14px;
+  cursor:pointer;color:var(--ink-soft);background:var(--paper);user-select:none;
+}
+.toggle-input:checked + .toggle-btn,
+label.toggle-btn.is-checked{
+  background:var(--doc-accent,var(--accent-02));color:var(--paper);border-color:var(--doc-accent,var(--accent-02));font-weight:700;
+}
+.toggle-input:focus-visible + .toggle-btn{outline:2px solid var(--ink);outline-offset:1px;}
+
+/* ---- 단지 배치도 경로 토글 (라디오가 .toggle-group/.site-map-wrap과 같은 부모의 형제라 ~ 로 연결) ---- */
+#mode-deploy:checked ~ .toggle-group label[for="mode-deploy"],
+#mode-visit:checked ~ .toggle-group label[for="mode-visit"]{
+  background:var(--doc-accent,var(--accent-02));color:var(--paper);border-color:var(--doc-accent,var(--accent-02));font-weight:700;
+}
+#mode-deploy:checked ~ .site-map-wrap .path-visit{opacity:.12;}
+#mode-visit:checked ~ .site-map-wrap .path-deploy{opacity:.12;}
+.path-deploy,.path-visit{transition:opacity .15s ease;}
+
+/* ---- 시퀀스/타임라인 ---- */
+.seq{display:flex;gap:var(--sp-3);overflow-x:auto;padding:var(--sp-2) 0;}
+.seq-step{
+  flex:0 0 168px;border:1px solid var(--rule-strong);background:var(--paper);
+  border-radius:var(--radius);padding:var(--sp-3);position:relative;
+}
+.seq-step + .seq-step::before{
+  content:"→";position:absolute;left:-22px;top:50%;transform:translateY(-50%);
+  color:var(--doc-accent,var(--accent-02));font-weight:800;font-size:1.1rem;
+}
+.seq-step .seq-num{font-size:.7rem;color:var(--ink-faint);font-weight:700;}
+.seq-step .seq-title{font-size:.85rem;font-weight:700;margin:2px 0 4px;}
+.seq-step .seq-desc{font-size:.76rem;color:var(--ink-soft);}
+
+/* ---- 매트릭스(2열 대응) ---- */
+.matrix-table td:first-child{width:38%;background:var(--paper-deep);}
+.matrix-table td.arrow-cell{width:34px;text-align:center;color:var(--doc-accent,var(--accent-02));font-weight:800;background:transparent;border-left:none;border-right:none;}
+
+/* ---- 코드 패널 ---- */
+.code-panel{
+  background:var(--ink);color:var(--paper);border-radius:var(--radius);
+  padding:var(--sp-4);font-family:var(--font-mono);font-size:.82rem;line-height:1.7;
+  overflow-x:auto;position:relative;
+}
+.code-panel .cl{color:#e8dcc0;}
+.code-panel .cn{color:#e0a15e;}
+.code-panel .cc{color:#9db98c;}
+.code-callout{font-size:.72rem;color:var(--ink-faint);margin-top:var(--sp-2);padding-left:var(--sp-2);border-left:2px solid var(--doc-accent,var(--accent-02));}
+
+/* ---- 콜아웃(글로스) ---- */
+.gloss-note{font-size:.86em;color:var(--ink-faint);font-style:italic;}
+
+/* ---- 용어 안내판 ---- */
+.glossary-board{display:flex;flex-wrap:wrap;gap:8px;}
+.gterm{border:1px solid var(--rule-strong);border-radius:4px;padding:6px 10px;background:var(--paper);font-size:.82rem;max-width:290px;flex:1 1 240px;}
+.gterm b{color:var(--doc-accent,var(--accent-02));}
+
+/* ---- 확인 못한 것 카드 ---- */
+.unverified-card{
+  border:1px dashed var(--ink-faint);border-radius:var(--radius);padding:var(--sp-3);
+  background:var(--paper);color:var(--ink-soft);font-size:.86rem;
+}
+
+/* ---------- 푸터 (시리즈 공통) ---------- */
+.site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+.footer-inner{max-width:1180px;margin:0 auto;}
+.footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+.footer-prevnext{display:flex;gap:var(--sp-4);}
+.footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+.footer-source{margin-top:var(--sp-3);font-family:var(--font-mono);font-size:0.76rem;color:var(--ink-faint);}
+.footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+@media (max-width:640px){
+  .doc-title{font-size:1.5rem;}
+  .page{padding:var(--sp-5) var(--sp-3) var(--sp-7);}
+  figure.visual{margin-left:0;}
+  .section-anchor{margin-left:0;}
+  .seq{flex-direction:column;}
+  .seq-step{flex:1 1 auto;}
+  .seq-step + .seq-step::before{left:50%;top:-20px;transform:translateX(-50%) rotate(90deg);}
+}
+</style>
+</head>
+<body class="doc" style="--doc-accent:var(--accent-02)">
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">02 · 아키텍처 설계서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <div class="doc-hero">
+    <div class="doc-kicker">02 · 청사진 청색</div>
+    <h1 class="doc-title">아키텍처 설계서</h1>
+    <p class="doc-lede">
+      앵커 비유: <strong>단지 배치도</strong> — 정문(호스트 포트)은 잠겨 있고, 물건도 손님도
+      후문 전용 통로로만 들어옵니다. 이 문서는 hoster가 사는 "단지"의 배치를 한 장에 그리고,
+      그 위에 배포 경로와 주민 통행 경로 두 가지를 겹쳐 봅니다.
+    </p>
+    <div class="meta-block">
+      <span><b>원본</b> docs/deliverables/02-아키텍처-설계서.md</span>
+      <span><b>버전</b> 1.0</span>
+      <span><b>작성일</b> 2026-08-13</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 0. 용어 안내판 (하드 게이트: 전문용어 첫 등장 즉시 글로스) -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-glossary">
+    <h2 class="section-title"><span class="section-num">0</span>처음 보는 말 — 먼저 풀어둡니다</h2>
+    <p class="section-anchor">본문에서 이 말들을 다시 만나면 전부 여기 적은 뜻입니다. 여기서 한 번 풀어두고, 본문에서는 다시 설명하지 않습니다.</p>
+    <div class="glossary-board ruled" style="padding:12px;border:1px solid var(--rule);border-radius:4px;margin-left:2.3em;">
+      <div class="gterm"><b>컨테이너</b><span class="gloss-note"> — 내용물이 무엇이든 규격이 같아 어디서든 그대로 옮길 수 있는 표준 이사짐 상자</span></div>
+      <div class="gterm"><b>이미지</b><span class="gloss-note"> — 컨테이너를 찍어내는 원판. 같은 이미지면 언제 열어도 내용물이 같음</span></div>
+      <div class="gterm"><b>레지스트리(ghcr.io)</b><span class="gloss-note"> — 포장된 상자를 맡아 두는 물류 창고</span></div>
+      <div class="gterm"><b>터널</b><span class="gloss-note"> — 정문을 열지 않고 안에서 밖으로 미리 뚫어 둔 전용 통로</span></div>
+      <div class="gterm"><b>리버스 프록시(Traefik)</b><span class="gloss-note"> — 동·호수 팻말을 보고 배달할 세대를 정해주는 경비실 안내데스크</span></div>
+      <div class="gterm"><b>DNS/CNAME</b><span class="gloss-note"> — 간판 주소(도메인)를 실제 배송지에 연결해 두는 주소록 등록</span></div>
+      <div class="gterm"><b>HMAC(서명)</b><span class="gloss-note"> — 우리 둘만 아는 인주로 찍은 도장. 도장이 같아야 접수됨</span></div>
+      <div class="gterm"><b>타임스탬프 허용 오차</b><span class="gloss-note"> — 접수증 시각이 너무 오래됐으면(5분 초과) 반려하는 규칙</span></div>
+      <div class="gterm"><b>헬스체크</b><span class="gloss-note"> — 새 설비가 실제로 불이 들어오는지 확인하는 점검</span></div>
+      <div class="gterm"><b>롤백</b><span class="gloss-note"> — 새 물건에 하자가 있으면 원래 물건을 다시 꺼내 놓는 것</span></div>
+      <div class="gterm"><b>배포 큐</b><span class="gloss-note"> — 접수창구에 밀려드는 요청을 순서대로 처리하는 대기줄</span></div>
+      <div class="gterm"><b>부트스트랩</b><span class="gloss-note"> — 관리사무소를 처음 여는 개소(開所) 준비 절차</span></div>
+      <div class="gterm"><b>docker label</b><span class="gloss-note"> — 컨테이너 문 앞에 붙이는 호수 팻말. 경비실이 이걸 보고 배달 여부를 정함</span></div>
+      <div class="gterm"><b>bridge 네트워크</b><span class="gloss-note"> — 같은 단지 안에서만 통하는 내부 배선망</span></div>
+      <div class="gterm"><b>external 네트워크</b><span class="gloss-note"> — 단지 준공 때 미리 깔아 둔 배선망. 나중 공사가 새로 깔지 않고 그대로 씀</span></div>
+      <div class="gterm"><b>인그레스(ingress)</b><span class="gloss-note"> — 후문으로 들어온 것을 어느 부서로 넘길지 정하는 접수 규칙표</span></div>
+      <div class="gterm"><b>아웃바운드 연결</b><span class="gloss-note"> — 안에서 밖으로 먼저 거는 전화. 밖에서 안으로 거는 전화는 애초에 받지 않음</span></div>
+      <div class="gterm"><b>WAL(저널 모드)</b><span class="gloss-note"> — 장부에 바로 옮겨 적기 전에 먼저 써 두는 임시 메모장</span></div>
+      <div class="gterm"><b>볼륨 마운트</b><span class="gloss-note"> — 관리사무소 서랍(컨테이너 내부 경로)을 실제 창고 캐비닛(NAS 디스크 경로)에 그대로 연결해 두는 것</span></div>
+      <div class="gterm"><b>restart policy(unless-stopped)</b><span class="gloss-note"> — 정전이 나도 사람이 끄지 않는 한 저절로 다시 켜지는 자동복구 규칙</span></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 1. 시그니처: 단지 배치도 + 두 경로 오버레이 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-map">
+    <h2 class="section-title"><span class="section-num">1</span>시스템 구성도 — 단지 배치도</h2>
+    <p class="section-anchor">정문은 잠겨 있고, 물건도 손님도 후문 전용 통로(터널)로만 들어옵니다. 아래 배치도는 이 시리즈 전체가 공유하는 자산입니다.</p>
+
+    <figure class="visual site-map-figure">
+      <figcaption class="viz-caption">같은 단지 배치도 위에서, 버튼을 눌러 "내 코드가 배달되는 길"과 "손님이 찾아오는 길"을 번갈아 봅니다.</figcaption>
+      <div class="viz-body">
+        <input type="radio" name="map-mode-02" id="mode-deploy" class="toggle-input" checked>
+        <input type="radio" name="map-mode-02" id="mode-visit" class="toggle-input">
+        <div class="toggle-group" role="group" aria-label="배치도 경로 전환">
+          <label for="mode-deploy" class="toggle-btn">① 배포 경로 — 내 코드가 오는 길</label>
+          <label for="mode-visit" class="toggle-btn">② 주민 통행 경로 — 손님이 오는 길</label>
+        </div>
+        <div class="site-map-wrap ruled" style="border:1px solid var(--rule);border-radius:var(--radius);padding:8px;">
+        <svg class="site-map" viewBox="0 0 940 640" role="img" aria-label="hoster 단지 배치도: 로컬 Mac, GitHub Actions, ghcr.io, Cloudflare, NAS 단지 내부(cloudflared, traefik, deployer, 앱 컨테이너)">
+          <defs>
+            <marker id="ah-deploy" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-02)"/>
+            </marker>
+            <marker id="ah-visit" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/>
+            </marker>
+          </defs>
+
+          <!-- 외부 존 -->
+          <g class="nodes-outer" font-family="var(--font-body)">
+            <rect x="20" y="30" width="150" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+            <text x="95" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">로컬 Mac</text>
+            <text x="95" y="76" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">hoster CLI 실행</text>
+
+            <rect x="220" y="30" width="170" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+            <text x="305" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">GitHub Actions</text>
+            <text x="305" y="76" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">이미지 빌드 · push</text>
+
+            <rect x="440" y="30" width="120" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+            <text x="500" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">ghcr.io</text>
+            <text x="500" y="76" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">이미지 창고</text>
+
+            <rect x="610" y="30" width="140" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+            <text x="680" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">Cloudflare</text>
+            <text x="680" y="76" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">DNS·HTTPS 종료</text>
+
+            <rect x="800" y="30" width="120" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+            <text x="860" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">브라우저</text>
+            <text x="860" y="76" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">입주민·방문객</text>
+          </g>
+
+          <!-- NAS 단지 담장 -->
+          <rect x="140" y="170" width="760" height="430" rx="14" fill="none" stroke="var(--rule-strong)" stroke-width="2" stroke-dasharray="3 4"/>
+          <text x="164" y="196" font-size="12" font-weight="700" fill="var(--ink-soft)">NAS 단지 담장 안쪽 (hoster-net)</text>
+
+          <!-- 정문 : 잠김, 미사용 -->
+          <g>
+            <rect x="160" y="500" width="140" height="60" rx="4" fill="var(--paper-deep)" stroke="var(--ink-faint)" stroke-dasharray="4 3"/>
+            <text x="230" y="522" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink-faint)">정문(호스트 포트)</text>
+            <text x="230" y="538" text-anchor="middle" font-size="10" fill="var(--ink-faint)">잠김 · 사용 안 함</text>
+            <g transform="translate(212,540)">
+              <rect x="0" y="6" width="16" height="12" rx="2" fill="none" stroke="var(--ink-faint)" stroke-width="1.6"/>
+              <path d="M3,6 V2 a5,5 0 0 1 10,0 V6" fill="none" stroke="var(--ink-faint)" stroke-width="1.6"/>
+            </g>
+          </g>
+
+          <!-- 내부 노드 -->
+          <rect x="480" y="225" width="190" height="70" rx="4" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1.6"/>
+          <text x="575" y="253" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">hoster-cloudflared</text>
+          <text x="575" y="270" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">터널실 — 후문 지기</text>
+          <text x="575" y="284" text-anchor="middle" font-size="10" fill="var(--ink-faint)">← 후문 전용 통로 (터널)</text>
+
+          <rect x="190" y="370" width="200" height="80" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="290" y="398" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">hoster-deployer</text>
+          <text x="290" y="415" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">관리사무소 — 배포 접수</text>
+          <text x="290" y="430" text-anchor="middle" font-size="10" fill="var(--ink-faint)">:8080 (컨테이너 내부)</text>
+
+          <rect x="610" y="370" width="200" height="80" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="710" y="398" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">hoster-traefik</text>
+          <text x="710" y="415" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">경비실 안내데스크</text>
+          <text x="710" y="430" text-anchor="middle" font-size="10" fill="var(--ink-faint)">팻말 보고 세대 배달</text>
+
+          <rect x="520" y="500" width="150" height="60" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="595" y="524" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">hoster-app-a 동</text>
+          <text x="595" y="540" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">지금 배포 중인 프로젝트</text>
+
+          <rect x="730" y="500" width="150" height="60" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="805" y="524" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">hoster-app-b 동</text>
+          <text x="805" y="540" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">평소 방문객을 받는 다른 프로젝트</text>
+
+          <!-- 경로선 (노드 뒤가 아니라 나중에 그림) -->
+          <g class="edges" stroke-width="2.4" fill="none">
+            <g class="path-deploy">
+              <path d="M170,65 H220" stroke="var(--accent-02)" marker-end="url(#ah-deploy)"/>
+              <path d="M390,65 H440" stroke="var(--accent-02)" marker-end="url(#ah-deploy)"/>
+              <path d="M305,100 V145 H555 V225" stroke="var(--accent-02)" marker-end="url(#ah-deploy)"/>
+              <path d="M500,100 V105 H290 V370" stroke="var(--accent-02)" stroke-dasharray="6 4" marker-end="url(#ah-deploy)"/>
+              <path d="M540,295 V330 H370 V370" stroke="var(--accent-02)" marker-end="url(#ah-deploy)"/>
+              <path d="M290,450 V475 H595 V500" stroke="var(--accent-02)" marker-end="url(#ah-deploy)"/>
+              <rect x="163" y="54" width="94" height="20" rx="10" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1"/>
+              <text x="210" y="68" text-anchor="middle" font-size="10" fill="var(--accent-02)" font-weight="700">git push</text>
+              <rect x="368" y="54" width="102" height="20" rx="10" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1"/>
+              <text x="419" y="68" text-anchor="middle" font-size="10" fill="var(--accent-02)" font-weight="700">이미지 build·push</text>
+              <rect x="357" y="135" width="146" height="20" rx="10" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1"/>
+              <text x="430" y="149" text-anchor="middle" font-size="10" fill="var(--accent-02)" font-weight="700">POST /deploy (서명)</text>
+              <rect x="322" y="96" width="146" height="20" rx="10" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1"/>
+              <text x="395" y="110" text-anchor="middle" font-size="10" fill="var(--accent-02)" font-weight="700">이미지 pull(아웃바운드)</text>
+              <rect x="379" y="320" width="152" height="20" rx="10" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1"/>
+              <text x="455" y="334" text-anchor="middle" font-size="10" fill="var(--accent-02)" font-weight="700">hoster.&lt;도메인&gt; → :8080</text>
+              <rect x="367" y="465" width="150" height="20" rx="10" fill="var(--paper)" stroke="var(--accent-02)" stroke-width="1"/>
+              <text x="442" y="479" text-anchor="middle" font-size="10" fill="var(--accent-02)" font-weight="700">컨테이너 교체(swap)</text>
+            </g>
+            <g class="path-visit" stroke-dasharray="5 4">
+              <path d="M800,65 H750" stroke="var(--ink)" marker-end="url(#ah-visit)"/>
+              <path d="M680,100 V180 H610 V225" stroke="var(--ink)" marker-end="url(#ah-visit)"/>
+              <path d="M620,295 V330 H710 V370" stroke="var(--ink)" marker-end="url(#ah-visit)"/>
+              <path d="M710,450 V475 H805 V500" stroke="var(--ink)" marker-end="url(#ah-visit)"/>
+              <rect x="713" y="54" width="120" height="20" rx="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"/>
+              <text x="773" y="68" text-anchor="middle" font-size="9.5" fill="var(--ink)" font-weight="700">https://&lt;프로젝트&gt;.도메인</text>
+              <rect x="580" y="170" width="126" height="20" rx="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"/>
+              <text x="643" y="184" text-anchor="middle" font-size="10" fill="var(--ink)" font-weight="700">같은 터널 경유</text>
+              <rect x="600" y="320" width="120" height="20" rx="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"/>
+              <text x="660" y="334" text-anchor="middle" font-size="10" fill="var(--ink)" font-weight="700">*.&lt;도메인&gt; → :80</text>
+              <rect x="695" y="465" width="122" height="20" rx="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"/>
+              <text x="756" y="479" text-anchor="middle" font-size="10" fill="var(--ink)" font-weight="700">라벨 보고 배달</text>
+            </g>
+          </g>
+        </svg>
+        </div>
+      </div>
+      <details class="viz-detail">
+        <summary>기술 상세 보기</summary>
+        <div class="viz-detail-body">
+          <p>배포 경로(①): <code>git push</code> → GitHub Actions(<code>actions/checkout</code> → <code>docker/build-push-action</code>) → <code>ghcr.io/&lt;owner&gt;/&lt;repo&gt;:&lt;sha&gt;</code> push → HMAC-SHA256 서명 후 <code>POST https://hoster.&lt;baseDomain&gt;/deploy</code> → cloudflared → <code>hoster-deployer</code>(내부 8080) → 이미지 pull(ghcr.io, 별도 아웃바운드 연결) → 컨테이너 교체.</p>
+          <p>주민 통행 경로(②): 브라우저 → Cloudflare 엣지(DNS CNAME, HTTPS 종료) → cloudflared → <code>hoster-traefik</code>(:80, docker label 라우팅) → 앱 컨테이너.</p>
+          <p>두 경로 모두 cloudflared가 유지하는 <b>하나의 아웃바운드 터널 연결</b>을 함께 씁니다(인그레스 2규칙으로 호스트명에 따라 갈라짐 — §3 참고).</p>
+        </div>
+      </details>
+    </figure>
+
+    <h3 class="sub">컴포넌트 6종 — 누가 어디에 사는가</h3>
+    <figure class="visual">
+      <figcaption class="viz-caption">단지 배치도의 세 구역(로컬 Mac · GitHub 클라우드 · NAS 담장 안)에 실제로 사는 설비를 나열합니다. 역할 카드가 아니라 "주소"로 구분합니다.</figcaption>
+      <div class="viz-body">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+
+          <div style="border-left:4px solid var(--ink-soft);padding:8px 0 8px 14px;">
+            <div class="chip chip-accent" style="margin-bottom:6px;">로컬 Mac</div>
+            <details style="display:inline-block;vertical-align:top;">
+              <summary style="cursor:pointer;font-weight:700;font-size:.88rem;">🗂 hoster CLI — 부트스트랩·레포 등록·운영 커맨드</summary>
+              <div class="viz-detail-body">TypeScript, <code>commander</code>. <code>init</code>/<code>add</code>/<code>ls</code>/<code>status</code>/<code>logs</code>/<code>rollback</code>/<code>env</code>/<code>remove</code>/<code>doctor</code> — 06번 문서에서 전부 다룹니다.</div>
+            </details>
+          </div>
+
+          <div style="border-left:4px solid var(--accent-02);padding:8px 0 8px 14px;">
+            <div class="chip chip-accent" style="margin-bottom:6px;">GitHub 클라우드 (ubuntu-latest 러너)</div>
+            <details>
+              <summary style="cursor:pointer;font-weight:700;font-size:.88rem;">🗂 GitHub Actions workflow — 이미지 빌드·push·배포 알림</summary>
+              <div class="viz-detail-body"><code>actions/checkout@v4</code>, <code>docker/setup-buildx-action@v3</code>, <code>docker/login-action@v3</code>, <code>docker/build-push-action@v6</code>. 러너는 <code>ubuntu-latest</code>(GitHub 호스팅).</div>
+            </details>
+          </div>
+
+          <div style="border-left:4px solid var(--ink-soft);padding:8px 0 8px 14px;">
+            <div class="chip chip-accent" style="margin-bottom:6px;">NAS 담장 안 (hoster-net 컨테이너 3종 + 앱)</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <details>
+                <summary style="cursor:pointer;font-weight:700;font-size:.88rem;">🗂 hoster-cloudflared — 터널 유지, 인그레스 규칙대로 전달</summary>
+                <div class="viz-detail-body">이미지 <code>cloudflare/cloudflared:latest</code>.</div>
+              </details>
+              <details>
+                <summary style="cursor:pointer;font-weight:700;font-size:.88rem;">🗂 hoster-traefik — docker label 기반 리버스 프록시<span class="gloss-note">(팻말을 보고 세대를 정해주는 경비실 데스크)</span> 라우팅</summary>
+                <div class="viz-detail-body">이미지 <code>traefik:v3.2</code>.</div>
+              </details>
+              <details>
+                <summary style="cursor:pointer;font-weight:700;font-size:.88rem;">🗂 hoster-deployer — 배포 API 서버(HMAC 인증·pull·교체·헬스체크·롤백·SQLite)</summary>
+                <div class="viz-detail-body">TypeScript, <code>hono</code> ^4.6.0, <code>@hono/node-server</code> ^1.13.0, <code>dockerode</code> ^4.0.2, <code>better-sqlite3</code> ^11.5.0, 베이스 이미지 <code>node:22-alpine</code>.</div>
+              </details>
+              <details>
+                <summary style="cursor:pointer;font-weight:700;font-size:.88rem;">🗂 앱 컨테이너(hoster-&lt;project&gt;) — 등록된 레포의 실행 컨테이너</summary>
+                <div class="viz-detail-body">사용자 Dockerfile 사용. 없고 Next.js면 <code>templates/Dockerfile.nextjs.tpl</code>로 standalone 빌드 자동 생성.</div>
+              </details>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 2. 네트워크 설계 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-network">
+    <h2 class="section-title"><span class="section-num">2</span>네트워크 설계 — "포트 없음" 원칙</h2>
+    <p class="section-anchor">단지는 정문을 아예 열지 않습니다. 손님도 물건도 후문 전용 통로 하나로만 드나듭니다.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">왼쪽은 흔한 포트포워딩 방식(쓰지 않음), 오른쪽은 hoster의 방식입니다. 화살표 방향이 다릅니다 — 밖에서 안으로 여는가, 안에서 밖으로 먼저 거는가.</figcaption>
+      <div class="viz-body">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div style="flex:1 1 260px;min-width:260px;">
+            <div style="font-size:.82rem;font-weight:700;color:var(--status-fail);margin-bottom:6px;">✗ 전통적 포트포워딩 (hoster는 쓰지 않음)</div>
+            <svg viewBox="0 0 300 170" width="100%" style="min-width:0;max-width:320px;" role="img" aria-label="포트포워딩 비교: 사용 안 함">
+              <rect x="10" y="20" width="80" height="50" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+              <text x="50" y="49" text-anchor="middle" font-size="11">인터넷</text>
+              <line x1="130" y1="45" x2="240" y2="45" stroke="var(--status-fail)" stroke-width="6"/>
+              <rect x="120" y="10" width="16" height="70" fill="var(--status-fail)"/>
+              <text x="128" y="100" text-anchor="middle" font-size="9.5" fill="var(--status-fail)">라우터 — 구멍 뚫음</text>
+              <path d="M225,38 L241,45 L225,52 Z" fill="var(--status-fail)"/>
+              <rect x="210" y="20" width="80" height="50" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+              <text x="250" y="49" text-anchor="middle" font-size="11">NAS</text>
+              <text x="150" y="125" text-anchor="middle" font-size="9.5" fill="var(--ink-soft)">밖에서 안으로 직접 들어옴</text>
+              <text x="150" y="145" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">(정문을 상시 개방)</text>
+            </svg>
+          </div>
+          <div style="flex:1 1 260px;min-width:260px;">
+            <div style="font-size:.82rem;font-weight:700;color:var(--status-success);margin-bottom:6px;">✓ hoster 방식 — 아웃바운드 터널</div>
+            <svg viewBox="0 0 300 170" width="100%" style="min-width:0;max-width:320px;" role="img" aria-label="아웃바운드 터널 방식">
+              <rect x="10" y="20" width="80" height="50" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+              <text x="50" y="49" text-anchor="middle" font-size="11">Cloudflare</text>
+              <line x1="130" y1="45" x2="240" y2="45" stroke="var(--status-success)" stroke-width="6"/>
+              <rect x="120" y="10" width="16" height="70" fill="none" stroke="var(--status-success)" stroke-width="2" stroke-dasharray="3 3"/>
+              <text x="128" y="100" text-anchor="middle" font-size="9.5" fill="var(--status-success)">담장 — 구멍 없음</text>
+              <path d="M145,38 L129,45 L145,52 Z" fill="var(--status-success)"/>
+              <rect x="210" y="20" width="80" height="50" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+              <text x="250" y="49" text-anchor="middle" font-size="11">NAS(cloudflared)</text>
+              <text x="150" y="125" text-anchor="middle" font-size="9.5" fill="var(--ink-soft)">NAS가 먼저 밖으로 연결을 검</text>
+              <text x="150" y="145" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">(안→밖으로만 여는 전용 통로)</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <details class="viz-detail">
+        <summary>기술 상세 보기</summary>
+        <div class="viz-detail-body">
+          <code>stack/docker-compose.yml</code>의 3개 서비스(cloudflared/traefik/deployer) 모두 <code>ports:</code> 항목이 없습니다. NAS 호스트에 열린 포트가 하나도 없고, 오직 <code>hoster-net</code> 내부 통신(bridge 네트워크) + Cloudflare Tunnel(아웃바운드 연결)로만 인입됩니다. <code>hoster-net</code>은 compose 파일에서 <code>external: true</code>로 선언되어 있어 compose 자신은 만들지 않고, <code>hoster init</code> 6단계가 미리 만들어 둡니다.
+          <div class="code-panel" style="margin-top:8px;">
+networks:<br>
+&nbsp;&nbsp;hoster-net: <span class="cc"># external: true — init 6단계가 미리 생성</span><br>
+services:<br>
+&nbsp;&nbsp;cloudflared: <span class="cc"># ports: 없음, restart: unless-stopped</span><br>
+&nbsp;&nbsp;traefik: <span class="cc"># ports: 없음, restart: unless-stopped</span><br>
+&nbsp;&nbsp;deployer: <span class="cc"># ports: 없음, build: 섹션도 없음, restart: unless-stopped</span>
+          </div>
+          <p class="code-callout">deployer 서비스는 <code>image: hoster-deployer:latest</code>만 참조합니다 — NAS에서 직접 빌드하지 않는다는 뜻입니다(§4 기술 선정 사유). 3개 컨테이너 모두 restart policy가 <code>unless-stopped</code>라 정전·재부팅 후에도 사람이 끄지 않는 한 자동으로 다시 켜집니다.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 3. 터널 인그레스 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-ingress">
+    <h2 class="section-title"><span class="section-num">3</span>터널 인그레스 2규칙 + 404 폴백</h2>
+    <p class="section-anchor">후문으로 들어온 것도 아무 데나 배달되지 않습니다. 팻말(호스트명)을 보고 정확히 두 곳 중 하나로만 갑니다.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">들어온 요청의 호스트명을 확인해서 딱 두 갈래 중 하나로 보내고, 어디에도 안 맞으면 문 앞에서 돌려보냅니다.</figcaption>
+      <div class="viz-body">
+        <svg viewBox="0 0 640 300" role="img" aria-label="터널 인그레스 판정 흐름">
+          <defs>
+            <marker id="ah-flow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-02)"/>
+            </marker>
+          </defs>
+          <rect x="250" y="10" width="140" height="50" rx="25" fill="var(--paper-deep)" stroke="var(--accent-02)" stroke-width="1.6"/>
+          <text x="320" y="40" text-anchor="middle" font-size="12" font-weight="700">들어온 호스트명은?</text>
+
+          <rect x="30" y="120" width="180" height="60" rx="4" fill="var(--paper)" stroke="var(--status-success)" stroke-width="1.6"/>
+          <text x="120" y="145" text-anchor="middle" font-size="11.5" font-weight="700">hoster.&lt;baseDomain&gt;</text>
+          <text x="120" y="163" text-anchor="middle" font-size="10.5" fill="var(--status-success)">→ hoster-deployer:8080</text>
+
+          <rect x="230" y="120" width="180" height="60" rx="4" fill="var(--paper)" stroke="var(--status-success)" stroke-width="1.6"/>
+          <text x="320" y="145" text-anchor="middle" font-size="11.5" font-weight="700">*.&lt;baseDomain&gt;</text>
+          <text x="320" y="163" text-anchor="middle" font-size="10.5" fill="var(--status-success)">→ hoster-traefik:80</text>
+
+          <rect x="430" y="120" width="180" height="60" rx="4" fill="var(--paper)" stroke="var(--status-fail)" stroke-width="1.6"/>
+          <text x="520" y="145" text-anchor="middle" font-size="11.5" font-weight="700">그 외 전부</text>
+          <text x="520" y="163" text-anchor="middle" font-size="10.5" fill="var(--status-fail)">→ http_status:404</text>
+
+          <g stroke="var(--accent-02)" fill="none" stroke-width="2">
+            <path d="M290,60 V95 H120 V120" marker-end="url(#ah-flow)"/>
+            <path d="M320,60 V120" marker-end="url(#ah-flow)"/>
+            <path d="M350,60 V95 H520 V120" marker-end="url(#ah-flow)"/>
+          </g>
+
+          <rect x="230" y="220" width="180" height="60" rx="4" fill="var(--paper-raised)" stroke="var(--rule-strong)"/>
+          <text x="320" y="243" text-anchor="middle" font-size="10.5" font-weight="700">traefik 안에서 한 번 더 확인</text>
+          <text x="320" y="260" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">exposedbydefault=false</text>
+          <text x="320" y="273" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">팻말(label) 없는 컨테이너는 배달 안 함</text>
+          <path d="M320,180 V220" stroke="var(--accent-02)" stroke-width="2" marker-end="url(#ah-flow)" fill="none"/>
+        </svg>
+      </div>
+      <details class="viz-detail">
+        <summary>기술 상세 보기</summary>
+        <div class="viz-detail-body">
+          <code>Cloudflare.setTunnelIngress</code>(<code>packages/cli/src/cloudflare.ts</code>)가 <code>hoster init</code> 4단계에서 설정: <code>hoster.&lt;baseDomain&gt;</code> → <code>http://hoster-deployer:8080</code>, <code>*.&lt;baseDomain&gt;</code> → <code>http://hoster-traefik:80</code>, 매칭 없음 → <code>http_status:404</code>. 부트스트랩 때 1회만 설정하고 프로젝트 추가/삭제 때 다시 건드리지 않습니다 — 그 역할은 Traefik의 docker label이 맡습니다(<code>--providers.docker.exposedbydefault=false</code>).
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 4. 기술 선정 사유 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-tech">
+    <h2 class="section-title"><span class="section-num">4</span>기술 선정 사유</h2>
+    <p class="section-anchor">모든 결정은 하나의 뿌리에서 갈라져 나옵니다 — NAS의 과거 이력과 "정문을 열지 않는다"는 방침.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">왜 이렇게 만들었는지, 뿌리(제약)에서 가지(결정)로 따라가 봅니다.</figcaption>
+      <div class="viz-body">
+        <svg viewBox="0 0 760 280" role="img" aria-label="기술 선정 근거 나무">
+          <defs>
+            <marker id="ah-tree" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"/>
+            </marker>
+          </defs>
+          <rect x="10" y="100" width="180" height="70" rx="4" fill="var(--paper-deep)" stroke="var(--ink)" stroke-width="1.6"/>
+          <text x="100" y="128" text-anchor="middle" font-size="11" font-weight="700">NAS bridge 네트워크</text>
+          <text x="100" y="143" text-anchor="middle" font-size="10" font-weight="700">과거 외부통신 불가 이력</text>
+          <text x="100" y="158" text-anchor="middle" font-size="9" fill="var(--ink-faint)">+ "정문 안 연다" 방침</text>
+
+          <g fill="none" stroke="var(--ink-soft)" stroke-width="1.6">
+            <path d="M190,115 H210 V30 H260" marker-end="url(#ah-tree)"/>
+            <path d="M190,125 H225 V90 H260" marker-end="url(#ah-tree)"/>
+            <path d="M190,145 H240 V185 H260" marker-end="url(#ah-tree)"/>
+            <path d="M190,155 H255 V245 H260" marker-end="url(#ah-tree)"/>
+          </g>
+
+          <rect x="260" y="5" width="230" height="50" rx="4" fill="var(--paper)" stroke="var(--rule-strong)"/>
+          <text x="375" y="26" text-anchor="middle" font-size="10.5" font-weight="700">이미지 빌드 = GitHub Actions</text>
+          <text x="375" y="42" text-anchor="middle" font-size="9" fill="var(--ink-faint)">NAS 자체 빌드 대신</text>
+
+          <rect x="260" y="65" width="230" height="50" rx="4" fill="var(--paper)" stroke="var(--rule-strong)"/>
+          <text x="375" y="86" text-anchor="middle" font-size="10.5" font-weight="700">deployer 이미지 = Mac에서 빌드·전송</text>
+          <text x="375" y="102" text-anchor="middle" font-size="9" fill="var(--ink-faint)">buildx → save\|gzip\|ssh\|load</text>
+
+          <rect x="260" y="160" width="230" height="50" rx="4" fill="var(--paper)" stroke="var(--rule-strong)"/>
+          <text x="375" y="181" text-anchor="middle" font-size="10.5" font-weight="700">외부 인입 = Cloudflare Tunnel</text>
+          <text x="375" y="197" text-anchor="middle" font-size="9" fill="var(--ink-faint)">라우터 포트포워딩 대신</text>
+
+          <rect x="260" y="220" width="230" height="50" rx="4" fill="var(--paper)" stroke="var(--rule-strong)"/>
+          <text x="375" y="241" text-anchor="middle" font-size="10.5" font-weight="700">프로젝트별 라우팅 = Traefik label</text>
+          <text x="375" y="257" text-anchor="middle" font-size="9" fill="var(--ink-faint)">cloudflared 인그레스 직접 추가 대신</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="viz-body" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>결정 항목</th><th>선택</th><th>대안</th><th>사유</th></tr></thead>
+        <tbody>
+          <tr><td>이미지 빌드 위치</td><td>GitHub Actions</td><td>NAS 자체 빌드</td><td>NAS bridge 네트워크 과거 외부 통신 불가 이력</td></tr>
+          <tr><td>외부 트래픽 인입</td><td>Cloudflare Tunnel</td><td>라우터 포트포워딩</td><td>NAS 호스트에 포트를 열지 않고도 공개 가능</td></tr>
+          <tr><td>프로젝트별 라우팅</td><td>Traefik docker label</td><td>cloudflared 인그레스에 규칙 직접 추가</td><td>터널 인그레스는 부트스트랩 1회만, 이후 label만 보고 자동 반영</td></tr>
+          <tr><td>deployer 이미지 빌드·전달</td><td>Mac buildx → save\|gzip\|ssh\|load</td><td>NAS에서 직접 build</td><td>NAS 외부 통신 불가 이력으로 <code>pnpm install</code> 등 곤란</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 5. 배포 시퀀스 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-sequence">
+    <h2 class="section-title"><span class="section-num">5</span>배포 시퀀스 12단계</h2>
+    <p class="section-anchor"><code>POST /deploy</code> 접수부터 다음 접수를 받을 준비까지, 관리사무소가 처리하는 순서표입니다.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">접수증(서명) 확인부터 시작해, 성공하면 왼쪽 갈래로 실패하면 오른쪽 갈래로 갔다가 다시 다음 대기자를 부릅니다.</figcaption>
+      <div class="viz-body">
+        <div class="seq">
+          <div class="seq-step"><span class="seq-num">1</span><div class="seq-title">서명·시각 검증</div><div class="seq-desc">허용 오차 5분, <code>timingSafeEqual</code>. 실패 시 401.</div></div>
+          <div class="seq-step"><span class="seq-num">2</span><div class="seq-title">큐 등록</div><div class="seq-desc">실행 중이면 대기, 이전 대기 deploy는 <span class="stamp s-skipped" style="transform:none;padding:1px 5px;">skipped</span></div></div>
+          <div class="seq-step"><span class="seq-num">3</span><div class="seq-title">이력 생성</div><div class="seq-desc"><code>recordDeployment</code>, 상태 <span class="stamp s-pending" style="padding:1px 5px;">pending</span></div></div>
+          <div class="seq-step"><span class="seq-num">4</span><div class="seq-title">이미지 pull</div><div class="seq-desc"><code>GHCR_PAT</code> 인증으로 private pull</div></div>
+          <div class="seq-step"><span class="seq-num">5</span><div class="seq-title">잔여 -old 정리</div><div class="seq-desc">이전 스왑이 남겼을 수 있는 old 컨테이너 제거</div></div>
+          <div class="seq-step"><span class="seq-num">6</span><div class="seq-title">rename 시도</div><div class="seq-desc">최초 배포면 대상 없어 실패 무시</div></div>
+          <div class="seq-step"><span class="seq-num">7</span><div class="seq-title">old stop</div><div class="seq-desc">제거 아님 — 롤백 위해 보존</div></div>
+          <div class="seq-step"><span class="seq-num">8</span><div class="seq-title">새 컨테이너 run</div><div class="seq-desc">Traefik label 자동 부착</div></div>
+          <div class="seq-step"><span class="seq-num">9</span><div class="seq-title">healthCheck</div><div class="seq-desc">1초 간격, 최대 60초, &lt;400이면 통과</div></div>
+        </div>
+        <div style="display:flex;gap:24px;margin-top:20px;flex-wrap:wrap;">
+          <div class="seq-step" style="flex:1 1 260px;border-color:var(--status-success);">
+            <span class="seq-num" style="color:var(--status-success);">10 · 성공 갈래</span>
+            <div class="seq-title">old 완전 제거</div>
+            <div class="seq-desc">current/previous 이미지 갱신, 직전-1 이미지 삭제, 이력 <span class="stamp s-success" style="padding:1px 5px;">success</span></div>
+          </div>
+          <div class="seq-step" style="flex:1 1 260px;border-color:var(--status-fail);">
+            <span class="seq-num" style="color:var(--status-fail);">11 · 실패 갈래</span>
+            <div class="seq-title">new 제거 + old 원복</div>
+            <div class="seq-desc">rename 복구 후 <b>start()</b>, 이력 <span class="stamp s-fail" style="padding:1px 5px;">failed</span></div>
+          </div>
+        </div>
+        <div class="seq" style="margin-top:20px;justify-content:center;">
+          <div class="seq-step" style="flex:0 0 220px;border-color:var(--accent-02);">
+            <span class="seq-num">12</span><div class="seq-title">drain — 다음 대기 실행</div><div class="seq-desc">큐에 남은 작업 있으면 이어서 처리</div>
+          </div>
+        </div>
+      </div>
+      <details class="viz-detail">
+        <summary>기술 상세 보기</summary>
+        <div class="viz-detail-body">
+          출처: <code>packages/deployer/src/orchestrator.ts</code>, <code>docker.ts</code>, <code>app.ts</code>. 큐의 비대칭: 대기 중이던 이전 <b>deploy</b>는 새 deploy가 오면 전부 <code>skipped</code>로 즉시 resolve, <b>rollback은 스킵되지 않고</b> 순서대로 대기합니다(상세 시뮬레이션은 03번 문서). 11단계에서 old는 <code>stop()</code>으로만 정지돼 있었으므로 rename만으로는 복구되지 않고 반드시 <code>start()</code>가 필요합니다.
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 6. stop-before-start -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-swap">
+    <h2 class="section-title"><span class="section-num">6</span>컨테이너 교체 전략 — stop-before-start와 그 대가</h2>
+    <p class="section-anchor">설비실 작업 순서표 — 낡은 설비를 옆으로 빼서 먼저 끄고, 새것을 켜고, 불이 들어오는지 봅니다. <b>hoster는 무중단 배포가 아닙니다</b> — 교체 중 실제로 응답하지 않는 시간이 있다는 것을 감추지 않고 스스로 밝힙니다.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">rename만 하고 끄지 않으면 검증 안 된 새 버전으로 트래픽이 샙니다. 그래서 즉시 끄지만, 그 대신 짧게 완전히 응답하지 않는 시간이 생깁니다.</figcaption>
+      <div class="viz-body">
+        <div style="display:flex;flex-direction:column;gap:18px;">
+
+          <div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--status-fail);margin-bottom:4px;">✗ 만약 정지하지 않는다면(가정 — hoster는 이렇게 하지 않음)</div>
+            <svg viewBox="0 0 700 60" width="100%" style="min-width:0;" role="img" aria-label="정지하지 않을 경우 트래픽 유출">
+              <rect x="0" y="15" width="700" height="30" fill="var(--paper-deep)"/>
+              <rect x="0" y="15" width="340" height="30" fill="none" stroke="var(--ink-soft)"/>
+              <text x="170" y="34" text-anchor="middle" font-size="10.5">old (실행 중, 라벨 유지)</text>
+              <rect x="340" y="15" width="360" height="30" fill="var(--status-fail)" opacity=".25" stroke="var(--status-fail)"/>
+              <text x="520" y="34" text-anchor="middle" font-size="10.5" fill="var(--status-fail)" font-weight="700">new (헬스체크 대기, 미검증인데도 등록됨)</text>
+            </svg>
+            <p class="caption-note">old+new가 동시에 Traefik에 등록되어, 아직 검증되지 않은 새 버전으로도 트래픽이 흐를 수 있습니다.</p>
+          </div>
+
+          <div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--status-success);margin-bottom:4px;">✓ 실제 방식 — rename 직후 즉시 stop</div>
+            <svg viewBox="0 0 700 60" width="100%" style="min-width:0;" role="img" aria-label="정지할 경우 무응답 구간">
+              <rect x="0" y="15" width="700" height="30" fill="var(--paper-deep)"/>
+              <rect x="0" y="15" width="200" height="30" fill="none" stroke="var(--ink-soft)"/>
+              <text x="100" y="34" text-anchor="middle" font-size="10.5">old (곧 정지)</text>
+              <rect x="200" y="15" width="150" height="30" fill="var(--status-pending)" opacity=".3" stroke="var(--status-pending)"/>
+              <text x="275" y="34" text-anchor="middle" font-size="10" fill="var(--status-pending)" font-weight="700">무응답(정상 수 초)</text>
+              <rect x="350" y="15" width="350" height="30" fill="none" stroke="var(--status-rolled)" stroke-dasharray="3 3"/>
+              <text x="525" y="34" text-anchor="middle" font-size="10" fill="var(--status-rolled)" font-weight="700">실패 시 무응답 최대 60초까지 연장 후 old 복귀</text>
+            </svg>
+            <p class="caption-note">막대 폭은 상대적 느낌만 나타냅니다(정확한 초 단위 비례는 10번 문서에서 다룹니다). 검증되지 않은 트래픽 유출을 막는 대신, 프로젝트가 짧게 완전히 응답하지 않는 구간이 실제로 생깁니다 — 이것은 사고가 아니라 <b>의도된 트레이드오프</b>입니다.</p>
+          </div>
+
+        </div>
+      </div>
+      <details class="viz-detail">
+        <summary>기술 상세 보기</summary>
+        <div class="viz-detail-body">
+          rename만으로는 Docker 라벨이 유지되어 old가 새 컨테이너와 동일한 Traefik 라우터/서비스 라벨을 계속 가집니다. 이를 막기 위해 rename 직후 old를 즉시 <code>stop()</code>합니다(Traefik의 docker provider는 실행 중인 컨테이너만 반영). 롤백 경로 원복 순서: <code>stopAndRemove(new)</code> → <code>rename(old→원래 이름)</code> → <code>start(원래 이름)</code>. dockerode의 404(대상 없음)/304(이미 목표 상태) 응답은 <code>ignoreAlreadyInTargetState</code>가 무시합니다 — 특히 <b>start의 304</b>가 중요합니다(진짜 데몬 오류가 "already started"로 가려지는 것을 방지).
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 7. 상태 관리 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-state">
+    <h2 class="section-title"><span class="section-num">7</span>상태 관리 — 요약</h2>
+    <p class="section-anchor">장부(DB)가 실제로 어디에 있는지만 여기서 확인합니다. 장부 안쪽 내용은 05번 문서가 다룹니다.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">관리사무소 안(컨테이너 내부)에서 부르는 서랍 이름과, 실제로 그 서랍이 놓인 창고 캐비닛(NAS 디스크) 위치는 다릅니다 — 볼륨 마운트<span class="gloss-note">(컨테이너 내부 경로를 실제 NAS 디스크 경로에 그대로 연결해 두는 것)</span>로 이어져 있을 뿐입니다.</figcaption>
+      <div class="viz-body">
+        <svg viewBox="0 0 640 130" role="img" aria-label="상태 저장소 경로 대응">
+          <defs>
+            <marker id="ah-mount" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"/>
+            </marker>
+          </defs>
+          <rect x="10" y="30" width="240" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="130" y="55" text-anchor="middle" font-size="11" font-weight="700">컨테이너 내부(관리사무소 서랍)</text>
+          <text x="130" y="73" text-anchor="middle" font-size="10.5" font-family="var(--font-mono)">/state/hoster.db</text>
+          <text x="130" y="88" text-anchor="middle" font-size="9" fill="var(--ink-faint)">STATE_DIR=/state</text>
+
+          <path d="M255,65 H385" stroke="var(--ink-soft)" stroke-width="2.4" fill="none" marker-end="url(#ah-mount)"/>
+          <rect x="264" y="52" width="112" height="20" rx="10" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="320" y="66" text-anchor="middle" font-size="9.5" font-weight="700">볼륨 마운트</text>
+
+          <rect x="390" y="30" width="240" height="70" rx="4" fill="var(--paper)" stroke="var(--ink-soft)"/>
+          <text x="510" y="55" text-anchor="middle" font-size="11" font-weight="700">NAS 호스트(창고 캐비닛)</text>
+          <text x="510" y="73" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">/volume1/docker/hoster/</text>
+          <text x="510" y="88" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">state/hoster.db</text>
+
+          <text x="320" y="118" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">저널 모드 WAL<span style="font-style:italic;"> — 장부에 바로 옮겨 적기 전 먼저 쓰는 임시 메모장</span></text>
+        </svg>
+      </div>
+      <details class="viz-detail">
+        <summary>기술 상세 보기</summary>
+        <div class="viz-detail-body">
+          <code>db.pragma('journal_mode = WAL')</code>. <code>projects</code> 테이블(PK <code>name</code>, <code>image_repo</code>, <code>domain</code>, <code>branch</code>, <code>health_path</code>, <code>container_port</code>, <code>current_image</code>, <code>previous_image</code>)과 <code>deployments</code> 테이블(<code>id</code>, <code>project</code>, <code>image</code>, <code>sha</code>, <code>status</code>, <code>error</code>, <code>created_at</code>, 최신순 20건 조회) — 전체 컬럼 명세와 관계는 05번 DB 설계서 참고. 이미지 보관은 현재+직전 2개만, 환경변수 파일은 <code>/volume1/docker/hoster/state/env/&lt;project&gt;.env</code>, 0600 권한(<code>chmodSync</code>로 재강제).
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 8. 확인 못 해 뺀 항목 -->
+  <!-- ============================================================ -->
+  <section class="doc-section" id="sec-unverified">
+    <h2 class="section-title"><span class="section-num">8</span>이 문서가 말하지 않는 것 / 확인 못 한 것</h2>
+    <p class="section-anchor">축소하거나 미화하지 않습니다. 이 두 가지는 이번 범위에서 확인되지 않았습니다.</p>
+
+    <figure class="visual">
+      <figcaption class="viz-caption">도장이 찍히지 않은 빈 칸 두 개입니다 — 아직 확인하지 못한 항목이라는 뜻입니다(범위 제외·미구현과는 다른, "검증 자체가 안 된" 상태입니다).</figcaption>
+      <div class="viz-body">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;">
+          <div class="unverified-card" style="flex:1 1 260px;">
+            <div class="stamp s-blank" style="margin-bottom:6px;">미확인</div>
+            <div style="font-weight:700;">host 네트워크 폴백 아키텍처</div>
+            <div style="margin-top:4px;">고유 포트 자동 할당 범위 등 — 코드에 미구현이라 아키텍처 설계에서도 함께 제외했습니다(01번 문서 "범위 제외" 참고).</div>
+          </div>
+          <div class="unverified-card" style="flex:1 1 260px;">
+            <div class="stamp s-blank" style="margin-bottom:6px;">미확인</div>
+            <div style="font-weight:700;">Container Manager / DSM 버전별 세부 동작 차이</div>
+            <div style="margin-top:4px;">spec에는 최초 확인 시점(docker 24.0.2)만 기록되어 있고, 이후 버전 검증 근거가 없습니다.</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/02-아키텍처-설계서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="01-요구사항-정의서.html">← 01 요구사항 정의서</a>
+        <a href="03-상세-설계서.html">03 상세 설계서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

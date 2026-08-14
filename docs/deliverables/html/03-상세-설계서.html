@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 상세 설계서 · hoster 산출물</title>
+<style>
+:root{
+  /* 시리즈 정본 팔레트(spec.md 부록B) — 이전에는 03만 다른 값을 썼던 것을 정본으로 통일 */
+  --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+  --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+  --rule:#c7bb9c; --rule-soft:#e2d6ae; --rule-strong:#a89877;
+  --accent:#a35a1c; --accent-deep:#6e3d12; --accent-bg:#f0dcb8; --accent-line:#c98a3f;
+  /* 상태색 5종 — 이름은 이 문서 고유(--pass 등)로 유지, 값은 시리즈 정본과 동일 */
+  --pass:#2f5233; --pass-bg:#dfe8d3; --pass-line:#7fa066;
+  --fail:#b83a1f; --fail-bg:#f5ddce; --fail-line:#d6835a;
+  --pending:#8b8577; --pending-bg:#e6e1d6; --pending-line:#a29a8c;
+  --rolled:#8a5a2c; --rolled-bg:#ecdfcf; --rolled-line:#b58a63;
+  --skip:#aca493; --skip-bg:#efe9db;
+  /* 시리즈 정본 accent 로스터(spec.md 부록B) — 색인 탭 참조용, 11개 파일 공통 */
+  --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+  --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+  --fs-doctitle:clamp(1.7rem,1.35rem + 1.4vw,2.35rem);
+  --fs-section:clamp(1.25rem,1.1rem + 0.5vw,1.5rem);
+  --fs-sub:1.08rem; --fs-body:1rem; --fs-caption:0.83rem; --fs-code:0.86rem;
+  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:48px; --sp8:72px;
+  /* 시리즈 공통 헤더/푸터 CSS(08~10/index)가 참조하는 하이픈 표기 간격 스케일 — 이 문서만 --spN 표기라 별칭으로 추가 */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
+  --font-ui:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:ui-monospace,'SF Mono','D2Coding',Consolas,Menlo,monospace;
+  --font-serif:"AppleMyungjo","Batang","Nanum Myeongjo",serif;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-ui);
+  font-size:var(--fs-body); line-height:1.6; overflow-x:hidden;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 27px, var(--rule-soft) 27px 28px),
+    repeating-linear-gradient(90deg, transparent 0 27px, var(--rule-soft) 27px 28px);
+  background-attachment:local;
+}
+img,svg{max-width:100%;}
+a{color:var(--accent-deep);}
+a:hover{color:var(--accent);}
+h1,h2,h3,h4{font-weight:700; line-height:1.3; margin:0 0 var(--sp3);}
+h2{font-size:var(--fs-section); border-bottom:2px solid var(--rule-strong); padding-bottom:var(--sp2); margin-top:0;}
+h3{font-size:var(--fs-sub); color:var(--accent-deep);}
+p{margin:0 0 var(--sp3);}
+code{font-family:var(--font-mono); font-size:var(--fs-code); background:var(--paper-deep); padding:1px 5px; border-radius:2px; border:1px solid var(--rule);}
+/* long inline code in flowing prose must wrap so it never forces page-level horizontal scroll;
+   table cells are intentionally excluded (their long content scrolls inside .tablewrap instead —
+   overflow-wrap:anywhere on <code> inside <td> collapses auto-layout table columns to 1 character). */
+p, li, .l2-body, figcaption, .footnote-box{overflow-wrap:anywhere;}
+table.ledger td, table.ledger th{overflow-wrap:normal;}
+.wrap{max-width:1040px; margin:0 auto; padding:0 var(--sp5);}
+
+/* ---------- 헤더 + 색인 탭 (시리즈 공통 — 08~10/index와 동일) ---------- */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+}
+.header-top{
+  max-width:1180px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  padding:var(--sp-4) var(--sp-5) var(--sp-2);
+  flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:var(--sp-3);}
+.brand-mark{
+  width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);
+  font-size:1.1rem;flex:none;
+}
+.brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+.brand-title{margin:0;font-size:1.15rem;}
+.doc-meta-chip{
+  margin:0;font-size:var(--fs-caption);color:var(--ink-soft);
+  border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);
+  white-space:nowrap;
+}
+.index-tabs{
+  max-width:1180px;margin:0 auto;
+  display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;
+  scrollbar-width:thin;
+}
+.tab{
+  --tab-ac:var(--ink);
+  flex:none;
+  font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);
+  padding:var(--sp-2) var(--sp-3) var(--sp-2);
+  background:var(--paper-deep);
+  border:1px solid var(--rule-strong);border-bottom:none;
+  clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);
+  transform:translateY(3px);
+  transition:transform .12s ease;
+  white-space:nowrap;
+}
+.tab:hover{transform:translateY(0);color:var(--ink);}
+.tab--current{
+  background:var(--paper);
+  color:var(--ink);
+  border-color:var(--ink);
+  border-bottom:3px solid var(--tab-ac);
+  transform:translateY(0);
+  font-weight:800;
+}
+.tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+/* ===== doc intro ===== */
+main{padding:var(--sp7) 0 var(--sp8);}
+.doctitle-block{margin-bottom:var(--sp6);}
+.doctitle-block h1{font-size:var(--fs-doctitle); margin-bottom:var(--sp2);}
+.doc-meta{font-size:var(--fs-caption); color:var(--ink-faint); border-left:3px solid var(--accent-line); padding-left:var(--sp3); margin-bottom:var(--sp4);}
+.anchor-line{font-size:1.05rem; color:var(--accent-deep); font-weight:600; margin-bottom:var(--sp4); padding:var(--sp3) var(--sp4); background:var(--accent-bg); border-radius:4px; border:1px dashed var(--accent-line);}
+.intro-text{max-width:70ch;}
+
+/* glossary term inline */
+.glossed{white-space:normal;}
+.glossed strong{font-weight:700;}
+.gloss{color:var(--ink-soft); font-size:0.95em;}
+.gloss::before{content:"— ";}
+
+section.block{margin-top:var(--sp8); scroll-margin-top:20px;}
+section.block > .block-head{margin-bottom:var(--sp5);}
+.block-num{display:inline-block; font-family:var(--font-mono); font-size:0.8rem; color:var(--accent); border:1px solid var(--accent-line); border-radius:3px; padding:1px 7px; margin-right:8px;}
+
+/* ===== figure / viz shell ===== */
+figure.viz{
+  margin:var(--sp5) 0; padding:var(--sp5); background:var(--paper-card);
+  border:1px solid var(--rule-strong); border-radius:6px; position:relative;
+}
+figure.viz::before{
+  content:attr(data-viz-type); position:absolute; top:-11px; left:16px; background:var(--paper);
+  padding:0 8px; font-size:0.68rem; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; font-weight:700;
+}
+figure.viz > figcaption.cap1{
+  font-size:1rem; font-weight:600; color:var(--ink); margin-bottom:var(--sp4);
+  padding-left:var(--sp3); border-left:3px solid var(--accent-line);
+}
+figure.viz .viz-body{overflow-x:auto; padding-bottom:4px;}
+.viz-scroll-hint{font-size:0.7rem; color:var(--ink-faint); text-align:right; margin-top:2px; display:none;}
+@media (max-width:680px){ .viz-scroll-hint.mobileonly{display:block;} }
+
+details.layer2{margin-top:var(--sp4); border-top:1px dashed var(--rule-strong); padding-top:var(--sp3);}
+details.layer2 summary{
+  cursor:pointer; font-size:var(--fs-caption); font-weight:700; color:var(--accent-deep);
+  list-style:none; display:flex; align-items:center; gap:6px;
+}
+details.layer2 summary::-webkit-details-marker{display:none;}
+details.layer2 summary::before{content:"▸"; display:inline-block; transition:transform .15s;}
+details.layer2[open] summary::before{transform:rotate(90deg);}
+details.layer2 .l2-body{margin-top:var(--sp3); font-size:0.92rem; color:var(--ink-soft);}
+details.layer2 .l2-body ul{margin:var(--sp2) 0; padding-left:1.3em;}
+details.layer2 .l2-body li{margin-bottom:4px;}
+details.layer2 .l2-source{font-size:0.75rem; color:var(--ink-faint); margin-top:var(--sp3); font-style:normal;}
+
+/* stamps */
+.stamp{
+  display:inline-flex; align-items:center; gap:5px; font-weight:800; font-size:0.78rem;
+  padding:3px 11px; border-radius:14px; border:2px solid; letter-spacing:0.02em;
+}
+.stamp--pass{color:var(--pass); background:var(--pass-bg); border-color:var(--pass-line);}
+.stamp--fail{color:var(--fail); background:var(--fail-bg); border-color:var(--fail-line); border-radius:3px; transform:rotate(-2deg);}
+.stamp--pending{color:var(--pending); background:var(--pending-bg); border-color:var(--pending-line); border-style:dashed;}
+.stamp--rolled{color:var(--rolled); background:var(--rolled-bg); border-color:var(--rolled-line);}
+.stamp--skip{color:var(--skip); background:var(--skip-bg); border-color:var(--skip); text-decoration:line-through;}
+.stamp--blank{color:var(--ink-faint); background:transparent; border-color:var(--ink-faint); border-style:dashed;}
+
+.chip{
+  display:inline-block; font-family:var(--font-mono); font-size:0.78rem; background:var(--paper-deep);
+  border:1px solid var(--rule-strong); border-radius:3px; padding:2px 7px; color:var(--ink);
+}
+.chip--accent{background:var(--accent-bg); border-color:var(--accent-line); color:var(--accent-deep); font-weight:700;}
+
+/* form-field style label */
+.formfield{display:flex; flex-direction:column; gap:2px; font-size:0.85rem;}
+.formfield .flabel{font-size:0.7rem; letter-spacing:0.06em; color:var(--ink-faint); text-transform:uppercase;}
+.formfield .fvalue{border-bottom:1.5px solid var(--ink-soft); padding-bottom:2px; font-family:var(--font-mono);}
+
+table.ledger{border-collapse:collapse; width:100%; font-size:0.88rem;}
+table.ledger caption{caption-side:top; text-align:left; font-size:var(--fs-caption); color:var(--ink-faint); margin-bottom:6px;}
+table.ledger th, table.ledger td{border:1px solid var(--rule-strong); padding:7px 10px; text-align:left; vertical-align:top;}
+table.ledger thead th{background:var(--paper-deep); font-weight:700;}
+table.ledger tbody tr:nth-child(even){background:rgba(201,185,141,0.14);}
+table.ledger td code{background:transparent; border:none; padding:0;}
+.tablewrap{overflow-x:auto; margin:var(--sp3) 0;}
+
+.pairwrap{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp5);}
+.pairwrap > *{min-width:0;}
+@media (max-width:820px){ .pairwrap{grid-template-columns:1fr;} }
+figure.viz .viz-body, figure.viz .viz-body > div{min-width:0;}
+
+.btnrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:var(--sp4);}
+button.scrubctl{
+  font-family:var(--font-ui); font-size:0.85rem; font-weight:700; color:var(--accent-deep);
+  background:var(--paper-card); border:1.5px solid var(--accent-line); border-radius:5px; padding:7px 14px; cursor:pointer;
+}
+button.scrubctl:hover{background:var(--accent-bg);}
+button.scrubctl:disabled{opacity:0.35; cursor:default;}
+button.scrubctl:focus-visible, .dot:focus-visible, .toggle-btn:focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+.dot{
+  width:30px; height:30px; border-radius:50%; border:1.5px solid var(--rule-strong); background:var(--paper-card);
+  font-family:var(--font-mono); font-size:0.78rem; font-weight:700; color:var(--ink-soft); cursor:pointer;
+}
+.dot.active{background:var(--accent); color:#fbf3e4; border-color:var(--accent-deep);}
+.dotrow{display:flex; gap:6px; align-items:center;}
+.toggle-btn{
+  font-family:var(--font-ui); font-size:0.8rem; font-weight:700; padding:6px 12px; border-radius:16px;
+  border:1.5px solid var(--rule-strong); background:var(--paper-card); cursor:pointer; color:var(--ink-soft);
+}
+.toggle-btn[aria-pressed="true"]{background:var(--fail-bg); border-color:var(--fail-line); color:var(--fail);}
+
+.footnote-box{margin-top:var(--sp4); font-size:var(--fs-caption); color:var(--ink-faint); border-top:1px dashed var(--rule); padding-top:var(--sp2);}
+
+/* ---------- 푸터 (시리즈 공통) ---------- */
+.site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+.footer-inner{max-width:1180px;margin:0 auto;}
+.footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+.footer-prevnext{display:flex;gap:var(--sp-4);}
+.footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+.footer-source{margin-top:var(--sp-3);font-family:var(--font-mono);font-size:0.76rem;color:var(--ink-faint);}
+.footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+@media (max-width:680px){
+  .wrap{padding:0 var(--sp4);}
+  section.block{margin-top:var(--sp6);}
+  figure.viz{padding:var(--sp4);}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">03 · 상세 설계서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <div class="doctitle-block">
+    <h1>상세 설계서</h1>
+    <div class="doc-meta">대상: <code>packages/deployer</code>, <code>packages/cli</code> (pnpm workspace) · 근거: <code>packages/deployer/src/*.ts</code>, <code>packages/cli/src/*.ts</code>, <code>packages/cli/src/commands/*.ts</code> 소스 원문</div>
+    <p class="anchor-line">🔧 설비실 작업 순서표 — 낡은 설비를 옆으로 빼서 끄고, 새 설비를 켜고, 불이 들어오는지 보고, 안 들어오면 원래 것을 도로 켠다.</p>
+    <p class="intro-text">이 문서는 hoster의 배포 엔진이 코드 수준에서 정확히 무엇을 하는지 그린다. 새 코드를
+      <span class="glossed"><strong>컨테이너</strong><span class="gloss">내용물이 무엇이든 규격이 같아 어디서든 그대로 옮길 수 있는 표준 상자</span></span>로
+      들여오고, 낡은 것을 빼는 절차 한 번(<b>swapContainer</b>)이 이 시스템 전체에서 가장 손이 많이 가는 대목이다. 잘못 만들면 두 가지 방식으로 사고가 난다 — 새 설비에 불이 안 들어왔는데 그대로 내버려두거나(서비스 중단), 원복 도중 오류가 나서 두 설비 다 꺼진 채 남거나. 아래 스크러버로 그 절차를 직접 앞뒤로 움직여 보면서 확인한다.</p>
+  </div>
+
+  <!-- =====================================================================
+       SIGNATURE: swapContainer scrubber (also serves as one-page summary)
+  ====================================================================== -->
+  <section class="block" id="signature">
+    <div class="block-head">
+      <h2><span class="block-num">SIGNATURE</span>교체 절차 스크러버 — swapContainer</h2>
+      <p>원문 §3.4. 7단계를 앞뒤로 이동하며 <b>성공 갈래</b>와 <b>실패 갈래</b>를 같은 화면에서 비교한다. 두 슬롯(구 컨테이너 / 신규 컨테이너)의 이름표·실행 상태가 실제로 바뀐다 — 색만 바뀌는 장식이 아니다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="인터랙티브 · 단계 이동형 상태 도해" id="viz-swap">
+      <figcaption class="cap1">낡은 설비를 옆으로 빼서 끄고, 새 설비를 켜고, 불이 들어오는지 보고, 안 들어오면 원래 것을 도로 켠다.</figcaption>
+
+      <div class="viz-body">
+        <div class="btnrow" role="group" aria-label="스크러버 조작">
+          <button type="button" class="scrubctl" id="swap-prev">◀ 이전 단계</button>
+          <div class="dotrow" id="swap-dots" role="tablist" aria-label="단계 선택"></div>
+          <button type="button" class="scrubctl" id="swap-next">다음 단계 ▶</button>
+          <button type="button" class="toggle-btn" id="swap-branch-toggle" aria-pressed="false">마지막 단계 결과: <span id="swap-branch-label">성공(healthCheck 통과)</span> — 클릭해 실패로 전환</button>
+        </div>
+
+        <div id="swap-stage" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="slotcard" id="slot-old" style="border:1.5px solid var(--rule-strong); border-radius:6px; padding:14px; background:var(--paper);">
+            <div style="font-size:0.7rem; letter-spacing:0.06em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:6px;">슬롯 1 — 원래 있던 설비</div>
+            <div class="chip chip--accent" id="slot-old-name" style="font-size:0.95rem; margin-bottom:8px;">hoster-app</div>
+            <div id="slot-old-state" style="font-size:0.85rem; font-weight:700;"></div>
+            <div id="slot-old-icon" style="height:40px; display:flex; align-items:center; margin-top:8px;"></div>
+          </div>
+          <div class="slotcard" id="slot-new" style="border:1.5px solid var(--rule-strong); border-radius:6px; padding:14px; background:var(--paper);">
+            <div style="font-size:0.7rem; letter-spacing:0.06em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:6px;">슬롯 2 — 새로 들여오는 설비</div>
+            <div class="chip chip--accent" id="slot-new-name" style="font-size:0.95rem; margin-bottom:8px;">—</div>
+            <div id="slot-new-state" style="font-size:0.85rem; font-weight:700;"></div>
+            <div id="slot-new-icon" style="height:40px; display:flex; align-items:center; margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <div id="swap-step-title" style="margin-top:16px; font-weight:700; font-size:1.02rem; color:var(--accent-deep);"></div>
+        <p id="swap-step-cap" style="margin:6px 0 0; font-size:0.98rem;"></p>
+        <div id="swap-step-warn" style="display:none; margin-top:8px; padding:8px 12px; background:var(--fail-bg); border:1px dashed var(--fail-line); border-radius:4px; font-size:0.85rem; color:var(--fail);"></div>
+        <div class="tablewrap" style="margin-top:10px;">
+          <code id="swap-step-code" style="display:block; padding:8px 10px; white-space:pre-wrap;"></code>
+        </div>
+      </div>
+
+      <details class="layer2" open>
+        <summary>기술 상세 펼치기 — 7단계 전체 목록(고정 텍스트, JS 없이도 읽힘)</summary>
+        <div class="l2-body">
+          <ol id="swap-static-list" style="padding-left:1.3em;">
+            <li><b>①</b> <code>hoster-${project}-old</code> 잔존 컨테이너를 <code>stopAndRemove</code>로 우선 정리 — 직전 롤백 실패로 남은 잔재 대비.</li>
+            <li><b>②</b> 기존 <code>hoster-${project}</code>를 <code>-old</code>로 <code>rename</code> 시도. 성공하면 <code>renamed = true</code>, 실패(최초 배포로 컨테이너 없음)하면 <code>renamed = false</code>.</li>
+            <li><b>③</b> (<code>renamed === true</code>인 경우) <code>-old</code>를 <code>stop</code>(제거 아님). rename은 Docker 라벨을 바꾸지 않으므로 실행 중인 채 두면 <span class="glossed"><strong>리버스 프록시</strong><span class="gloss">손님을 보고 어느 세대로 보낼지 결정하는 안내데스크(Traefik)</span></span>가 old+new 두 컨테이너를 같은 라우터에 동시 등록해, 헬스체크가 끝나기 전(최대 60초) 미검증 신규 컨테이너로도 트래픽이 흐를 수 있다.
+              <br><span style="font-size:0.8rem; color:var(--fail);">⚠ 원문 8번: 이 <code>stop(oldName)</code> 호출은 반드시 catch로 보호되는 try 블록 안에 있어야 한다(커밋 <code>dfa8835</code>) — 단계가 아니라 배치 제약. 밖에 있으면 데몬 일시 장애로 404/304가 아닌 오류가 났을 때 원복 로직이 전혀 실행되지 못하고 서비스가 <code>-old</code> 이름으로 완전히 멈춘 채 남는다.</span>
+            </li>
+            <li><b>④</b> <code>docker.run({ name, image, domain, containerPort, env: readEnv(project) })</code>로 신규 이름·이미지 컨테이너 기동.</li>
+            <li><b>⑤</b> <code>docker.healthCheck("http://${name}:${containerPort}${healthPath}")</code> 수행 — 실패 시 <code>Error('health check failed')</code> throw.</li>
+            <li><b>⑥ 성공</b>: <code>renamed === true</code>이면 <code>-old</code>를 <code>stopAndRemove</code>(완전 제거) → <code>{ success: true }</code>.</li>
+            <li><b>⑦ 실패(catch)</b>: 신규 컨테이너를 <code>stopAndRemove</code>로 정리 → <code>renamed === true</code>이면 <code>rename(oldName, name)</code>으로 이름 복구 후 반드시 <code>start(name)</code> 호출(③에서 꺼 뒀으므로 rename만으로는 복구되지 않음) → <code>{ success: false, error: e.message }</code>.</li>
+          </ol>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.4 swapContainer(project, image) — 절차. 관련 커밋: <code>dfa8835</code>(stop을 롤백 보호 try 안으로), <code>2e04ed1</code>(start의 304 무시).</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 1 — module map
+  ====================================================================== -->
+  <section class="block" id="modules">
+    <div class="block-head">
+      <h2><span class="block-num">01</span>모듈 지도 — 누가 무엇을 책임지는가</h2>
+      <p>deployer 6개 파일과 CLI 12개 파일. 화살표는 <b>의존 방향</b>이다. 점선 테두리는
+        <span class="glossed"><strong>순수 함수</strong><span class="gloss">재료만 보고 결과를 계산할 뿐, 파일·네트워크 같은 서랍에 손대지 않는 계산기 — 같은 입력이면 언제나 같은 출력</span></span>
+        로만 이루어진 파일(<code>repo.ts</code>, <code>shell.ts</code>, <code>planInit</code>)이다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="배선 도해 · 의존 방향" id="viz-modmap">
+      <figcaption class="cap1">경비실 쪽 설비(deployer, NAS에 상주)와 관리사무소 쪽 도구(CLI, 개발자 로컬)는 선을 타고서만 서로에게 말을 건다 — 화살표 방향이 "누가 누구를 필요로 하는가"다.</figcaption>
+      <div class="viz-body">
+        <svg viewBox="0 0 980 520" role="img" aria-label="deployer와 cli 모듈 의존 방향 배선도" style="width:100%; height:auto; min-width:760px;">
+          <defs>
+            <marker id="arrow-modmap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"></path>
+            </marker>
+          </defs>
+          <!-- column headers -->
+          <text x="230" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#6e3d12">packages/deployer — NAS 상주</text>
+          <text x="750" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#6e3d12">packages/cli — 개발자 로컬</text>
+          <line x1="490" y1="10" x2="490" y2="500" stroke="#c9b98d" stroke-width="1.5" stroke-dasharray="3 5"></line>
+
+          <!-- deployer nodes -->
+          <g font-family="ui-monospace,monospace" font-size="12.5">
+            <a href="#mod-index"><rect x="60" y="46" width="340" height="30" rx="4" fill="#f0dcb8" stroke="#c98a3f"></rect><text x="230" y="66" text-anchor="middle" fill="#241f18">index.ts (엔트리포인트)</text></a>
+
+            <a href="#mod-app"><rect x="60" y="102" width="160" height="30" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="140" y="122" text-anchor="middle" fill="#241f18">app.ts</text></a>
+            <a href="#mod-orch"><rect x="240" y="102" width="160" height="30" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="320" y="122" text-anchor="middle" fill="#241f18">orchestrator.ts</text></a>
+
+            <a href="#mod-store"><rect x="60" y="168" width="150" height="30" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="135" y="188" text-anchor="middle" fill="#241f18">store.ts</text></a>
+            <a href="#mod-docker"><rect x="250" y="168" width="150" height="30" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="325" y="188" text-anchor="middle" fill="#241f18">docker.ts</text></a>
+            <a href="#mod-hmac-d"><rect x="130" y="234" width="150" height="30" rx="4" fill="#faf6ea" stroke="#a68e5c" stroke-dasharray="4 3"></rect><text x="205" y="254" text-anchor="middle" fill="#241f18">hmac.ts (I/O 없음)</text></a>
+
+            <!-- arrows deployer -->
+            <path d="M230,102 L230,76" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M170,168 L155,132" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M310,168 L320,132" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M320,132 L235,102" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M205,234 L205,198" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M180,102 L160,86" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+          </g>
+
+          <!-- cli nodes -->
+          <g font-family="ui-monospace,monospace" font-size="12">
+            <a href="#mod-cli-index"><rect x="600" y="46" width="340" height="30" rx="4" fill="#f0dcb8" stroke="#c98a3f"></rect><text x="770" y="66" text-anchor="middle" fill="#241f18">index.ts (커맨드 정의)</text></a>
+
+            <a href="#mod-init"><rect x="530" y="102" width="120" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="590" y="121" text-anchor="middle" fill="#241f18">init.ts</text></a>
+            <a href="#mod-add"><rect x="665" y="102" width="120" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="725" y="121" text-anchor="middle" fill="#241f18">add.ts</text></a>
+            <a href="#mod-ops"><rect x="800" y="102" width="120" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="860" y="121" text-anchor="middle" fill="#241f18">ops.ts</text></a>
+
+            <a href="#mod-client"><rect x="530" y="160" width="105" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="582" y="179" text-anchor="middle" fill="#241f18">client.ts</text></a>
+            <a href="#mod-cf"><rect x="650" y="160" width="105" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="702" y="179" text-anchor="middle" fill="#241f18">cloudflare.ts</text></a>
+            <a href="#mod-config"><rect x="770" y="160" width="105" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="822" y="179" text-anchor="middle" fill="#241f18">config.ts</text></a>
+            <a href="#mod-nas"><rect x="890" y="160" width="60" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="920" y="179" text-anchor="middle" fill="#241f18">nas.ts</text></a>
+
+            <a href="#mod-prompt"><rect x="530" y="220" width="100" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="580" y="239" text-anchor="middle" fill="#241f18">prompt.ts</text></a>
+            <a href="#mod-repo"><rect x="645" y="220" width="130" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c" stroke-dasharray="4 3"></rect><text x="710" y="239" text-anchor="middle" fill="#241f18">repo.ts (I/O 없음)</text></a>
+            <a href="#mod-shell"><rect x="790" y="220" width="130" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c" stroke-dasharray="4 3"></rect><text x="855" y="239" text-anchor="middle" fill="#241f18">shell.ts (I/O 없음)</text></a>
+            <a href="#mod-hmac-c"><rect x="530" y="278" width="100" height="28" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect><text x="580" y="297" text-anchor="middle" fill="#241f18">hmac.ts</text></a>
+
+            <path d="M770,102 L770,76" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M700,102 L740,76" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M600,102 L720,76" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M582,160 L590,130" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M702,160 L720,130" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M710,220 L725,130" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M855,220 L740,130" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M580,278 L582,188" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M822,160 L860,130" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+            <path d="M920,160 L880,130" stroke="#5b5040" stroke-width="1.6" fill="none" marker-end="url(#arrow-modmap)"></path>
+          </g>
+
+          <!-- cross-package tie: PROJECT_NAME_RE identical text (app.ts holds the deployer copy, repo.ts the cli copy) -->
+          <path d="M200,132 C260,380 620,380 700,252" stroke="#a35a1c" stroke-width="2" fill="none" stroke-dasharray="2 5" marker-end="url(#arrow-modmap)"></path>
+          <rect x="326" y="350" width="248" height="20" fill="#f0dcb8" stroke="#c98a3f" rx="9"></rect>
+          <text x="450" y="364" text-anchor="middle" font-size="11" fill="#6e3d12" font-weight="700">PROJECT_NAME_RE 문자열 원문 동일해야 함</text>
+
+          <text x="490" y="500" text-anchor="middle" font-size="11" fill="#8a7d64">점선 사각형 = 순수 함수(I/O 없음) · 굵은 칩 = 엔트리포인트 · 화살표 = "이 파일이 저 파일을 가져다 씀"</text>
+        </svg>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤해 전체 배선을 본다 →</div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — PROJECT_NAME_RE가 두 곳에 있는 이유</summary>
+        <div class="l2-body">
+          <p><code>packages/deployer/src/app.ts</code>의 <code>PROJECT_NAME_RE</code>와 <code>packages/cli/src/repo.ts</code>의 동명 정규식은 별도 파일에 각각 정의된 <b>서로 다른 사본</b>이다. 공유 모듈이 아니므로 한쪽만 고치면 어긋난다 — 문자열 원문(<code>/^[a-z0-9][a-z0-9-]{0,62}$/</code>)까지 정확히 일치해야 CLI가 통과시킨 이름을 deployer가 그대로 받아들인다.</p>
+          <p>여러 모듈이 <span class="glossed"><strong>의존성 주입</strong><span class="gloss">부품을 고정하지 않고 필요할 때 바꿔 끼울 수 있게 밖에서 넣어주는 방식</span></span>을 쓴다 — <code>Orchestrator</code>는 <code>store</code>/<code>docker</code>를 생성자 인자로 받고, <code>DeployerClient</code>는 <code>fetchFn</code>/<code>now</code>를(테스트 주입용), <code>Nas</code>는 <code>runner</code>/<code>bufferRunner</code>를 받는다. 실제 코드 대신 가짜(fake)를 끼워 테스트할 수 있게 하는 설계다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §4.8 (repo.ts 설명 "PROJECT_NAME_RE: packages/deployer/src/app.ts의 동명 정규식과 반드시 일치해야 함"), §4.1 client.ts, §4.6 nas.ts.</p>
+        </div>
+      </details>
+    </figure>
+
+    <div class="pairwrap">
+      <div>
+        <div class="tablewrap">
+          <table class="ledger">
+            <caption>모듈 구성표 1 — packages/deployer (NAS 상주 배포 API, 6파일)</caption>
+            <thead><tr><th>파일</th><th>책임</th><th>주요 export</th><th>의존</th></tr></thead>
+            <tbody>
+              <tr id="mod-hmac-d"><td><code>src/hmac.ts</code></td><td>
+                <span class="glossed"><strong>HMAC</strong><span class="gloss">우리 둘만 아는 인주로 찍은 도장 — 본문과 시각을 합쳐 찍는다</span></span>-SHA256 서명 생성/검증. 도장 찍힌
+                <span class="glossed"><strong>타임스탬프 허용 오차</strong><span class="gloss">접수증에 찍힌 시각이 얼마나 어긋나도 봐주는지의 기준(기본 5분)</span></span>를 넘으면 반려(자세한 조작은 <a href="07-보안-설계서.html">07 보안 설계서</a>의 도장 실습기 참고)</td><td><code>signPayload</code>, <code>verifySignature</code></td><td><code>node:crypto</code></td></tr>
+              <tr id="mod-store"><td><code>src/store.ts</code></td><td>SQLite(better-sqlite3) 상태 저장소 — projects/deployments CRUD, <span class="glossed"><strong>upsert</strong><span class="gloss">이미 있으면 고치고 없으면 새로 적는 장부 기입 방식</span></span></td><td><code>StateStore</code>, <code>Project</code>, <code>Deployment</code></td><td><code>better-sqlite3</code></td></tr>
+              <tr id="mod-docker"><td><code>src/docker.ts</code></td><td>dockerode 래퍼 — pull/run/stop/start/rename/logs/healthCheck. <span class="glossed"><strong>레지스트리(ghcr.io)</strong><span class="gloss">상자 틀을 보관해 두는 창고</span></span>에서 이미지를 받아온다</td><td><code>DockerManager</code></td><td><code>dockerode</code>, <code>node:timers/promises</code></td></tr>
+              <tr id="mod-orch"><td><code>src/orchestrator.ts</code></td><td>프로젝트별 배포/롤백 직렬 큐, 컨테이너 스왑·롤백 절차</td><td><code>Orchestrator</code></td><td><code>node:fs</code>, <code>node:path</code>, store/docker(타입)</td></tr>
+              <tr id="mod-app"><td><code>src/app.ts</code></td><td>Hono 기반 HTTP API — 인증 미들웨어, 라우팅, 입력 검증</td><td><code>buildApp</code></td><td><code>hono</code>, hmac.js, store/docker/orch(타입)</td></tr>
+              <tr id="mod-index"><td><code>src/index.ts</code></td><td>프로세스 엔트리포인트 — 환경변수 로드, 조립, 서버 기동</td><td>(없음 — 실행 스크립트)</td><td>@hono/node-server, store/docker/orch/app.js</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="tablewrap">
+          <table class="ledger">
+            <caption>모듈 구성표 2 — packages/cli (로컬 관리 도구, 12파일)</caption>
+            <thead><tr><th>파일</th><th>책임</th><th>의존</th></tr></thead>
+            <tbody>
+              <tr id="mod-client"><td><code>src/client.ts</code></td><td>deployer HTTP API 클라이언트, 요청마다 HMAC 서명 첨부</td><td>hmac.js</td></tr>
+              <tr id="mod-cf"><td><code>src/cloudflare.ts</code></td><td>Cloudflare API 클라이언트 — 터널/DNS</td><td>내장 fetch</td></tr>
+              <tr id="mod-config"><td><code>src/config.ts</code></td><td>로컬 설정 <code>~/.hoster/config.json</code> 로드/저장</td><td>node:fs/os/path</td></tr>
+              <tr id="mod-hmac-c"><td><code>src/hmac.ts</code></td><td>HMAC 서명 생성 — deployer와 동일 알고리즘의 별도 사본(검증 로직 없음)</td><td>node:crypto</td></tr>
+              <tr id="mod-cli-index"><td><code>src/index.ts</code></td><td>CLI 엔트리포인트 — commander 커맨드 정의</td><td>commander, config/nas/cf/client/commands</td></tr>
+              <tr id="mod-nas"><td><code>src/nas.ts</code></td><td>SSH 기반 NAS 원격 명령 실행/디렉터리 전송</td><td>node:child_process, node:path</td></tr>
+              <tr id="mod-prompt"><td><code>src/prompt.ts</code></td><td>대화형 stdin 입력(일반/숨김)</td><td>node:readline/promises</td></tr>
+              <tr id="mod-repo"><td><code>src/repo.ts</code></td><td>git/GitHub 저장소 추론·검증 순수 함수</td><td>없음(I/O 없음)</td></tr>
+              <tr id="mod-shell"><td><code>src/shell.ts</code></td><td>셸 인자 안전 <span class="glossed"><strong>이스케이프/인용(quoting)</strong><span class="gloss">특수 기호가 명령으로 오해되지 않도록 따옴표로 감싸는 것</span></span></td><td>없음</td></tr>
+              <tr id="mod-init"><td><code>src/commands/init.ts</code></td><td><code>hoster init</code> 오케스트레이션 — 설치 계획 수립/실행</td><td>nas/cf/config/prompt/shell.js</td></tr>
+              <tr id="mod-add"><td><code>src/commands/add.ts</code></td><td><code>hoster add</code> 오케스트레이션 — 레포 등록</td><td>cf/client/config/repo.js</td></tr>
+              <tr id="mod-ops"><td><code>src/commands/ops.ts</code></td><td>ls/status/logs/rollback/env/remove/doctor 커맨드</td><td>repo.js, init.js(planInit)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 2 — queue rules
+  ====================================================================== -->
+  <section class="block" id="queue">
+    <div class="block-head">
+      <h2><span class="block-num">02</span>배포 큐 규칙 — 최신 우선 vs 순서 대기</h2>
+      <p>프로젝트마다 <span class="glossed"><strong>뮤텍스/락</strong><span class="gloss">한 번에 한 사람만 들어갈 수 있게 걸어두는 작업실 문고리</span></span> 하나(<code>running: Set&lt;string&gt;</code>)와
+        <span class="glossed"><strong>큐·직렬화</strong><span class="gloss">동시에 오지 못하게 한 줄로 세우는 것</span></span> 큐 하나(<code>queues: Map&lt;string, Job[]&gt;</code>)가 있다. 새 <code>deploy</code>가 오면 대기 중이던 이전 <code>deploy</code>는 전부 사라지지만, <code>rollback</code>은 절대 스킵되지 않는다 — 이 비대칭이 이 절의 핵심이다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="대기줄 시뮬레이션" id="viz-queue">
+      <figcaption class="cap1">택배 접수대에 상자(deploy)가 밀려오면 뒤에 있던 헌 상자는 그냥 치워버리지만, 반품 처리(rollback)는 순서를 지켜 반드시 처리한다.</figcaption>
+      <div class="viz-body">
+        <div style="overflow-x:auto;">
+        <svg viewBox="0 0 960 300" role="img" aria-label="배포 큐 시뮬레이션: 도착 순서와 처리 결과" style="width:100%; height:auto; min-width:760px;">
+          <text x="10" y="24" font-size="12.5" font-weight="700" fill="#5b5040">도착 순서 (project=demo, A는 이미 실행 중)</text>
+          <g font-family="ui-monospace,monospace" font-size="12">
+            <rect x="10" y="36" width="130" height="34" rx="4" fill="#dfe8d3" stroke="#7fa066"></rect>
+            <text x="75" y="57" text-anchor="middle" fill="#241f18">A · deploy</text>
+            <text x="75" y="86" text-anchor="middle" font-size="10.5" fill="#8a7d64">실행 중(락 보유)</text>
+
+            <rect x="170" y="36" width="130" height="34" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect>
+            <text x="235" y="57" text-anchor="middle" fill="#241f18">B · deploy</text>
+
+            <rect x="330" y="36" width="130" height="34" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect>
+            <text x="395" y="57" text-anchor="middle" fill="#241f18">C · deploy</text>
+
+            <rect x="490" y="36" width="150" height="34" rx="4" fill="#f0dcb8" stroke="#c98a3f"></rect>
+            <text x="565" y="57" text-anchor="middle" fill="#241f18">D · rollback</text>
+
+            <rect x="660" y="36" width="130" height="34" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect>
+            <text x="725" y="57" text-anchor="middle" fill="#241f18">E · deploy</text>
+          </g>
+          <text x="10" y="118" font-size="11.5" fill="#8a7d64">B 도착 → 큐 비어 있어 그대로 대기. C 도착 → 대기 중이던 deploy B 스킵. D(rollback) 도착 → 그대로 뒤에 추가(스킵 대상 아님). E 도착 → 대기 중이던 deploy C 스킵, D는 그대로 둠.</text>
+
+          <line x1="10" y1="150" x2="950" y2="150" stroke="#c9b98d" stroke-width="1"></line>
+          <text x="10" y="172" font-size="12.5" font-weight="700" fill="#5b5040">처리 결과</text>
+
+          <g font-family="ui-monospace,monospace" font-size="12">
+            <rect x="10" y="184" width="130" height="34" rx="4" fill="#dfe8d3" stroke="#7fa066"></rect>
+            <text x="75" y="205" text-anchor="middle" fill="#241f18">A</text>
+            <rect x="15" y="222" width="120" height="18" rx="9" fill="#dfe8d3" stroke="#7fa066"></rect>
+            <text x="75" y="235" text-anchor="middle" font-size="10.5" fill="#35592c" font-weight="700">처리됨 (1번째)</text>
+
+            <rect x="170" y="184" width="130" height="34" rx="4" fill="#efe9db" stroke="#a89b83" stroke-dasharray="3 3"></rect>
+            <text x="235" y="205" text-anchor="middle" fill="#67605a" text-decoration="line-through">B</text>
+            <rect x="175" y="222" width="120" height="18" rx="9" fill="#efe9db" stroke="#a89b83"></rect>
+            <text x="235" y="235" text-anchor="middle" font-size="10.5" fill="#67605a" font-weight="700">skipped (즉시 응답)</text>
+
+            <rect x="330" y="184" width="130" height="34" rx="4" fill="#efe9db" stroke="#a89b83" stroke-dasharray="3 3"></rect>
+            <text x="395" y="205" text-anchor="middle" fill="#67605a" text-decoration="line-through">C</text>
+            <rect x="335" y="222" width="120" height="18" rx="9" fill="#efe9db" stroke="#a89b83"></rect>
+            <text x="395" y="235" text-anchor="middle" font-size="10.5" fill="#67605a" font-weight="700">skipped (즉시 응답)</text>
+
+            <rect x="490" y="184" width="150" height="34" rx="4" fill="#f0dcb8" stroke="#c98a3f"></rect>
+            <text x="565" y="205" text-anchor="middle" fill="#241f18">D</text>
+            <rect x="500" y="222" width="130" height="18" rx="9" fill="#f0dcb8" stroke="#c98a3f"></rect>
+            <text x="565" y="235" text-anchor="middle" font-size="10.5" fill="#6e3d12" font-weight="700">처리됨 (2번째, FIFO)</text>
+
+            <rect x="660" y="184" width="130" height="34" rx="4" fill="#faf6ea" stroke="#a68e5c"></rect>
+            <text x="725" y="205" text-anchor="middle" fill="#241f18">E</text>
+            <rect x="665" y="222" width="120" height="18" rx="9" fill="#faf6ea" stroke="#a68e5c"></rect>
+            <text x="725" y="235" text-anchor="middle" font-size="10.5" fill="#5b5040" font-weight="700">처리됨 (3번째)</text>
+          </g>
+          <path d="M75,218 L75,150" stroke="#a89b83" stroke-width="1.2" stroke-dasharray="2 3" fill="none"></path>
+          <path d="M565,218 L565,150" stroke="#a89b83" stroke-width="1.2" stroke-dasharray="2 3" fill="none"></path>
+          <path d="M725,218 L725,150" stroke="#a89b83" stroke-width="1.2" stroke-dasharray="2 3" fill="none"></path>
+          <text x="950" y="268" text-anchor="end" font-size="11" fill="#8a7d64">최종 처리 순서: A → D → E (deploy B·C는 사라짐, rollback D는 반드시 살아남는다)</text>
+        </svg>
+        </div>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤 →</div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — enqueue 규칙 원문</summary>
+        <div class="l2-body">
+          <ul>
+            <li>해당 프로젝트가 <code>running</code>에 없으면: 추가 후 즉시 <code>runJob</code> 실행.</li>
+            <li>실행 중이면 큐에 추가: <code>kind === 'deploy'</code>이면 큐에 대기 중이던 기존 <b>deploy</b> Job은 전부 <code>resolve({ status: 'skipped' })</code> 처리 후 제거(latest-wins) — 대기 중인 <b>rollback</b> Job은 건드리지 않음(순서 유지).</li>
+            <li><code>kind === 'rollback'</code>이면 그대로 큐 끝에 push — 스킵되지 않고 FIFO로 대기.</li>
+            <li><b>drain</b>: 큐가 비었으면 <code>running</code>에서 제거(락 해제). 비어있지 않으면 큐 맨 앞(<code>shift()</code>)을 다음으로 실행.</li>
+          </ul>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.4 Orchestrator — 큐 상태 / 큐 규칙(enqueue) / drain.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 3 — always resolve + lock
+  ====================================================================== -->
+  <section class="block" id="alwaysresolve">
+    <div class="block-head">
+      <h2><span class="block-num">03</span>"항상 resolve" 계약과 락</h2>
+      <p><code>Orchestrator.deploy()</code>/<code>rollback()</code>이 반환하는 Promise는 <b>절대 reject하지 않는다</b>. 이유는 문고리(락)가 영원히 잠기는 사고를 막기 위해서다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="상태 대비 도해 · 반사실 비교" id="viz-lock">
+      <figcaption class="cap1">문고리를 걸고 나서 안에서 사고가 나도, 반드시 스스로 문을 열고 나온다 — 열쇠를 두고 나가버리는 일은 설계상 없다.</figcaption>
+      <div class="viz-body pairwrap">
+        <div style="border:1.5px dashed var(--fail-line); border-radius:6px; padding:16px; background:var(--fail-bg);">
+          <div style="font-weight:700; color:var(--fail); margin-bottom:8px;">가상 — reject를 허용했다면 (실제 코드 아님)</div>
+          <svg viewBox="0 0 380 190" role="img" aria-label="reject 허용 시 락이 영구히 걸리는 가상 시나리오" style="width:100%; height:auto;">
+            <rect x="10" y="10" width="150" height="34" rx="4" fill="#faf6ea" stroke="#b7410e"></rect>
+            <text x="85" y="32" text-anchor="middle" font-size="12" fill="#241f18">execute() 예외 발생</text>
+            <path d="M85,44 L85,70" stroke="#b7410e" stroke-width="1.6" marker-end="url(#arrow-lock1)" fill="none"></path>
+            <defs><marker id="arrow-lock1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#b7410e"></path></marker></defs>
+            <rect x="10" y="72" width="150" height="34" rx="4" fill="#f5ddce" stroke="#b7410e"></rect>
+            <text x="85" y="94" text-anchor="middle" font-size="12" fill="#b7410e" font-weight="700">Promise reject 전파</text>
+            <path d="M85,106 L85,132" stroke="#b7410e" stroke-width="1.6" marker-end="url(#arrow-lock1)" fill="none"></path>
+            <rect x="10" y="134" width="220" height="40" rx="4" fill="#f5ddce" stroke="#b7410e" stroke-width="2"></rect>
+            <text x="120" y="152" text-anchor="middle" font-size="11.5" fill="#b7410e" font-weight="700">running Set 락 — 영구히 걸림</text>
+            <text x="120" y="168" text-anchor="middle" font-size="10.5" fill="#b7410e">이후 deploy/rollback 전부 큐에 무한 대기</text>
+          </svg>
+        </div>
+        <div style="border:1.5px solid var(--pass-line); border-radius:6px; padding:16px; background:var(--pass-bg);">
+          <div style="font-weight:700; color:var(--pass); margin-bottom:8px;">실제 — runJob이 항상 resolve</div>
+          <svg viewBox="0 0 380 190" role="img" aria-label="항상 resolve하여 락이 반드시 풀리는 실제 동작" style="width:100%; height:auto;">
+            <rect x="10" y="10" width="150" height="34" rx="4" fill="#faf6ea" stroke="#7fa066"></rect>
+            <text x="85" y="32" text-anchor="middle" font-size="12" fill="#241f18">execute() 예외 발생</text>
+            <path d="M85,44 L85,70" stroke="#35592c" stroke-width="1.6" marker-end="url(#arrow-lock2)" fill="none"></path>
+            <defs><marker id="arrow-lock2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#35592c"></path></marker></defs>
+            <rect x="10" y="72" width="220" height="34" rx="4" fill="#dfe8d3" stroke="#35592c"></rect>
+            <text x="120" y="94" text-anchor="middle" font-size="11.5" fill="#35592c" font-weight="700">catch → resolve({status:'failed'})</text>
+            <path d="M120,106 L120,132" stroke="#35592c" stroke-width="1.6" marker-end="url(#arrow-lock2)" fill="none"></path>
+            <rect x="10" y="134" width="220" height="40" rx="4" fill="#dfe8d3" stroke="#35592c" stroke-width="2"></rect>
+            <text x="120" y="152" text-anchor="middle" font-size="11.5" fill="#35592c" font-weight="700">finally { drain(project) } 항상 실행</text>
+            <text x="120" y="168" text-anchor="middle" font-size="10.5" fill="#35592c">락 해제 → 다음 job 실행 또는 대기열 종료</text>
+          </svg>
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — runJob / safeUpdateStatus</summary>
+        <div class="l2-body">
+          <p><b>runJob</b>: <code>execute</code>/<code>doRollback</code> 결과를 항상 <code>resolve</code> — 두 함수 모두 내부에서 항상 resolve하도록 설계돼 있으나, 예상치 못한 예외로 락이 영구히 걸리는 일이 없도록 한 번 더 try/catch로 감싸는 안전망이다. 예외 발생 시 <code>job.resolve({ status: 'failed', error: e.message })</code>.</p>
+          <p><b>safeUpdateStatus</b>: <code>id === undefined</code>이면 즉시 반환(no-op). <code>store.updateDeploymentStatus</code> 호출 실패는 무시하는
+            <span class="glossed"><strong>best-effort</strong><span class="gloss">되면 좋고 안 돼도 본 작업을 막지 않는 부수적 처리</span></span> 방식이다 — 상태 기록 실패가 배포/롤백 자체의 성공·실패 판정에 영향을 주지 않는다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §5.1 "항상 resolve" 계약 (Orchestrator).</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 4 — regex dissection x5
+  ====================================================================== -->
+  <section class="block" id="regex">
+    <div class="block-head">
+      <h2><span class="block-num">04</span>입력 검증 <span class="glossed"><strong>정규식</strong><span class="gloss">글자 모양이 정해진 규칙에 맞는지 검사하는 자(잣대)</span></span> 5종</h2>
+      <p>서식(요청 값)이 접수대에서 반려되는 진짜 이유는 이 다섯 개의 잣대다. 조각마다 무엇을 허용/거부하는지 라벨을 붙였다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="정규식 해부 도해" id="viz-re1">
+      <figcaption class="cap1">프로젝트 이름표는 소문자·숫자·하이픈만, 63자 이내로만 새길 수 있다.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap"><div style="display:flex; gap:2px; font-family:var(--font-mono); font-size:0.95rem; flex-wrap:nowrap; min-width:640px;">
+          <span class="chip">^</span><span class="chip">[a-z0-9]</span><span class="chip">[a-z0-9-]{0,62}</span><span class="chip">$</span>
+        </div></div>
+        <div style="display:flex; gap:2px; margin-top:4px; font-size:0.74rem; color:var(--ink-soft); flex-wrap:nowrap; min-width:640px;">
+          <span style="width:24px; text-align:center;">시작</span>
+          <span style="width:106px; text-align:center;">첫 글자: 소문자·숫자 1개 (하이픈 불가)</span>
+          <span style="width:180px; text-align:center;">이후 0~62자: 소문자·숫자·하이픈</span>
+          <span style="width:20px; text-align:center;">끝</span>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap; font-size:0.85rem;">
+          <div><span class="stamp stamp--pass">통과</span> <code>my-app</code>, <code>a1</code></div>
+          <div><span class="stamp stamp--fail">반려</span> <code>-app</code>(하이픈 시작), <code>My-App</code>(대문자)</div>
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — PROJECT_NAME_RE</summary>
+        <div class="l2-body">
+          <p><code>const PROJECT_NAME_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;</code> — <code>PROJECT_NAME_MAX = 63</code>. 컨테이너명·env 파일 경로·기본 도메인 라벨에 그대로 쓰이므로 DNS 라벨 형태로만 허용한다. <b>packages/deployer/src/app.ts</b>와 <b>packages/cli/src/repo.ts</b> 두 곳에 각각 정의된 별도 사본이며 문자열 원문까지 정확히 같아야 한다(위 모듈 배선도의 점선 연결 참고).</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.5, §4.8.</p>
+        </div>
+      </details>
+    </figure>
+
+    <figure class="viz" data-viz-type="정규식 해부 도해" id="viz-re2">
+      <figcaption class="cap1">도메인 팻말은 진짜 인터넷 주소 형식으로만 걸 수 있다 — 253자 넘으면 애초에 거부.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap"><div style="display:flex; gap:2px; font-family:var(--font-mono); font-size:0.88rem; flex-wrap:nowrap; min-width:760px;">
+          <span class="chip">^</span><span class="chip">(?=.{1,253}$)</span><span class="chip">([a-z0-9](...)?)</span><span class="chip">(\.([a-z0-9](...)?))+</span><span class="chip">$</span><span class="chip">/i</span>
+        </div></div>
+        <div style="display:flex; gap:2px; margin-top:4px; font-size:0.72rem; color:var(--ink-soft); flex-wrap:nowrap; min-width:760px;">
+          <span style="width:20px;"></span>
+          <span style="width:118px; text-align:center;">전체 길이 1~253자 선검사(lookahead)</span>
+          <span style="width:150px; text-align:center;">첫 라벨(하이픈은 양끝에 못 옴)</span>
+          <span style="width:210px; text-align:center;">점(.)+라벨 반복 — 최소 1회</span>
+          <span style="width:20px;"></span>
+          <span style="width:70px; text-align:center;">대소문자 무시</span>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap; font-size:0.85rem;">
+          <div><span class="stamp stamp--pass">통과</span> <code>my-app.example.com</code></div>
+          <div><span class="stamp stamp--fail">반려</span> <code>-bad.example.com</code>, <code>a..b.net</code>(빈 라벨)</div>
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — HOSTNAME_RE</summary>
+        <div class="l2-body">
+          <p><code>const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i;</code> — <code>POST /projects</code>의 <code>domain</code>은 Traefik 라우터 라벨(백틱 규칙)에 그대로 삽입되므로 호스트명 형식만 허용한다. <code>domain</code> 미지정 시 기본값 <code>${name}.${baseDomain}</code>을 만든 뒤에도 이 정규식으로 <b>다시</b> 검증한다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.5.</p>
+        </div>
+      </details>
+    </figure>
+
+    <div class="pairwrap">
+      <figure class="viz" data-viz-type="정규식 해부 도해" id="viz-re3">
+        <figcaption class="cap1">환경변수 이름표는 프로그램 변수 이름 규칙 그대로만 받는다.</figcaption>
+        <div class="viz-body">
+          <div style="display:flex; gap:2px; font-family:var(--font-mono); font-size:0.92rem;">
+            <span class="chip">^</span><span class="chip">[A-Za-z_]</span><span class="chip">[A-Za-z0-9_]*</span><span class="chip">$</span>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; font-size:0.82rem;">
+            <div><span class="stamp stamp--pass">통과</span> <code>API_KEY</code></div>
+            <div><span class="stamp stamp--fail">반려</span> <code>1KEY</code>, <code>MY-KEY</code></div>
+          </div>
+        </div>
+        <details class="layer2">
+          <summary>기술 상세 — ENV_KEY_RE</summary>
+          <div class="l2-body"><p><code>const ENV_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;</code> — <code>.env</code> 파일에 그대로 쓰이는 키는 통상적인 식별자 형태만 허용한다. <code>PUT /env/:project</code>의 값(value)은 개행 금지(<code>/[\r\n]/</code> 불가)로 별도 검사한다.</p>
+            <p class="l2-source">출처: 03-상세-설계서.md §3.5.</p></div>
+        </details>
+      </figure>
+
+      <figure class="viz" data-viz-type="정규식 해부 도해" id="viz-re4">
+        <figcaption class="cap1">GitHub 저장소 이름 조각은 슬래시만 빼면 다 통과하는 예전 방식이 위험해 좁혔다.</figcaption>
+        <div class="viz-body">
+          <div style="display:flex; gap:2px; font-family:var(--font-mono); font-size:0.92rem;">
+            <span class="chip">^</span><span class="chip">[A-Za-z0-9._-]+</span><span class="chip">$</span>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; font-size:0.82rem;">
+            <div><span class="stamp stamp--pass">통과</span> <code>my-repo.app</code></div>
+            <div><span class="stamp stamp--fail">반려</span> 따옴표·개행 포함 값</div>
+          </div>
+        </div>
+        <details class="layer2">
+          <summary>기술 상세 — GITHUB_SEGMENT_RE</summary>
+          <div class="l2-body"><p><code>const GITHUB_SEGMENT_RE = /^[A-Za-z0-9._-]+$/;</code> — <code>parseGitHubRepo</code>가 뽑아낸 owner/repo 세그먼트를 이 정규식으로 다시 검증한다. 기존 <code>[^/]+</code> 패턴은 슬래시만 아니면 따옴표·개행까지 통과시켜, origin 리모트를 조작할 수 있는 공격자가 <code>templates/workflow.yml.tpl</code>(YAML 문자열+셸 이중따옴표 문자열)에 YAML/셸을 주입할 수 있었다.</p>
+            <p class="l2-source">출처: 03-상세-설계서.md §4.8.</p></div>
+        </details>
+      </figure>
+    </div>
+
+    <figure class="viz" data-viz-type="정규식 해부 도해" id="viz-re5">
+      <figcaption class="cap1">브랜치 이름표는 200자까지 허용하되, git 규칙 전체 대신 "이 두 문맥에서 안전한" 보수적인 부분집합만 받는다.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap"><div style="display:flex; gap:2px; font-family:var(--font-mono); font-size:0.88rem; flex-wrap:nowrap; min-width:600px;">
+          <span class="chip">^</span><span class="chip">[A-Za-z0-9]</span><span class="chip">[A-Za-z0-9._/-]{0,199}</span><span class="chip">$</span>
+        </div></div>
+        <div style="margin-top:10px; font-size:0.82rem; color:var(--ink-soft);">정규식 통과 외에도 추가로 걸러냄: <code>..</code> 미포함 · <code>//</code> 미포함 · <code>/</code>로 끝나지 않음 · <code>.lock</code>으로 끝나지 않음.</div>
+        <div style="margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; font-size:0.82rem;">
+          <div><span class="stamp stamp--pass">통과</span> <code>feature/login</code></div>
+          <div><span class="stamp stamp--fail">반려</span> <code>a..b</code>, <code>br/</code>, <code>x.lock</code></div>
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — SAFE_BRANCH_RE / isValidBranchName</summary>
+        <div class="l2-body">
+          <p><code>const SAFE_BRANCH_RE = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/;</code> — git-check-ref-format 전체 규칙 대신, 이 브랜치명이 삽입되는 두 컨텍스트(<code>workflow.yml.tpl</code>의 YAML 큰따옴표 문자열, <code>printf</code> 안의 셸 이중따옴표 문자열) 모두에서 안전한 보수적 부분집합만 허용한다(따옴표/개행/셸 메타문자/백슬래시 전부 배제).</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §4.8.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 5 — planInit vs runInit
+  ====================================================================== -->
+  <section class="block" id="init">
+    <div class="block-head">
+      <h2><span class="block-num">05</span><code>hoster init</code> — 계획과 실행의 분리</h2>
+      <p><code>planInit</code>은 순수 함수라 시크릿이 결과물에 섞이지 않는다(빈칸만 있음). <code>runInit</code>이 실행 시점에 그 빈칸을 실제 값으로 채운다. 이것은
+        <span class="glossed"><strong>부트스트랩</strong><span class="gloss">단지를 처음 열 때 딱 한 번 해두는 기반 공사</span></span> 12단계 전체가 지나는 절차다. 실제로 값을 바꾸기 전
+        <span class="glossed"><strong>드라이런(dry-run)</strong><span class="gloss">실제로 하지 않고 계획만 미리 읽어보는 예행연습</span></span>(<code>--dry-run</code>)으로 12단계 계획만 로그로 먼저 확인할 수도 있다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="계획서 → 실행 대응 도해" id="viz-init">
+      <figcaption class="cap1">계획서(설계도면)에는 "빈칸"만 적어 두고, 실제 공사 날 그 빈칸을 진짜 값으로 채워 넣는다 — 도면 자체에는 절대 열쇠 번호를 적지 않는다.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap">
+        <table class="ledger" style="min-width:900px;">
+          <thead><tr><th style="width:32px;">#</th><th>종류</th><th>계획서 (placeholder 상태) — <code>planInit</code></th><th>실행 (치환 후) — <code>runInit</code></th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="chip">local-exec</td><td><code>ssh -p ${port} ${user}@${host} 'sudo -n /usr/local/bin/docker version ...'</code></td><td>NAS 접속 정보로 즉시 실행</td></tr>
+            <tr><td>2</td><td class="chip">nas-exec</td><td><code>sudo -n /usr/local/bin/docker compose version</code></td><td>그대로 실행 (compose 플러그인 확인)</td></tr>
+            <tr><td>3</td><td class="chip">cf-api</td><td><code>createTunnel(['hoster'])</code></td><td>Cloudflare API 토큰으로 터널 'hoster' 생성</td></tr>
+            <tr><td>4</td><td class="chip">cf-api</td><td>인그레스 설정(호스트→서비스 매핑)</td><td><code>hoster.&lt;baseDomain&gt;</code>→deployer, <code>*.&lt;baseDomain&gt;</code>→traefik</td></tr>
+            <tr><td>5</td><td class="chip">cf-api</td><td>DNS CNAME 계획</td><td><code>hoster.&lt;baseDomain&gt;</code> → <code>${TUNNEL_ID}.cfargotunnel.com</code></td></tr>
+            <tr><td>6</td><td class="chip">nas-exec</td><td><code>docker network create hoster-net</code></td><td>이미 있으면 "exists" 메시지로 무시</td></tr>
+            <tr><td>7</td><td class="chip">nas-transfer</td><td>상태 디렉터리·stack 전송 계획</td><td><code>mkdir -p .../state/env</code> + compose 파일 전송</td></tr>
+            <tr><td>8</td><td class="chip">local-exec</td><td>deployer 이미지 빌드+전송 계획</td><td><code>buildx build --platform linux/amd64 --load</code> 후 <code>save\|gzip\|ssh\|docker load</code></td></tr>
+            <tr style="background:var(--accent-bg);"><td>9</td><td class="chip chip--accent">nas-exec</td><td><code>printf 'TUNNEL_TOKEN=%s\nHMAC_SECRET=%s\n...' &gt; .env</code> — 값은 <code>${'{...}'}</code> 빈칸</td><td class="glossed"><strong>플레이스홀더 치환</strong><span class="gloss">빈칸에 실제 값을 나중에 채워 넣는 것</span> — <code>TUNNEL_TOKEN</code>/<code>HMAC_SECRET</code>(무작위 32바이트)/<code>GHCR_PAT</code> 실값 기입, mode 0600</td></tr>
+            <tr style="background:var(--accent-bg);"><td>10</td><td class="chip chip--accent"><b>write-config</b></td><td><code>~/.hoster/config.json</code> 저장 계획</td><td>11·12단계보다 <b>먼저</b> 실제 저장 — 실패해도 시크릿/터널ID를 잃지 않기 위함</td></tr>
+            <tr><td>11</td><td class="chip">nas-exec</td><td><code>network-diagnostic</code> — 외부 통신 확인 계획</td><td><code>docker run --network hoster-net alpine wget ... one.one.one.one</code></td></tr>
+            <tr><td>12</td><td class="chip">local-exec</td><td><code>healthz-check</code> 계획</td><td><code>curl https://hoster.&lt;baseDomain&gt;/healthz</code> — 10초 간격 6회 재시도</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤 →</div>
+
+        <div style="margin-top:16px; padding:12px 14px; background:var(--fail-bg); border:1.5px dashed var(--fail-line); border-radius:5px;">
+          <b style="color:var(--fail);">왜 10단계가 11·12단계보다 먼저인가</b> — 이 시점 이후 실패(11번 진단 경고, 12번 healthz 6회 소진)는 로컬 설정 저장을 막을 이유가 아니다. <span class="glossed"><strong>터널</strong><span class="gloss">정문을 열지 않고 안에서 밖으로 미리 뚫어 둔 전용 통로</span></span>/<span class="glossed"><strong>DNS/CNAME</strong><span class="gloss">건물 이름을 실제 위치로 바꿔주는 주소록 카드</span></span>/<code>.env</code>(HMAC_SECRET 포함)는 이미 NAS에 존재하므로, 여기서 저장하지 않으면 재시도 시 시크릿/터널ID를 알 방법이 없어 터널 이름 충돌에 부딪힌다.
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — planInit 순수성 / runInit 프롬프트</summary>
+        <div class="l2-body">
+          <p><code>planInit(input: { baseDomain, nas })</code>는 <b>순수 함수(I/O 없음)</b> — 시크릿(TUNNEL_TOKEN/HMAC_SECRET/GHCR_PAT)이 <code>InitInput</code>에 존재하지 않으므로 결과물에 실제 시크릿 값이 섞이지 않는다. 커맨드 문자열에는 <code>${'{...}'}</code> 빈칸만 남고, 실제 치환은 <code>runInit</code>이 실행 시점에 수행한다.</p>
+          <p><code>runInit</code>: <code>--dry-run</code>이면 계획만 로그로 출력하고 종료. Cloudflare API 토큰(<code>askHidden</code>) → Account ID(<code>ask</code>) → Zone ID(<code>ask</code>) → GHCR PAT(<code>askHidden</code>) 순서로 프롬프트(이 문서 원문 기준 — 09번 문서의 순서 표기와 한 항목이 다를 수 있으나 각 문서는 자기 원문을 따른다). <code>HMAC_SECRET</code>은 사용자 입력 없이 <code>randomBytes(32).toString('hex')</code>로 자동 생성.</p>
+          <p>실패 시 <code>printRecoveryNote(log, progress)</code>가 <code>stackTransferred</code>/<code>envWritten</code>/<code>configSaved</code> 진행 상태만으로 복구 안내 — 시크릿 값 자체는 절대 포함하지 않는다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §4.10 planInit / runInit.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 6 — execute vs doRollback asymmetry
+  ====================================================================== -->
+  <section class="block" id="asymmetry">
+    <div class="block-head">
+      <h2><span class="block-num">06</span>실행 순서의 비대칭 — execute vs doRollback</h2>
+      <p>배포 접수와 롤백 접수는 장부에 적는 순서가 정반대다. 이 비대칭이 <a href="05-DB-설계서.html">05 DB 설계서</a>에서 다루는 "고아 행" 문제의 원인이다.</p>
+    </div>
+
+    <figure class="viz" data-viz-type="두 갈래 순서 비교 도해" id="viz-asym">
+      <figcaption class="cap1">배포 접수는 일단 장부에 먼저 적고 세대 확인은 나중에 하지만, 반품 접수는 세대부터 확인하고서야 장부에 적는다.</figcaption>
+      <div class="viz-body pairwrap">
+        <div>
+          <div style="font-weight:700; margin-bottom:8px;">execute(req) — deploy</div>
+          <ol style="padding-left:1.2em; font-size:0.88rem;">
+            <li style="background:var(--accent-bg); padding:4px 6px; border-radius:3px; margin-bottom:6px;"><code>recordDeployment(req)</code> → id 발급 (status='pending')</li>
+            <li style="padding:4px 6px; margin-bottom:6px;"><code>getProject(project)</code> — 없으면 <code>Error('unknown project')</code></li>
+            <li style="padding:4px 6px; margin-bottom:6px;"><code>docker.pull(image)</code></li>
+            <li style="padding:4px 6px; margin-bottom:6px;"><code>swapContainer(project, image)</code></li>
+            <li style="padding:4px 6px; margin-bottom:6px;">성공: <code>setImages(project, image, 기존 currentImage)</code> + dropped 이미지 정리</li>
+            <li style="padding:4px 6px;"><code>updateDeploymentStatus(id, 'success')</code> <span class="stamp stamp--pass" style="margin-left:6px;">success</span></li>
+          </ol>
+        </div>
+        <div>
+          <div style="font-weight:700; margin-bottom:8px;">doRollback(project) — rollback</div>
+          <ol style="padding-left:1.2em; font-size:0.88rem;">
+            <li style="background:var(--accent-bg); padding:4px 6px; border-radius:3px; margin-bottom:6px;"><code>getProject(project)</code> — 없으면 <code>{status:'failed'}</code> (id 미발급)</li>
+            <li style="padding:4px 6px; margin-bottom:6px;"><code>previousImage</code> 없으면 <code>{status:'failed', error:'no previous image'}</code></li>
+            <li style="padding:4px 6px; margin-bottom:6px;"><code>recordDeployment({..., sha:'rollback'})</code> → id 발급</li>
+            <li style="padding:4px 6px; margin-bottom:6px;"><code>swapContainer(project, previousImage)</code></li>
+            <li style="padding:4px 6px; margin-bottom:6px;">성공: <code>setImages(project, previousImage, 기존 currentImage)</code></li>
+            <li style="padding:4px 6px;"><code>updateDeploymentStatus(id, 'rolled_back')</code> <span class="stamp stamp--rolled" style="margin-left:6px;">rolled_back</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="viz-body" style="margin-top:6px; padding:10px 14px; background:var(--paper); border:1px dashed var(--rule-strong); border-radius:5px; font-size:0.85rem;">
+        <b>비대칭의 결과</b> — <code>execute</code>는 <code>recordDeployment</code>가 <code>getProject</code>보다 먼저이므로, 미등록 프로젝트로 배포 요청이 와도 <code>deployments</code> 행이 먼저 생긴 뒤 실패 처리된다. <code>doRollback</code>은 순서가 반대라 미등록이면 행 자체가 생기지 않는다. 롤백 성공 상태값은 <code>rolled_back</code>이지 <code>success</code>가 <b>아니다</b>.
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — try 전체 예외 처리</summary>
+        <div class="l2-body">
+          <p>두 함수 모두 try 블록 전체의 예외(catch)에서 <code>safeUpdateStatus(id, 'failed', msg)</code>를 호출한다. <code>swapContainer</code> 실패 시에는 각각 <code>safeUpdateStatus(id, 'failed', swap.error 또는 ok.error)</code> 후 <code>{ status: 'failed' }</code>를 반환한다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.4 execute(req) — deploy / doRollback(project) — rollback.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 7 — additional recommended visuals
+  ====================================================================== -->
+  <section class="block" id="deepdive">
+    <div class="block-head">
+      <h2><span class="block-num">07</span>더 들여다보기 — 시간·바이트·문자열·순서·안내</h2>
+      <p>원문이 요구하는 다섯 가지 세부 사실을 각각 어울리는 형식으로 그린다.</p>
+    </div>
+
+    <h3>7.1 healthCheck 폴링 타이밍</h3>
+    <figure class="viz" data-viz-type="시간축 도해" id="viz-timing">
+      <figcaption class="cap1">불이 들어오는지 1초마다 두드려 보되, 한 번 두드릴 때 3초 넘게 대답이 없으면 그 시도는 포기하고, 전체 60초가 지나면 완전히 포기한다.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap">
+        <svg viewBox="0 0 900 130" role="img" aria-label="헬스체크 폴링 시간축: 1초 간격, 3초 개별 타임아웃, 60초 데드라인" style="width:100%; height:auto; min-width:760px;">
+          <line x1="20" y1="70" x2="860" y2="70" stroke="#5b5040" stroke-width="2"></line>
+          <text x="20" y="24" font-size="12" fill="#5b5040">0s</text>
+          <text x="850" y="24" font-size="12" fill="#5b5040" text-anchor="end">60s (데드라인)</text>
+          <g font-family="ui-monospace,monospace" font-size="10.5">
+            <!-- ticks every ~1s scaled -->
+            <g id="ticks"></g>
+          </g>
+          <rect x="20" y="60" width="60" height="20" fill="#f0dcb8" stroke="#c98a3f"></rect>
+          <text x="50" y="74" text-anchor="middle" font-size="10" fill="#6e3d12">시도 1 (≤3s)</text>
+          <rect x="100" y="60" width="60" height="20" fill="#f0dcb8" stroke="#c98a3f"></rect>
+          <text x="130" y="74" text-anchor="middle" font-size="10" fill="#6e3d12">시도 2</text>
+          <rect x="180" y="60" width="60" height="20" fill="#f0dcb8" stroke="#c98a3f"></rect>
+          <text x="210" y="74" text-anchor="middle" font-size="10" fill="#6e3d12">시도 3</text>
+          <text x="280" y="74" font-size="14" fill="#8a7d64">⋯ 1초 간격으로 계속 ⋯</text>
+          <rect x="800" y="60" width="55" height="20" fill="#f5ddce" stroke="#b7410e"></rect>
+          <text x="827" y="74" text-anchor="middle" font-size="9.5" fill="#b7410e">데드라인 초과 → false</text>
+          <path d="M855,60 L855,90" stroke="#b7410e" stroke-width="2"></path>
+          <text x="855" y="106" text-anchor="middle" font-size="10.5" fill="#b7410e" font-weight="700">60s</text>
+        </svg>
+        </div>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤 →</div>
+        <p style="font-size:0.82rem; color:var(--ink-soft); margin-top:8px;">이 시간축은 <code>swapContainer</code> 내부의 컨테이너 <span class="glossed"><strong>헬스체크</strong><span class="gloss">새로 들여온 설비에 불이 들어오는지 확인하는 시운전</span></span>(1초 간격 <span class="glossed"><strong>폴링</strong><span class="gloss">될 때까지 일정한 간격으로 계속 두드려 확인하는 것</span></span> · 3초 개별
+          <span class="glossed"><strong>타임아웃</strong><span class="gloss">이만큼 기다려도 답이 없으면 포기하는 제한 시간</span></span> · 60초
+          <span class="glossed"><strong>데드라인</strong><span class="gloss">이 시각까지 안 되면 포기하는 마감 시각</span></span>)만을 그린 것이다. <code>hoster init</code> 12단계의 <code>healthz-check</code> 재시도(10초 간격 6회)는 완전히 다른 별도 메커니즘이며 혼동하지 않도록 주의한다.</p>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — healthCheck 구현</summary>
+        <div class="l2-body">
+          <p><code>healthCheck(url, timeoutMs=60_000)</code>: <code>deadline = Date.now() + timeoutMs</code>까지 1초 간격 폴링. <code>fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(3000) })</code>, <code>res.status &lt; 400</code>이면 true. fetch 예외는 무시하고 재시도. 데드라인 초과 시 false.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.3 docker.ts.</p>
+        </div>
+      </details>
+    </figure>
+
+    <h3>7.2 <code>docker logs</code> 프레임 헤더 제거</h3>
+    <figure class="viz" data-viz-type="바이트 레이아웃 도해" id="viz-bytes">
+      <figcaption class="cap1">한 통로로 두 종류(정상 출력/에러 출력)를 같이 보낼 때, 앞머리 8바이트가 "이게 어느 쪽이고 얼마나 긴지" 알려주는 꼬리표다. 그 꼬리표를 떼어내야 사람이 읽을 텍스트만 남는다.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap">
+        <svg viewBox="0 0 760 150" role="img" aria-label="docker logs 8바이트 프레임 헤더 레이아웃" style="width:100%; height:auto; min-width:640px;">
+          <g font-family="ui-monospace,monospace" font-size="11">
+            <rect x="10" y="30" width="46" height="34" fill="#f0dcb8" stroke="#c98a3f"></rect><text x="33" y="51" text-anchor="middle">0</text>
+            <rect x="56" y="30" width="46" height="34" fill="#efe9db" stroke="#a89b83"></rect><text x="79" y="51" text-anchor="middle" fill="#8a7d64">1</text>
+            <rect x="102" y="30" width="46" height="34" fill="#efe9db" stroke="#a89b83"></rect><text x="125" y="51" text-anchor="middle" fill="#8a7d64">2</text>
+            <rect x="148" y="30" width="46" height="34" fill="#efe9db" stroke="#a89b83"></rect><text x="171" y="51" text-anchor="middle" fill="#8a7d64">3</text>
+            <rect x="194" y="30" width="180" height="34" fill="#f0dcb8" stroke="#c98a3f"></rect><text x="284" y="51" text-anchor="middle">4 ~ 7</text>
+            <rect x="374" y="30" width="330" height="34" fill="#dfe8d3" stroke="#7fa066"></rect><text x="539" y="51" text-anchor="middle">payload (length 바이트)</text>
+          </g>
+          <text x="33" y="20" text-anchor="middle" font-size="9.5" fill="#6e3d12">스트림 종류</text>
+          <text x="284" y="20" text-anchor="middle" font-size="9.5" fill="#6e3d12">payload 길이 (big-endian)</text>
+          <text x="79" y="82" text-anchor="middle" font-size="9" fill="#8a7d64">예약 영역</text>
+          <text x="539" y="82" text-anchor="middle" font-size="9.5" fill="#35592c">순수 텍스트</text>
+          <path d="M374,64 L374,100 L704,100 L704,64" stroke="#a89b83" stroke-width="1" fill="none" stroke-dasharray="3 3"></path>
+          <rect x="470" y="104" width="150" height="30" rx="4" fill="none" stroke="#b7410e" stroke-dasharray="4 3"></rect>
+          <text x="545" y="123" text-anchor="middle" font-size="10" fill="#b7410e">불완전한 프레임(end&gt;buf.length) → 안전 중단</text>
+        </svg>
+        </div>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤 →</div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — demux</summary>
+        <div class="l2-body">
+          <p>dockerode <code>logs({ stdout: true, stderr: true, tail })</code> → <code>demux()</code>로 8바이트 프레임 헤더(0번째 바이트: 스트림 종류, 4~7번째 바이트: payload 길이, big-endian) 제거해 순수 텍스트만 추출하는
+            <span class="glossed"><strong>멀티플렉싱(프레임 헤더)</strong><span class="gloss">한 통로로 여러 종류를 같이 보낼 때 앞에 붙이는 꼬리표</span></span> 해제 과정이다. 불완전한 프레임(<code>end &gt; buf.length</code>)은 안전하게 중단한다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §3.3 logs.</p>
+        </div>
+      </details>
+    </figure>
+
+    <h3>7.3 <code>shQuote</code> 문자열 치환</h3>
+    <figure class="viz" data-viz-type="문자열 변환 도해" id="viz-shquote">
+      <figcaption class="cap1">값을 작은따옴표로 통째로 감싸되, 값 안에 이미 작은따옴표가 있으면 그 자리만 "따옴표를 잠깐 닫았다가, 이스케이프된 따옴표 하나를 찍고, 다시 연다."</figcaption>
+      <div class="viz-body">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:var(--font-mono); font-size:1rem;">
+          <span class="chip" style="font-size:1rem;">can't</span>
+          <span style="font-size:1.3rem; color:var(--ink-faint);">→</span>
+          <span class="chip chip--accent" style="font-size:1rem;">'can'\''t'</span>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:2px; font-family:var(--font-mono); font-size:0.95rem; flex-wrap:wrap;">
+          <span class="chip">'</span><span class="chip">can</span><span class="chip" style="background:var(--fail-bg); border-color:var(--fail-line); color:var(--fail);">'\''</span><span class="chip">t</span><span class="chip">'</span>
+        </div>
+        <div style="display:flex; gap:2px; margin-top:4px; font-size:0.72rem; color:var(--ink-soft); flex-wrap:wrap;">
+          <span style="width:20px;">여는 따옴표</span><span style="width:44px;">원문</span><span style="width:120px; color:var(--fail);">닫기+이스케이프된 따옴표+열기</span><span style="width:20px;">원문</span><span>닫는 따옴표</span>
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — shQuote / substitutePlaceholders</summary>
+        <div class="l2-body">
+          <p><code>shQuote</code>: POSIX 셸 표준 기법 — 작은따옴표로 감싸고, 값에 포함된 작은따옴표는 <code>'\''</code>(닫는 따옴표 + 이스케이프된 리터럴 따옴표 + 여는 따옴표)로 치환한다. NAS(ssh 원격 셸)나 로컬 셸(<code>sh -c</code>)로 전달되는 명령 문자열에 보간되는 모든 값은 반드시 이 헬퍼를 거쳐야 한다.</p>
+          <p><code>substitutePlaceholders</code>: <code>${KEY}</code> 형태 플레이스홀더를 <code>shQuote(val)</code>로 치환한다. <code>String.replaceAll(문자열, 문자열)</code>은 교체 문자열에 <code>$&amp;</code>, <code>$$</code> 등이 있으면 특수 패턴으로 해석하므로(시크릿 값에 <code>$</code>가 포함될 가능성 배제 불가) <code>split(...).join(...)</code>을 사용한다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §4.9 shell.ts.</p>
+        </div>
+      </details>
+    </figure>
+
+    <h3>7.4 <code>hoster add</code> 12단계 순서 근거</h3>
+    <figure class="viz" data-viz-type="순서 근거 도해" id="viz-add">
+      <figcaption class="cap1">신청서 칸을 검사하는 일과, 접수원이 자리에 있는지 확인하는 일은 실제로 서류철을 만들기 전에 끝내야 한다 — 반쯤 만들어진 서류철을 남기지 않으려고.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap">
+        <div style="display:flex; gap:6px; flex-wrap:nowrap; min-width:980px; align-items:stretch;">
+          <div class="formfield" style="min-width:74px;"><span class="flabel">1</span><span class="fvalue" style="font-size:0.78rem;">git remote 조회</span></div>
+          <div class="formfield" style="min-width:74px;"><span class="flabel">2</span><span class="fvalue" style="font-size:0.78rem;">owner/repo 파싱</span></div>
+          <div class="formfield" style="min-width:74px;"><span class="flabel">3</span><span class="fvalue" style="font-size:0.78rem;">이름 유도</span></div>
+          <div class="formfield" style="min-width:96px; background:var(--accent-bg); border-radius:4px; padding:4px;"><span class="flabel" style="color:var(--accent-deep);">4 · 검증</span><span class="fvalue" style="font-size:0.78rem; color:var(--accent-deep); font-weight:700;">파일 쓰기 전</span></div>
+          <div class="formfield" style="min-width:74px;"><span class="flabel">5</span><span class="fvalue" style="font-size:0.78rem;">dry-run 분기</span></div>
+          <div class="formfield" style="min-width:96px; background:var(--accent-bg); border-radius:4px; padding:4px;"><span class="flabel" style="color:var(--accent-deep);">6 · gh 준비</span><span class="fvalue" style="font-size:0.78rem; color:var(--accent-deep); font-weight:700;">생성보다 먼저</span></div>
+          <div class="formfield" style="min-width:74px;"><span class="flabel">7</span><span class="fvalue" style="font-size:0.78rem;">config 로드</span></div>
+          <div class="formfield" style="min-width:84px;"><span class="flabel">8</span><span class="fvalue" style="font-size:0.78rem;">Dockerfile 생성</span></div>
+          <div class="formfield" style="min-width:84px;"><span class="flabel">9</span><span class="fvalue" style="font-size:0.78rem;">workflow 생성</span></div>
+          <div class="formfield" style="min-width:84px;"><span class="flabel">10</span><span class="fvalue" style="font-size:0.78rem;">gh secret set ×2</span></div>
+          <div class="formfield" style="min-width:84px;"><span class="flabel">11</span><span class="fvalue" style="font-size:0.78rem;">DNS+등록</span></div>
+          <div class="formfield" style="min-width:96px;"><span class="flabel">12</span><span class="fvalue" style="font-size:0.78rem; color:var(--fail);">원자성 없음 안내</span></div>
+        </div>
+        </div>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤 →</div>
+        <p style="font-size:0.85rem; margin-top:12px;"><b>4번</b>은 <code>isValidBranchName</code>/<code>isValidProjectName</code> 검증이 8·9번(파일 생성)보다 먼저 온다는 뜻이다. <code>branch</code>/<code>project</code>는 <code>templates/workflow.yml.tpl</code>에 YAML 문자열과 셸 이중따옴표 문자열(printf 안) 양쪽으로 그대로 삽입되므로 반드시 선검증한다 — <code>--project</code>는 <code>projectNameOf()</code>를 거치지 않는 유일한 경로라 특히 중요하다.
+          <b>6번 <code>ensureGhReady</code></b>는 실제로 무언가를 만들기(8·9·10번) 전, 가장 먼저 확인된다 — 이후 단계가 이미 실행된 뒤 gh 없음으로 중단되면 저장소가 "반쯤 설정된" 상태로 남기 때문이다.</p>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — runAdd 12항목 전체</summary>
+        <div class="l2-body">
+          <ol>
+            <li><code>git remote get-url origin</code> 조회 실패 시 <code>Error</code>.</li>
+            <li><code>parseGitHubRepo(remote.stdout)</code> → owner, repo.</li>
+            <li><code>projectName = opts.project ?? projectNameOf(repo)</code>, <code>imageRepo = imageRepoOf(owner, repo)</code>.</li>
+            <li>파일 쓰기 전 <code>isValidBranchName</code>/<code>isValidProjectName</code> 검증.</li>
+            <li><code>--dry-run</code>: 6단계 계획 로그만 출력(파일/시크릿/DNS/등록 아무것도 실행하지 않음).</li>
+            <li><code>ensureGhReady(run, cwd)</code> — <code>gh --version</code> 실패 시 설치 안내, <code>gh auth status</code> 실패 시 로그인 안내.</li>
+            <li><code>loadConfig()</code>.</li>
+            <li>Dockerfile 없고 Next.js 감지(<code>detectNextJs</code>) 시 템플릿 생성, <code>standalone</code> 미포함 시 경고.</li>
+            <li>workflow 파일 없거나 <code>--force</code>면 <code>renderTemplate</code>로 생성. 있고 <code>--force</code> 없으면 보존.</li>
+            <li><code>gh secret set HOSTER_DEPLOY_URL</code>/<code>HOSTER_DEPLOY_SECRET</code> — argv 대신 stdin 사용(ps 노출 방지).</li>
+            <li><code>cf.upsertDnsCname(...)</code> → <code>client.registerProject(...)</code>.</li>
+            <li>DNS 생성과 프로젝트 등록 사이 원자성 없음 — <code>dnsCreated</code> 플래그로 실패 지점 안내.</li>
+          </ol>
+          <p class="l2-source">출처: 03-상세-설계서.md §4.11 commands/add.ts.</p>
+        </div>
+      </details>
+    </figure>
+
+    <h3>7.5 부분 실패 안내</h3>
+    <figure class="viz" data-viz-type="복구 안내 장부 · 매트릭스" id="viz-partial">
+      <figcaption class="cap1">여러 창구를 차례로 거치는 접수는 중간에 멈출 수 있다 — 어디까지 처리됐는지를 장부에 정확히 남겨야 다음에 헤매지 않는다.</figcaption>
+      <div class="viz-body">
+        <div class="tablewrap">
+        <table class="ledger">
+          <caption>4종 — <span class="glossed"><strong>원자성</strong><span class="gloss">쪼개지지 않고 한 번에 전부 되거나 전부 안 되거나 하는 성질</span></span> 없는 다단계 원격 작업</caption>
+          <thead><tr><th>위치</th><th>실패 지점</th><th>안내 내용</th></tr></thead>
+          <tbody>
+            <tr><td><code>add.ts</code> runAdd</td><td>DNS 생성 성공 후 <code>registerProject</code> 실패</td><td>DNS는 이미 생성됨(재시도 시 upsert로 안전), Dockerfile/workflow/gh secret은 이미 완료 <span class="stamp stamp--pending" style="margin-left:6px;">부분 완료</span></td></tr>
+            <tr><td><code>add.ts</code> runAdd</td><td>DNS 생성 자체 실패</td><td>프로젝트 등록은 시도하지 않음, Dockerfile/workflow/gh secret만 완료 <span class="stamp stamp--fail" style="margin-left:6px;">DNS 반려</span></td></tr>
+            <tr><td><code>ops.ts</code> runRemove</td><td><code>removeProject</code> 성공 후 <code>deleteDnsRecord</code> 실패</td><td>deployer 등록/컨테이너는 제거됨, DNS는 Cloudflare 대시보드에서 직접 삭제 안내 <span class="stamp stamp--pending" style="margin-left:6px;">부분 완료</span></td></tr>
+            <tr><td><code>init.ts</code> runInit (<code>printRecoveryNote</code>)</td><td>시크릿 생성 이후 임의 단계 실패</td><td><code>stackTransferred</code>/<code>envWritten</code>/<code>configSaved</code> 진행 상태만 정확히 안내(시크릿 값 제외). <code>envWritten</code>이면 재시도 시 HMAC_SECRET이 새로 생성됨을 경고 <span class="stamp stamp--fail" style="margin-left:6px;">재시도 주의</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="viz-scroll-hint mobileonly">← 좌우로 스크롤 →</div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — friendlyDeployerErrorMessage</summary>
+        <div class="l2-body">
+          <p><code>friendlyDeployerErrorMessage(e)</code>: <code>DeployerClient.request</code>가 2xx 아닌 응답에서 던지는 <code>deployer 응답 ${status}: ${rawBody}</code> 형태 메시지에서 <code>rawBody</code>가 JSON이고 <code>error</code> 필드가 문자열이면 그 값만 추출한다. deployer는 실패한 rollback/deploy에 HTTP 500을 반환하므로, 성공적으로 반환되는 결과의 <code>status</code>는 실제로는 항상 <code>'success'</code>뿐이고 <code>'failed'</code>는 절대 여기까지 오지 않는다(항상 throw로 먼저 걸러짐) — 예전 <code>result.status !== 'success'</code> 분기는 도달 불가능한 죽은 코드였다.</p>
+          <p class="l2-source">출처: 03-상세-설계서.md §5.2, §5.3.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+  <!-- =====================================================================
+       what this doc does not confirm
+  ====================================================================== -->
+  <section class="block" id="notconfirmed">
+    <div class="block-head">
+      <h2>이 문서가 확인하지 못한 것</h2>
+      <p>요청 범위(<code>src/*.ts</code>) 밖이라 원문이 명시적으로 다루지 않은 3건이다. 코드 근거 없이 채워 넣지 않는다.</p>
+    </div>
+    <figure class="viz" data-viz-type="빈 도장칸" id="viz-unconfirmed">
+      <figcaption class="cap1">확인하지 않은 것은 확인했다고 도장을 찍지 않는다 — 빈칸으로 정직하게 남긴다.</figcaption>
+      <div class="viz-body" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px;">
+        <div style="border:1.5px dashed var(--ink-faint); border-radius:6px; padding:14px;">
+          <span class="stamp stamp--blank">미확인</span>
+          <div style="margin-top:8px; font-weight:700;"><code>packages/deployer/Dockerfile</code></div>
+          <div style="font-size:0.83rem; color:var(--ink-soft); margin-top:4px;">요청 범위인 <code>src/*.ts</code>에 포함되지 않아 내용을 확인하지 않았다.</div>
+        </div>
+        <div style="border:1.5px dashed var(--ink-faint); border-radius:6px; padding:14px;">
+          <span class="stamp stamp--blank">미확인</span>
+          <div style="margin-top:8px; font-weight:700;"><code>packages/*/test/*.test.ts</code> 개별 케이스</div>
+          <div style="font-size:0.83rem; color:var(--ink-soft); margin-top:4px;">파일명만 확인했고, 각 테스트 케이스의 내용은 확인하지 않았다(테스트 총계·파일 목록은 <a href="08-테스트-결과-보고서.html">08 테스트 결과 보고서</a> 참고).</div>
+        </div>
+        <div style="border:1.5px dashed var(--ink-faint); border-radius:6px; padding:14px;">
+          <span class="stamp stamp--blank">미확인</span>
+          <div style="margin-top:8px; font-weight:700;"><code>templates/workflow.yml.tpl</code> 원문</div>
+          <div style="font-size:0.83rem; color:var(--ink-soft); margin-top:4px;">CI/GitHub Actions workflow 템플릿 자체는 요청 범위 밖이라 원문을 확인하지 않았다(토큰 치환 계약은 <a href="06-인터페이스-정의서.html">06 인터페이스 정의서</a> 참고).</div>
+        </div>
+      </div>
+      <details class="layer2">
+        <summary>기술 상세 — 출처</summary>
+        <div class="l2-body">
+          <p class="l2-source">출처: 03-상세-설계서.md §7 확인 안 되어 제외한 항목.</p>
+        </div>
+      </details>
+    </figure>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/03-상세-설계서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="02-아키텍처-설계서.html">← 02 아키텍처 설계서</a>
+        <a href="04-API-명세서.html">04 API 명세서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- swapContainer scrubber ---------- */
+  var steps = [
+    { n:"1", title:"① 잔존 -old 정리", old:{name:"hoster-app-old", state:"none"}, neu:{name:"—", state:"none"},
+      cap:"옆자리에 이전에 실패하고 남은 헌 설비가 있는지 먼저 확인해 치운다.",
+      code:"docker.stopAndRemove('hoster-app-old')  // 직전 롤백 실패 잔재 대비" },
+    { n:"2", title:"② 구 컨테이너 rename", old:{name:"hoster-app-old", state:"running"}, neu:{name:"—", state:"none"},
+      cap:"지금 돌아가는 설비에 “구(old)” 팻말을 새로 붙인다. 설비 자체는 그대로 켜진 채다.",
+      code:"rename('hoster-app' → 'hoster-app-old')  // renamed = true" },
+    { n:"3", title:"③ 구 컨테이너 stop", old:{name:"hoster-app-old", state:"stopped"}, neu:{name:"—", state:"none"},
+      cap:"옆으로 뺀 설비를 끈다 — 켜둔 채 두면 안내데스크(Traefik)가 헌 설비와 새 설비 둘 다에게 손님을 보낼 수 있다.",
+      code:"docker.stop('hoster-app-old')",
+      warn:"⚠ 이 stop() 호출은 반드시 catch로 보호되는 try 블록 안에 있어야 한다 (커밋 dfa8835)." },
+    { n:"4", title:"④ 신규 컨테이너 기동", old:{name:"hoster-app-old", state:"stopped"}, neu:{name:"hoster-app", state:"running"},
+      cap:"원래 자리(정식 이름)에 새 설비를 놓고 켠다.",
+      code:"docker.run({ name:'hoster-app', image, domain, containerPort, env })" },
+    { n:"5", title:"⑤ 헬스체크", old:{name:"hoster-app-old", state:"stopped"}, neu:{name:"hoster-app", state:"checking"},
+      cap:"새 설비에 정말 불이 들어오는지 확인한다(최대 60초, 1초 간격).",
+      code:"docker.healthCheck(url, 60000)" }
+  ];
+  var stepSuccess = { n:"6", title:"⑥ 성공 — old 완전 제거", old:{name:"hoster-app-old", state:"removed"}, neu:{name:"hoster-app", state:"running"},
+      cap:"불이 들어왔다 — 옆에 세워둔 헌 설비를 완전히 치운다.",
+      code:"docker.stopAndRemove('hoster-app-old')  →  { success: true }" };
+  var stepFail = { n:"7", title:"⑦ 실패 — 새것 제거 + 원복", old:{name:"hoster-app", state:"running"}, neu:{name:"hoster-app-old(제거됨)", state:"removed"},
+      cap:"불이 안 들어왔다 — 새 설비를 치우고, 헌 설비를 원래 이름으로 되돌린 뒤 반드시 다시 켠다.",
+      code:"stopAndRemove('hoster-app') → rename('hoster-app-old'→'hoster-app') → start('hoster-app')  →  { success:false, error:'health check failed' }",
+      warn:"⚠ rename만으로는 서비스가 복구되지 않는다 — ③에서 이미 꺼 뒀으므로 start()가 반드시 필요하다." };
+
+  var pos = 0; // 0..5 (5 = branch point)
+  var branchFail = false;
+
+  var dotsEl = document.getElementById('swap-dots');
+  var total = steps.length + 1; // 5 common + 1 branch position
+  for (var i=0;i<total;i++){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'dot'; b.textContent = (i+1);
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-label', '단계 ' + (i+1));
+    (function(idx){ b.addEventListener('click', function(){ pos = idx; render(); }); })(i);
+    dotsEl.appendChild(b);
+  }
+
+  var iconMarks = { none:'&mdash;', running:'&#9679;', stopped:'&#9632;', checking:'&#9678;', removed:'&#10005;' };
+  var iconColor = { none:'var(--ink-faint)', running:'var(--pass)', stopped:'var(--pending)', checking:'var(--accent)', removed:'var(--fail)' };
+  var stateLabel = { none:'없음', running:'실행 중', stopped:'정지', checking:'확인 중', removed:'제거됨' };
+
+  function fillSlot(prefix, data){
+    document.getElementById(prefix+'-name').textContent = data.name;
+    var st = document.getElementById(prefix+'-state');
+    st.textContent = stateLabel[data.state];
+    st.style.color = iconColor[data.state];
+    var icon = document.getElementById(prefix+'-icon');
+    icon.innerHTML = '<span style="font-size:28px; color:'+iconColor[data.state]+';" aria-hidden="true">'+iconMarks[data.state]+'</span>';
+  }
+
+  function render(){
+    var s;
+    if (pos < steps.length){ s = steps[pos]; }
+    else { s = branchFail ? stepFail : stepSuccess; }
+
+    fillSlot('slot-old', s.old);
+    fillSlot('slot-new', s.neu);
+    document.getElementById('swap-step-title').textContent = s.title;
+    document.getElementById('swap-step-cap').textContent = s.cap;
+    document.getElementById('swap-step-code').textContent = s.code;
+
+    var warnEl = document.getElementById('swap-step-warn');
+    if (s.warn){ warnEl.style.display='block'; warnEl.textContent = s.warn; }
+    else { warnEl.style.display='none'; }
+
+    var dots = dotsEl.querySelectorAll('.dot');
+    for (var i=0;i<dots.length;i++){
+      dots[i].classList.toggle('active', i===pos);
+      dots[i].setAttribute('aria-selected', i===pos ? 'true':'false');
+    }
+    document.getElementById('swap-prev').disabled = (pos===0);
+    document.getElementById('swap-next').disabled = (pos===total-1);
+
+    var toggleBtn = document.getElementById('swap-branch-toggle');
+    toggleBtn.setAttribute('aria-pressed', branchFail ? 'true':'false');
+    document.getElementById('swap-branch-label').textContent = branchFail ? '실패(healthCheck 미통과)' : '성공(healthCheck 통과)';
+    toggleBtn.style.opacity = (pos===total-1) ? '1' : '0.55';
+  }
+
+  document.getElementById('swap-prev').addEventListener('click', function(){ if(pos>0){ pos--; render(); } });
+  document.getElementById('swap-next').addEventListener('click', function(){ if(pos<total-1){ pos++; render(); } });
+  document.getElementById('swap-branch-toggle').addEventListener('click', function(){
+    branchFail = !branchFail;
+    if (pos !== total-1){ pos = total-1; }
+    render();
+  });
+
+  render();
+
+  /* ---------- healthCheck timeline ticks (decorative fill, non-essential) ---------- */
+  var ticksG = document.getElementById('ticks');
+  if (ticksG){
+    for (var t=0; t<=12; t++){
+      var x = 20 + t*70;
+      if (x > 800) break;
+      var tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+      tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+      tick.setAttribute('y1', 66); tick.setAttribute('y2', 74);
+      tick.setAttribute('stroke', '#c9b98d'); tick.setAttribute('stroke-width','1');
+      ticksG.appendChild(tick);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

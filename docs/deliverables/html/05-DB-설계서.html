@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05. DB 설계서 — hoster 산출물</title>
+<style>
+  :root{
+    --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+    --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+    --rule:#c7bb9c; --rule-soft:#ded1ac; --rule-strong:#a89877;
+    --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+    --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+    --state-success:#2f5233; --state-success-bg:#e2e9df;
+    --state-failed:#b83a1f;  --state-failed-bg:#f2e0d8;
+    --state-pending:#8b8577; --state-pending-bg:#e6e2d6;
+    --state-rolledback:#8a5a2c; --state-rolledback-bg:#ecdfcb;
+    --state-skipped:#aca493; --state-skipped-bg:#eae5da;
+    --accent:#5b4530; --accent-ink:#3c2d1e; --accent-soft:#e6dcc9; --accent-line:#5b4530;
+    --ff-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --ff-title: "AppleMyungjo", "Apple SD Gothic Neo", "Batang", "New Batang", "Noto Serif KR", serif;
+    --ff-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "D2Coding", monospace;
+    --fs-doctitle: clamp(1.7rem, 1.35rem + 1.4vw, 2.3rem);
+    --fs-section: clamp(1.2rem, 1.05rem + .6vw, 1.5rem);
+    --fs-sub: 1.08rem;
+    --fs-body: 1rem;
+    --fs-caption: .8125rem;
+    --fs-code: .875rem;
+    --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2rem; --sp-7:3rem; --sp-8:4rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--ff-body);
+    font-size:var(--fs-body); line-height:1.62; overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-attachment:local;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 var(--sp-5);}
+  a{color:var(--accent-ink)}
+  h1,h2,h3,h4{font-family:var(--ff-title); font-weight:700; margin:0 0 var(--sp-3); color:var(--ink)}
+  p{margin:0 0 var(--sp-4); overflow-wrap:break-word;}
+  code, pre, .mono{font-family:var(--ff-mono)}
+  code{overflow-wrap:break-word;}
+  svg text{font-family:var(--ff-body)}
+
+  /* ---------- 헤더 + 색인 탭 (시리즈 공통 — 08~10/index와 동일) ---------- */
+  .site-header{
+    position:sticky;top:0;z-index:100;
+    background:var(--paper);
+    border-bottom:2px solid var(--ink);
+  }
+  .header-top{
+    max-width:1180px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+    padding:var(--sp-4) var(--sp-5) var(--sp-2);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:var(--sp-3);}
+  .brand-mark{
+    width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-family:var(--ff-title);
+    font-size:1.1rem;flex:none;
+  }
+  .brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+  .brand-title{margin:0;font-size:1.15rem;}
+  .doc-meta-chip{
+    margin:0;font-size:var(--fs-caption);color:var(--ink-soft);
+    border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);
+    white-space:nowrap;
+  }
+  .index-tabs{
+    max-width:1180px;margin:0 auto;
+    display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;
+    scrollbar-width:thin;
+  }
+  .tab{
+    --tab-ac:var(--ink);
+    flex:none;
+    font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);
+    padding:var(--sp-2) var(--sp-3) var(--sp-2);
+    background:var(--paper-deep);
+    border:1px solid var(--rule-strong);border-bottom:none;
+    clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);
+    transform:translateY(3px);
+    transition:transform .12s ease;
+    white-space:nowrap;
+  }
+  .tab:hover{transform:translateY(0);color:var(--ink);}
+  .tab--current{
+    background:var(--paper);
+    color:var(--ink);
+    border-color:var(--ink);
+    border-bottom:3px solid var(--tab-ac);
+    transform:translateY(0);
+    font-weight:800;
+  }
+  .tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+  /* ---------- hero / meta ---------- */
+  .doc-hero{padding:var(--sp-6) 0 var(--sp-5); border-bottom:1px dashed var(--rule);}
+  .doc-kicker{font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; margin-bottom:6px;}
+  .doc-title{font-size:var(--fs-doctitle); margin-bottom:var(--sp-2); line-height:1.25;}
+  .doc-anchor{font-size:var(--fs-sub); color:var(--ink-soft); max-width:64ch; margin-bottom:var(--sp-3)}
+  .meta-line{font-size:var(--fs-caption); color:var(--ink-faint); border-top:1px solid var(--rule-soft); padding-top:var(--sp-2); display:flex; flex-wrap:wrap; gap:4px 14px;}
+  .meta-line code{color:var(--ink-soft)}
+
+  /* ---------- locator ---------- */
+  .locator{display:flex; gap:var(--sp-5); align-items:center; flex-wrap:wrap; margin:var(--sp-5) 0; padding:var(--sp-4); background:var(--paper-card); border:1px solid var(--rule); border-radius:4px;}
+  .locator__map{flex:0 0 auto; width:min(320px,100%);}
+  .locator__cap{flex:1 1 240px; font-size:var(--fs-caption); color:var(--ink-soft);}
+  .locator__cap strong{color:var(--ink); font-family:var(--ff-title)}
+
+  /* ---------- sections ---------- */
+  main{padding-bottom:var(--sp-8)}
+  section.doc-section{padding:var(--sp-7) 0; border-bottom:1px dashed var(--rule-soft);}
+  section.doc-section:last-of-type{border-bottom:none}
+  .section-num{display:inline-block; font-family:var(--ff-mono); font-size:var(--fs-caption); color:var(--paper); background:var(--ink); padding:2px 7px; border-radius:2px; margin-right:8px; vertical-align:2px;}
+  .section-title{font-size:var(--fs-section);}
+  .lede{font-size:var(--fs-sub); color:var(--ink-soft); max-width:70ch; margin-bottom:var(--sp-5); position:relative; padding-left:16px; border-left:3px solid var(--accent);}
+  .lede b{color:var(--ink)}
+
+  .gloss{border-bottom:1px dotted var(--ink-faint); cursor:help;}
+  .gloss-note{display:inline; font-size:.94em; color:var(--ink-soft); background:var(--accent-soft); padding:1px 6px; border-radius:3px; margin:0 2px;}
+
+  details.layer2{margin-top:var(--sp-4); border:1px solid var(--rule); border-radius:4px; background:var(--paper-card);}
+  details.layer2>summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:var(--fs-caption); font-weight:700; color:var(--accent-ink); display:flex; align-items:center; gap:8px; user-select:none;}
+  details.layer2>summary::-webkit-details-marker{display:none}
+  details.layer2>summary:before{content:"▸"; display:inline-block; transition:transform .15s;}
+  details.layer2[open]>summary:before{transform:rotate(90deg);}
+  details.layer2>summary .layer2-label{text-transform:uppercase; letter-spacing:.05em; font-size:.72rem; color:var(--ink-faint); font-weight:700;}
+  .layer2-body{padding:0 16px 16px; font-size:.94rem; color:var(--ink-soft);}
+  .layer2-body table{margin-top:6px}
+  .layer2-body code{background:var(--paper-deep); padding:1px 5px; border-radius:3px; color:var(--ink)}
+  .cite{display:inline-block; font-family:var(--ff-mono); font-size:.72rem; color:var(--ink-faint); background:var(--paper-deep); padding:1px 6px; border-radius:3px; margin-top:6px;}
+
+  table{border-collapse:collapse; width:100%; font-size:.92rem;}
+  caption{caption-side:top; text-align:left; font-size:var(--fs-caption); color:var(--ink-faint); margin-bottom:4px; font-style:normal;}
+  th,td{border:1px solid var(--rule); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--paper-deep); font-weight:700; font-size:.85rem;}
+  .table-scroll{overflow-x:auto; border-radius:4px;}
+
+  .chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--ff-mono); font-size:.78rem; background:var(--paper); border:1px solid var(--ink-soft); border-radius:3px; padding:3px 8px; color:var(--ink);}
+  .stamp{display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:.78rem; padding:4px 10px; border-radius:3px; letter-spacing:.02em; white-space:nowrap;}
+  .stamp--pass{color:var(--state-success); background:var(--state-success-bg); border:2px double var(--state-success);}
+  .stamp--reject{color:var(--state-failed); background:var(--state-failed-bg); border:2px double var(--state-failed);}
+  .stamp--pending{color:var(--state-pending); background:var(--state-pending-bg); border:2px dashed var(--state-pending);}
+  .stamp--skipped{color:var(--state-skipped); background:var(--state-skipped-bg); border:2px dashed var(--state-skipped); text-decoration:line-through;}
+  .stamp--rolledback{color:var(--state-rolledback); background:var(--state-rolledback-bg); border:2px double var(--state-rolledback);}
+  .stamp--info{color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent);}
+
+  .panel{background:var(--paper-card); border:1px solid var(--rule); border-radius:4px; padding:var(--sp-4);}
+  .code-panel{background:#efe6cf; border:1px solid var(--rule); border-radius:4px; padding:var(--sp-4); position:relative;}
+  .code-panel pre{margin:0; font-size:var(--fs-code); line-height:1.55; overflow-x:auto; color:var(--ink);}
+
+  .diagram-wrap{overflow-x:auto; overflow-y:visible; padding:4px 2px 10px;}
+  .diagram-wrap svg{display:block; min-width:560px; width:100%; height:auto;}
+  figcaption{font-size:var(--fs-caption); color:var(--ink-faint); margin-top:6px;}
+
+  /* ---------- ledger spread (signature) ---------- */
+  .ledger{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:0; border:3px double var(--ink); background:var(--paper); border-radius:4px; overflow:visible;}
+  .ledger__page{padding:var(--sp-4) var(--sp-5); position:relative;}
+  .ledger__page + .ledger__page{border-left:2px dashed var(--rule);}
+  .ledger__page h3{font-size:1rem; margin-bottom:2px;}
+  .ledger__page .sub{font-size:.76rem; color:var(--ink-faint); margin-bottom:10px; font-family:var(--ff-mono);}
+  .ledger__row{display:grid; grid-template-columns:120px 1fr; gap:8px; padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:.84rem; align-items:baseline;}
+  .ledger__row .col{font-family:var(--ff-mono); color:var(--ink-faint); font-size:.72rem;}
+  .ledger__row .val{color:var(--ink);}
+  .ledger__row.linkfield{background:var(--accent-soft);}
+  .ledger__row.orphan{background:var(--state-failed-bg); outline:2px dashed var(--state-failed); outline-offset:-2px;}
+  .ledger__row.removed .val{text-decoration:line-through; color:var(--ink-faint);}
+  .ledger-controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:var(--sp-4);}
+  .ledger-btn{font-size:.82rem; padding:7px 14px; border:1.5px solid var(--ink); background:var(--paper-card); border-radius:4px; cursor:pointer; font-weight:700; color:var(--ink);}
+  .ledger-btn[aria-pressed="true"]{background:var(--ink); color:var(--paper);}
+  .thread-svg{position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:visible;}
+
+  .not-said-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--sp-3); margin-top:var(--sp-4);}
+  .not-said{border:2px dashed var(--ink-faint); border-radius:6px; padding:var(--sp-3); background:var(--paper);}
+  .not-said .stampmark{display:block; font-family:var(--ff-title); font-size:.72rem; color:var(--ink-faint); letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px;}
+  .not-said p{margin:0; font-size:.88rem; color:var(--ink-soft);}
+
+  /* ---------- access matrix ---------- */
+  .access-matrix{width:100%; border-collapse:collapse; font-size:.86rem;}
+  .access-matrix th, .access-matrix td{border:1px solid var(--rule); padding:8px; text-align:center;}
+  .access-matrix th{background:var(--paper-deep);}
+  .access-matrix td:first-child, .access-matrix th:first-child{text-align:left; font-family:var(--ff-mono); font-size:.8rem;}
+  .sym{font-weight:800; font-size:1rem;}
+  .sym.w{color:var(--state-failed)}
+  .sym.r{color:var(--accent-ink)}
+  .sym.none{color:var(--ink-faint)}
+
+  /* ---------- state graph ---------- */
+  .scenario-btns{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:var(--sp-4);}
+  .scenario-btn{font-size:.8rem; padding:7px 12px; border:1.5px solid var(--ink-soft); background:var(--paper-card); border-radius:4px; cursor:pointer;}
+  .scenario-btn[aria-pressed="true"]{background:var(--accent); color:var(--paper); border-color:var(--accent);}
+  .sg-caption{font-size:.88rem; color:var(--ink-soft); margin-top:8px; min-height:1.4em;}
+
+  /* ---------- 푸터 (시리즈 공통) ---------- */
+  .site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+  .footer-inner{max-width:1180px;margin:0 auto;}
+  .footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+  .footer-prevnext{display:flex;gap:var(--sp-4);}
+  .footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+  .footer-source{margin-top:var(--sp-3);font-family:var(--ff-mono);font-size:0.76rem;color:var(--ink-faint);}
+  .footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+  @media (max-width:640px){
+    .wrap{padding:0 var(--sp-4)}
+    .ledger{grid-template-columns:1fr}
+    .ledger__page + .ledger__page{border-left:none; border-top:2px dashed var(--rule);}
+    .access-matrix{font-size:.76rem}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">05 · DB 설계서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <div class="doc-kicker">관리사무소 장부실 · 장부 세피아</div>
+    <h1 class="doc-title">05. DB 설계서</h1>
+    <p class="doc-anchor"><b>세대 대장과 배송 일지</b> — 관리사무소 장부실에는 장부가 두 권 있다. 왼쪽은 <b>세대 대장</b>(<code>projects</code>), 오른쪽은 <b>배송 일지</b>(<code>deployments</code>)다. 두 장부는 같은 이름을 적지만, <b>서로 실로 묶여 있지 않다</b> — 세대를 지워도 배송 일지는 그대로 남는다.</p>
+    <div class="meta-line">
+      <span>대상: <code>packages/deployer</code> (StateStore, <code>src/store.ts</code>)</span>
+      <span>버전 1.0</span>
+      <span>작성일 2026-08-13</span>
+      <span>원문: <code>docs/deliverables/05-DB-설계서.md</code></span>
+    </div>
+
+    <div class="locator">
+      <svg class="locator__map" viewBox="0 0 320 170" role="img" aria-labelledby="locatorTitle05">
+        <title id="locatorTitle05">단지 배치도 축약판 — 관리사무소 장부실 강조</title>
+        <rect x="0" y="0" width="320" height="170" fill="#efe6cf" rx="4"/>
+        <rect x="8" y="70" width="26" height="30" fill="none" stroke="#8b8271" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="21" y="112" font-size="8" fill="#8b8271" text-anchor="middle">정문·잠김</text>
+        <text x="21" y="24" font-size="8" fill="#8b8271" text-anchor="middle">외부</text>
+        <path d="M40 40 C 90 10, 150 10, 190 34" fill="none" stroke="#8b8271" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="110" y="16" font-size="8" fill="#8b8271" text-anchor="middle">후문 전용 통로(터널)</text>
+        <rect x="188" y="30" width="46" height="30" fill="#e7ddc3" stroke="#8b8577" stroke-width="1.5" rx="3"/>
+        <text x="211" y="49" font-size="8" fill="#4a4038" text-anchor="middle">경비실</text>
+        <rect x="188" y="78" width="110" height="70" fill="#e7ddc3" stroke="#8b8577" stroke-width="1.5" rx="4" opacity=".5"/>
+        <text x="243" y="94" font-size="9" fill="#8b8577" text-anchor="middle" opacity=".85">관리사무소</text>
+        <rect x="198" y="116" width="90" height="24" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" rx="2"/>
+        <text x="243" y="131" font-size="7.2" fill="var(--accent-ink)" text-anchor="middle" font-weight="700">장부실(DB) ← 지금 여기</text>
+        <rect x="60" y="78" width="100" height="70" fill="#e7ddc3" stroke="#8b8577" stroke-width="1.2" rx="3" opacity=".4"/>
+        <text x="110" y="116" font-size="8" fill="#8b8271" text-anchor="middle" opacity=".7">각 동(앱 컨테이너)</text>
+      </svg>
+      <div class="locator__cap"><strong>지금 보고 있는 곳:</strong> 단지 배치도(02번 문서 자산의 축약판) 위에서, 이 문서는 관리사무소 안쪽의 <strong>장부실</strong> — deployer의 SQLite 상태 저장소를 다룬다. 창구에서 접수한 서식이 여기 장부에 어떻게 기록되는지가 이 문서의 범위다.</div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ================= 시그니처: 두 권의 장부 펼침면 ================= -->
+  <section class="doc-section" id="ledgerspread">
+    <h2 class="section-title"><span class="section-num">시그니처</span>두 권의 장부 펼침면</h2>
+    <p class="lede"><b>1층.</b> 왼쪽 페이지는 <b>세대 대장</b>, 오른쪽 페이지는 <b>배송 일지</b>다. 가운데 노란 줄로 표시된 "이름" 칸이 서로 같은 값을 적긴 하지만, <b>실로 꿰매어 묶여 있지는 않다</b> — 관리사무소가 세대 카드를 파기해도 배송 일지의 옛 기록은 그대로 남는다. 아래 버튼으로 세대를 지워 보면, 실제로 무슨 일이 일어나는지 확인할 수 있다.</p>
+
+    <div class="ledger-controls">
+      <button class="ledger-btn" id="orphanBtn" type="button" aria-pressed="false">세대 삭제 시뮬레이션 실행</button>
+      <button class="ledger-btn" id="orphanResetBtn" type="button">되돌리기</button>
+      <span class="sg-caption" id="orphanCaption">지금은 정상 상태 — 두 장부 모두 <code>my-app</code>을 기록하고 있다.</span>
+    </div>
+
+    <div class="ledger" id="ledgerRoot">
+      <div class="ledger__page">
+        <h3>세대 대장 <span style="font-weight:400;color:var(--ink-faint);font-size:.8rem">projects</span></h3>
+        <div class="sub">8 columns · <span class="gloss" tabindex="0">PK<span class="gloss-note">장부에서 그 줄을 유일하게 찾아낼 수 있는 대표 번호/이름 칸</span></span> = name</div>
+        <div class="ledger__row linkfield" id="row-name"><span class="col">name (PK)</span><span class="val" id="val-name">my-app</span></div>
+        <div class="ledger__row"><span class="col">image_repo</span><span class="val">ghcr.io/owner/my-app</span></div>
+        <div class="ledger__row"><span class="col">domain</span><span class="val">my-app.example.com</span></div>
+        <div class="ledger__row"><span class="col">branch</span><span class="val">main</span></div>
+        <div class="ledger__row"><span class="col">health_path</span><span class="val">/</span></div>
+        <div class="ledger__row"><span class="col">container_port</span><span class="val">3000</span></div>
+        <div class="ledger__row"><span class="col">current_image</span><span class="val">ghcr.io/…:abc1234</span></div>
+        <div class="ledger__row"><span class="col">previous_image</span><span class="val">NULL</span></div>
+      </div>
+      <div class="ledger__page">
+        <h3>배송 일지 <span style="font-weight:400;color:var(--ink-faint);font-size:.8rem">deployments</span></h3>
+        <div class="sub">7 columns · PK = id (<span class="gloss" tabindex="0">AUTOINCREMENT<span class="gloss-note">새 줄을 적을 때마다 번호표가 자동으로 하나씩 올라가는 방식</span></span>)</div>
+        <div class="ledger__row"><span class="col">id (PK)</span><span class="val">3</span></div>
+        <div class="ledger__row linkfield" id="row-project"><span class="col">project</span><span class="val" id="val-project">my-app</span></div>
+        <div class="ledger__row"><span class="col">image</span><span class="val">ghcr.io/…:abc1234</span></div>
+        <div class="ledger__row"><span class="col">sha</span><span class="val">abc1234…</span></div>
+        <div class="ledger__row"><span class="col">status</span><span class="val">success</span></div>
+        <div class="ledger__row"><span class="col">error</span><span class="val">NULL</span></div>
+        <div class="ledger__row"><span class="col">created_at</span><span class="val">2026-08-13 04:00:00</span></div>
+      </div>
+      <svg class="thread-svg" id="threadSvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+    <figcaption>노란 칸(<code>projects.name</code> ↔ <code>deployments.project</code>)을 잇는 실은 <b>끊긴 실선</b>으로 그려져 있다 — <span class="gloss" tabindex="0">FK(FOREIGN KEY)<span class="gloss-note">다른 장부의 어느 줄을 가리키는지 표시해 두 장부를 묶어주는 실</span></span>가 없다는 뜻. "세대 삭제 시뮬레이션"을 누르면 왼쪽 카드가 지워져도 오른쪽 일지는 그대로 남아 <span class="gloss" tabindex="0">고아 행<span class="gloss-note">그 줄이 가리키던 세대가 이미 지워졌는데도 장부에 그대로 남아있는 줄</span></span>이 되는 것을 볼 수 있다.</figcaption>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>CREATE TABLE 원문과 컬럼 명세</summary>
+      <div class="layer2-body">
+        <p><span class="gloss" tabindex="0">SQLite<span class="gloss-note">관리사무소 캐비닛 속 종이 장부 파일 하나로 끝나는, 별도 서버가 필요 없는 가벼운 장부 시스템</span></span> 위에 <code>better-sqlite3</code>(^11.5.0) 드라이버로 접근한다. <span class="gloss" tabindex="0">저널 모드는 WAL<span class="gloss-note">장부에 바로 지우고 쓰는 대신, 옆 임시 메모장(저널)에 먼저 적어 두었다가 나중에 정리하는 안전한 기록 방식</span></span>(<code>this.db.pragma('journal_mode = WAL')</code>). <code>current_image</code>/<code>previous_image</code>는 <code>upsertProject</code>(같은 이름이 있으면 고쳐 쓰고 없으면 새로 만드는 <span class="gloss" tabindex="0">upsert<span class="gloss-note">이미 있는 세대 카드면 내용을 고쳐 쓰고, 없으면 새로 만드는 접수 방식 — <code>ON CONFLICT DO UPDATE</code></span></span> 동작)가 건드리지 않고 오직 <code>setImages</code>로만 갱신된다 — 최초 상태는 둘 다 NULL.</p>
+        <div class="table-scroll">
+          <table>
+            <caption>projects 8컬럼</caption>
+            <thead><tr><th>컬럼</th><th>타입/제약</th><th>의미</th></tr></thead>
+            <tbody>
+              <tr><td>name</td><td>TEXT PK</td><td>PROJECT_NAME_RE 준수(04번 문서 검증)</td></tr>
+              <tr><td>image_repo</td><td>TEXT NOT NULL</td><td>이미지 저장소 경로 (예: ghcr.io/owner/repo)</td></tr>
+              <tr><td>domain</td><td>TEXT NOT NULL</td><td>Traefik Host 규칙 도메인</td></tr>
+              <tr><td>branch</td><td>TEXT NOT NULL</td><td>미지정 시 기본 'main'</td></tr>
+              <tr><td>health_path</td><td>TEXT NOT NULL</td><td>미지정 시 기본 '/'</td></tr>
+              <tr><td>container_port</td><td>INTEGER NOT NULL</td><td>미지정 시 기본 3000</td></tr>
+              <tr><td>current_image</td><td>TEXT NULL 허용</td><td>최초 NULL, setImages로만 갱신</td></tr>
+              <tr><td>previous_image</td><td>TEXT NULL 허용</td><td>최초 NULL, 롤백 대상</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: packages/deployer/src/store.ts:1,20-33 · 05-DB-설계서.md § 2~3</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 1. FK 없음 3가지 결과 — 호출순서 비대칭 ================= -->
+  <section class="doc-section" id="asymmetry">
+    <h2 class="section-title"><span class="section-num">1</span>FK 없음이 낳는 결과 — 호출 순서 비대칭 도해</h2>
+    <p class="lede"><b>1층.</b> "배송 접수(deploy)"와 "반송 접수(rollback)"는 같은 일을 반대 순서로 한다. 배송은 <b>일지부터 적고</b> 나중에 세대를 확인하고, 반송은 <b>세대부터 확인하고</b> 나중에 일지를 적는다. 그래서 등록 안 된 세대로 배송을 시도하면 일지엔 기록이 남지만, 반송을 시도하면 아예 일지에 흔적조차 남지 않는다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 260" role="img" aria-labelledby="asymTitle">
+        <title id="asymTitle">deploy 경로와 rollback 경로의 호출 순서 비대칭</title>
+
+        <text x="20" y="26" font-size="11.5" fill="var(--ink)" font-weight="700">POST /deploy (execute)</text>
+        <rect x="20" y="40" width="270" height="34" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="155" y="61" text-anchor="middle" font-size="10.5" fill="var(--accent-ink)">① recordDeployment(req) — INSERT pending</text>
+        <line x1="155" y1="74" x2="155" y2="92" stroke="var(--ink)" stroke-width="2" marker-end="url(#a05m)"/>
+        <rect x="20" y="94" width="270" height="34" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.5"/>
+        <text x="155" y="115" text-anchor="middle" font-size="10.5">② getProject(project) — 존재 확인</text>
+        <line x1="155" y1="128" x2="155" y2="146" stroke="var(--ink)" stroke-width="2" marker-end="url(#a05m)"/>
+        <rect x="20" y="148" width="270" height="46" rx="4" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="1.5"/>
+        <text x="155" y="167" text-anchor="middle" font-size="10" fill="var(--state-failed)" font-weight="700">미등록이면 → 'unknown project'</text>
+        <text x="155" y="181" text-anchor="middle" font-size="9.5" fill="var(--state-failed)">deployments 행은 이미 만들어진 뒤(①) failed로 업데이트</text>
+
+        <text x="700" y="26" text-anchor="end" font-size="11.5" fill="var(--ink)" font-weight="700">POST /rollback (doRollback)</text>
+        <rect x="410" y="40" width="270" height="34" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.5"/>
+        <text x="545" y="61" text-anchor="middle" font-size="10.5">① getProject(project) — 존재 확인</text>
+        <line x1="545" y1="74" x2="545" y2="92" stroke="var(--ink)" stroke-width="2" marker-end="url(#a05m)"/>
+        <rect x="410" y="94" width="270" height="46" rx="4" fill="var(--state-pending-bg)" stroke="var(--state-pending)" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="545" y="113" text-anchor="middle" font-size="10" fill="var(--state-pending)" font-weight="700">미등록이면 → 여기서 종료</text>
+        <text x="545" y="127" text-anchor="middle" font-size="9.5" fill="var(--state-pending)">deployments 행 자체가 생성되지 않음</text>
+        <line x1="545" y1="140" x2="545" y2="158" stroke="var(--ink)" stroke-width="2" marker-end="url(#a05m)" opacity=".55"/>
+        <rect x="410" y="160" width="270" height="34" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" opacity=".85"/>
+        <text x="545" y="181" text-anchor="middle" font-size="10.5" fill="var(--accent-ink)">② recordDeployment(req) — INSERT pending</text>
+
+        <path d="M292 57 C 350 30, 360 30, 408 57" fill="none" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#a05m2)"/>
+        <rect x="325" y="18" width="70" height="20" rx="10" fill="var(--paper)" stroke="var(--ink-faint)"/>
+        <text x="360" y="32" text-anchor="middle" font-size="8.5" fill="var(--ink-soft)">순서가 뒤바뀜</text>
+
+        <text x="20" y="222" font-size="10" fill="var(--ink-soft)">→ deploy: 기록이 먼저, 확인이 나중(형식만 맞으면 일단 장부에 흔적이 남는다)</text>
+        <text x="410" y="222" font-size="10" fill="var(--ink-soft)">→ rollback: 확인이 먼저, 기록이 나중(없는 세대는 흔적조차 안 남긴다)</text>
+
+        <defs>
+          <marker id="a05m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+          <marker id="a05m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>FK 부재가 낳는 3가지 실제 결과</summary>
+      <div class="layer2-body">
+        <ol style="margin:0; padding-left:18px;">
+          <li>프로젝트를 지워도 배포 이력은 <span class="gloss" tabindex="0">고아 행<span class="gloss-note">그 줄이 가리키던 세대가 이미 지워졌는데도 장부에 그대로 남아있는 줄</span></span>으로 남는다(<code>removeProject</code>는 <code>DELETE FROM projects</code>만 실행, <code>deployments</code>는 손대지 않음).</li>
+          <li>deploy 경로는 미등록 프로젝트로도 <code>deployments</code> 행이 먼저 생긴 뒤 실패 처리된다 — <code>execute()</code>가 <code>recordDeployment</code>(orchestrator.ts:113)를 <code>getProject</code> 확인(:114-115)보다 먼저 호출.</li>
+          <li>rollback 경로는 반대라 행 자체가 안 생긴다 — <code>doRollback()</code>은 <code>getProject</code> 확인(:139-141)이 <code>recordDeployment</code>(:143)보다 먼저.</li>
+        </ol>
+        <p style="margin-top:10px"><code>deployments.project</code>는 TEXT이며 <span class="gloss" tabindex="0">FK<span class="gloss-note">다른 장부의 어느 줄을 가리키는지 표시해 두 장부를 묶어주는 실</span></span>(FOREIGN KEY) 절이 CREATE TABLE 원문에 없다 — 참조 무결성이 DB 레벨에서 보장되지 않는다.</p>
+        <span class="cite">근거: packages/deployer/src/orchestrator.ts:113-115,139-143 · src/store.ts:57</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 2. 상태 전이 그래프 ================= -->
+  <section class="doc-section" id="stategraph">
+    <h2 class="section-title"><span class="section-num">2</span><code>deployments.status</code> 상태 전이</h2>
+    <p class="lede"><b>1층.</b> 일지의 한 줄은 항상 "대기(pending)"로 시작해서, 딱 한 번 다른 도장으로 바뀌고 멈춘다 — 성공, 실패, 또는 롤백 완료. 자기 자신으로 되돌아오는 화살표는 없다. 아래 시나리오 버튼을 누르면 점이 실제로 그 경로를 따라 움직인다.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:var(--sp-4)">
+      <span class="stamp stamp--pending">대기 · pending</span>
+      <span class="stamp stamp--pass">성공 · success</span>
+      <span class="stamp stamp--reject">실패 · failed</span>
+      <span class="stamp stamp--rolledback">롤백 완료 · rolled_back</span>
+    </div>
+    <p style="font-size:.82rem; color:var(--ink-faint); margin-top:-8px; margin-bottom:var(--sp-4)">이 네 도장의 색은 시리즈 전역에서 의미가 고정되어 있다 — 다른 9개 문서에서도 같은 색은 항상 같은 뜻이다(§3.0 공통 상태 색).</p>
+
+    <div class="scenario-btns" role="group" aria-label="상태 전이 시나리오 선택">
+      <button class="scenario-btn" data-sc="1" type="button">① 정상 배포</button>
+      <button class="scenario-btn" data-sc="2" type="button">② 배포 중 헬스체크 실패</button>
+      <button class="scenario-btn" data-sc="3" type="button">③ 배포 중 예외 발생</button>
+      <button class="scenario-btn" data-sc="4" type="button">④ 롤백 성공</button>
+      <button class="scenario-btn" data-sc="5" type="button">⑤ 롤백 중 헬스체크 실패</button>
+      <button class="scenario-btn" data-sc="6" type="button">⑥ 롤백 중 예외 발생</button>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 620 300" role="img" aria-labelledby="sgTitle" id="stateGraphSvg">
+        <title id="sgTitle">pending에서 success/failed/rolled_back으로의 상태 전이</title>
+
+        <!-- nodes drawn FIRST so connectors + arrowheads can overlay them cleanly (Part C draw-order rule) -->
+        <circle cx="90" cy="150" r="34" fill="var(--state-pending-bg)" stroke="var(--state-pending)" stroke-width="2.5"/>
+        <text x="90" y="146" text-anchor="middle" font-size="10.5" fill="var(--state-pending)" font-weight="700">pending</text>
+        <text x="90" y="159" text-anchor="middle" font-size="8" fill="var(--state-pending)">(시작)</text>
+
+        <circle cx="490" cy="60" r="36" fill="var(--state-success-bg)" stroke="var(--state-success)" stroke-width="2.5"/>
+        <text x="490" y="56" text-anchor="middle" font-size="10.5" fill="var(--state-success)" font-weight="700">success</text>
+
+        <circle cx="490" cy="165" r="36" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="2.5"/>
+        <text x="490" y="161" text-anchor="middle" font-size="10.5" fill="var(--state-failed)" font-weight="700">failed</text>
+
+        <circle cx="490" cy="245" r="36" fill="var(--state-rolledback-bg)" stroke="var(--state-rolledback)" stroke-width="2.5"/>
+        <text x="490" y="238" text-anchor="middle" font-size="9.5" fill="var(--state-rolledback)" font-weight="700">rolled</text>
+        <text x="490" y="251" text-anchor="middle" font-size="9.5" fill="var(--state-rolledback)" font-weight="700">_back</text>
+
+        <!-- connector paths + arrowheads drawn AFTER nodes, in an overlay group, so the arrowhead always reaches and is visible at the node edge -->
+        <g id="edgeOverlay">
+          <path id="p1" d="M116 138 C 260 60, 320 60, 450 62"  fill="none" stroke="var(--rule)" stroke-width="2" marker-end="url(#sgArrow)"/>
+          <path id="p2" d="M118 158 C 260 140, 320 122, 452 143" fill="none" stroke="var(--rule)" stroke-width="2" marker-end="url(#sgArrow)"/>
+          <path id="p3" d="M112 168 C 220 195, 320 172, 451 152" fill="none" stroke="var(--rule)" stroke-width="2" marker-end="url(#sgArrow)"/>
+          <path id="p4" d="M116 172 C 260 250, 320 250, 452 236" fill="none" stroke="var(--rule)" stroke-width="2" marker-end="url(#sgArrow)"/>
+          <path id="p5" d="M110 176 C 220 205, 340 195, 452 158" fill="none" stroke="var(--rule)" stroke-width="2" marker-end="url(#sgArrow)"/>
+          <path id="p6" d="M108 182 C 220 215, 340 215, 452 168" fill="none" stroke="var(--rule)" stroke-width="2" marker-end="url(#sgArrow)"/>
+        </g>
+
+        <defs>
+          <marker id="sgArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/>
+          </marker>
+        </defs>
+
+        <!-- numbered chips at path midpoints -->
+        <g id="chip1"><circle cx="285" cy="75" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/><text x="285" y="79" text-anchor="middle" font-size="9" font-weight="700">①</text></g>
+        <g id="chip2"><circle cx="285" cy="132" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/><text x="285" y="136" text-anchor="middle" font-size="9" font-weight="700">②</text></g>
+        <g id="chip3"><circle cx="270" cy="182" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/><text x="270" y="186" text-anchor="middle" font-size="9" font-weight="700">③</text></g>
+        <g id="chip4"><circle cx="285" cy="248" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/><text x="285" y="252" text-anchor="middle" font-size="9" font-weight="700">④</text></g>
+        <g id="chip5"><circle cx="270" cy="200" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/><text x="270" y="204" text-anchor="middle" font-size="9" font-weight="700">⑤</text></g>
+        <g id="chip6"><circle cx="270" cy="215" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/><text x="270" y="219" text-anchor="middle" font-size="9" font-weight="700">⑥</text></g>
+
+        <!-- moving dot -->
+        <circle id="movingDot" cx="90" cy="150" r="7" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.5" style="transition:cx .8s ease, cy .8s ease;"/>
+      </svg>
+    </div>
+    <p class="sg-caption" id="sgCaption">시나리오를 선택하면 점이 pending에서 실제 도착 상태까지 이동한다.</p>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>전이 표 (호출 지점 원문)</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>전이</th><th>호출 지점</th><th>조건</th></tr></thead>
+            <tbody>
+              <tr><td>①</td><td>pending → success</td><td>orchestrator.ts:127 (execute())</td><td>swapContainer 성공</td></tr>
+              <tr><td>②</td><td>pending → failed</td><td>orchestrator.ts:119 (execute())</td><td>swapContainer 실패</td></tr>
+              <tr><td>③</td><td>pending → failed</td><td>orchestrator.ts:131 (execute() catch)</td><td>try 블록 내 예외(예: docker.pull 실패)</td></tr>
+              <tr><td>④</td><td>pending → rolled_back</td><td>orchestrator.ts:150 (doRollback())</td><td>swapContainer 성공</td></tr>
+              <tr><td>⑤</td><td>pending → failed</td><td>orchestrator.ts:146 (doRollback())</td><td>swapContainer 실패</td></tr>
+              <tr><td>⑥</td><td>pending → failed</td><td>orchestrator.ts:154 (doRollback() catch)</td><td>try 블록 내 예외</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:10px">모든 <code>updateDeploymentStatus</code> 호출은 <code>safeUpdateStatus</code>(orchestrator.ts:160-167)를 거친다 — <code>id === undefined</code>면 아무 것도 안 하고, 갱신 자체가 실패해도 catch로 무시하는 <b>best-effort</b>다. 상태 기록 실패가 HTTP 응답 판정에는 영향을 주지 않는다. 롤백 성공의 <b>상태 컬럼 값은 <code>rolled_back</code>이지 <code>success</code>가 아니다</b> — 04번 문서의 <code>POST /rollback</code> 응답 JSON은 <code>&#123;"status":"success"&#125;</code>를 반환하지만, 그것은 <b>API 응답 필드</b>이고 이 컬럼은 <b>DB 상태 필드</b>로 서로 다른 계층의 값이다.</p>
+        <span class="cite">근거: packages/deployer/src/orchestrator.ts:119-167 · 05-DB-설계서.md § 6</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 3. API별 테이블 접근 지도 ================= -->
+  <section class="doc-section" id="accessmatrix">
+    <h2 class="section-title"><span class="section-num">3</span>API별 테이블 접근 지도</h2>
+    <p class="lede"><b>1층.</b> 창구 9곳 중 어디가 장부를 펼쳐 보고, 어디가 장부에 적고, 어디는 장부실 근처도 안 가는지를 한 번에 본다.</p>
+
+    <div class="table-scroll">
+      <table class="access-matrix">
+        <thead><tr><th>엔드포인트</th><th>projects</th><th>deployments</th><th>파일시스템</th></tr></thead>
+        <tbody>
+          <tr><td>GET /healthz</td><td class="sym none">—</td><td class="sym none">—</td><td class="sym none">—</td></tr>
+          <tr><td>POST /deploy</td><td class="sym r">R</td><td class="sym w">W</td><td class="sym none">—</td></tr>
+          <tr><td>POST /projects</td><td class="sym w">W</td><td class="sym none">—</td><td class="sym none">—</td></tr>
+          <tr><td>DELETE /projects/:name</td><td class="sym w">W</td><td class="sym none">—</td><td class="sym none">—</td></tr>
+          <tr><td>GET /status</td><td class="sym r">R</td><td class="sym none">—</td><td class="sym none">—</td></tr>
+          <tr><td>GET /status/:project</td><td class="sym r">R</td><td class="sym r">R</td><td class="sym none">—</td></tr>
+          <tr><td>GET /logs/:project</td><td class="sym none">—</td><td class="sym none">—</td><td class="sym none">— (docker logs)</td></tr>
+          <tr><td>POST /rollback/:project</td><td class="sym w">R/W</td><td class="sym w">W</td><td class="sym none">—</td></tr>
+          <tr><td>PUT /env/:project</td><td class="sym none">—</td><td class="sym none">—</td><td class="sym w">W</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>R = 읽기, W = 쓰기, — = 무접근. <code>/healthz</code>와 <code>/logs</code>는 DB를 아예 안 건드리고, <code>/env</code>는 DB가 아니라 파일만 건드린다 — 04번 문서 §7의 서식 접수 절차와 이 지도가 같은 사실을 가리킨다.</figcaption>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>세부 호출 시퀀스</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>API</th><th>세부 동작</th></tr></thead>
+            <tbody>
+              <tr><td>POST /deploy</td><td><code>recordDeployment</code>(INSERT) → <code>getProject</code>(SELECT) → 성공 시 <code>setImages</code>(UPDATE projects) → <code>updateDeploymentStatus</code>(UPDATE deployments)</td></tr>
+              <tr><td>POST /projects</td><td><code>upsertProject</code>: <code>INSERT ... ON CONFLICT(name) DO UPDATE</code></td></tr>
+              <tr><td>DELETE /projects/:name</td><td><code>removeProject</code>: <code>DELETE FROM projects</code> (deployments 미삭제)</td></tr>
+              <tr><td>GET /status/:project</td><td><code>getProject</code> + <code>listDeployments</code>(LIMIT 20, id DESC)</td></tr>
+              <tr><td>POST /rollback/:project</td><td><code>getProject</code>(SELECT) → <code>recordDeployment</code>(INSERT) → 성공 시 <code>setImages</code> → <code>updateDeploymentStatus</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: 05-DB-설계서.md § 5. 데이터 흐름</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 4. 경로 대응 도해 ================= -->
+  <section class="doc-section" id="pathmap">
+    <h2 class="section-title"><span class="section-num">4</span>장부는 실제로 어디에 있는가 — 경로 대응 도해</h2>
+    <p class="lede"><b>1층.</b> 컨테이너 안에서 보는 서랍 이름과, NAS 캐비닛의 진짜 서랍 이름은 다르다. <span class="gloss" tabindex="0">볼륨 마운트<span class="gloss-note">컨테이너 안의 특정 서랍을 NAS의 실제 캐비닛 서랍과 같은 것으로 연결해 두는 것</span></span>가 둘을 같은 서랍으로 만들어 준다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 210" role="img" aria-labelledby="pathTitle">
+        <title id="pathTitle">컨테이너 내부 경로와 NAS 호스트 경로의 볼륨 마운트 대응</title>
+
+        <rect x="10" y="10" width="300" height="90" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="160" y="30" text-anchor="middle" font-size="10.5" font-weight="700">컨테이너 내부 좌표계</text>
+        <text x="160" y="52" text-anchor="middle" font-size="10" font-family="ui-monospace">$&#123;STATE_DIR&#125;/hoster.db</text>
+        <text x="160" y="70" text-anchor="middle" font-size="10" font-family="ui-monospace">$&#123;envDir&#125;/&lt;project&gt;.env</text>
+        <text x="160" y="88" text-anchor="middle" font-size="8.5" fill="var(--ink-faint)">STATE_DIR 기본값 = /state</text>
+
+        <rect x="390" y="10" width="300" height="90" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="540" y="30" text-anchor="middle" font-size="10.5" font-weight="700">NAS 호스트 좌표계</text>
+        <text x="540" y="52" text-anchor="middle" font-size="9.3" font-family="ui-monospace">/volume1/docker/hoster/state/hoster.db</text>
+        <text x="540" y="70" text-anchor="middle" font-size="9.3" font-family="ui-monospace">/volume1/docker/hoster/state/env/&lt;p&gt;.env</text>
+
+        <line x1="312" y1="40" x2="388" y2="40" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#a05p)"/>
+        <line x1="312" y1="60" x2="388" y2="60" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#a05p)"/>
+        <text x="350" y="34" text-anchor="middle" font-size="7.5" fill="var(--accent-ink)">마운트</text>
+
+        <rect x="150" y="130" width="400" height="60" rx="4" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="350" y="150" text-anchor="middle" font-size="10.5" fill="var(--state-failed)" font-weight="700">권한 0600 — 관리사무소 직원만 열람 가능한 서랍</text>
+        <text x="350" y="167" text-anchor="middle" font-size="9" fill="var(--state-failed)">writeFileSync mode:0o600 + 덮어쓸 때도 chmodSync로 재강제</text>
+        <text x="350" y="181" text-anchor="middle" font-size="8.3" fill="var(--state-failed)">(mode 옵션은 신규 생성 시에만 적용되기 때문)</text>
+
+        <defs><marker id="a05p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+      </svg>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>compose 볼륨 마운트 원문</summary>
+      <div class="layer2-body">
+        <p><code>stack/docker-compose.yml</code>의 deployer 서비스 volumes: <code>/volume1/docker/hoster/state:/state</code>. 컨테이너 내부에서는 <code>process.env.STATE_DIR ?? '/state'</code>로 접근하고, <code>envDir = join(stateDir, 'env')</code>. env 파일 하나의 형식은 줄 단위 <code>KEY=VALUE</code>, 파일 끝 개행.</p>
+        <span class="cite">근거: packages/deployer/src/index.ts:15,19 · stack/docker-compose.yml</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 5. CREATE TABLE 주석 코드 패널 ================= -->
+  <section class="doc-section" id="createtable">
+    <h2 class="section-title"><span class="section-num">5</span>장부 서식 원문 — 주석 달린 코드 패널</h2>
+    <p class="lede"><b>1층.</b> 장부 두 권을 처음 펼칠 때 쓰는 서식 원본이다. 매번 문을 열 때마다 "이 서식이 있는지"만 확인하고 없으면 새로 찍어낸다 — 서식 칸 자체를 나중에 고치는 도구는 없다.</p>
+
+    <div class="code-panel">
+      <pre>CREATE TABLE IF NOT EXISTS projects (
+  name TEXT PRIMARY KEY,              <span style="color:var(--accent-ink)">← 이 줄이 이 장부의 대표 번호</span>
+  image_repo TEXT NOT NULL, domain TEXT NOT NULL,
+  branch TEXT NOT NULL, health_path TEXT NOT NULL, container_port INTEGER NOT NULL,
+  current_image TEXT, previous_image TEXT
+);
+CREATE TABLE IF NOT EXISTS deployments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, <span style="color:var(--accent-ink)">← 번호표가 자동으로 하나씩 올라감</span>
+  project TEXT NOT NULL,                <span style="color:var(--state-failed)">← projects.name을 가리키지만 FOREIGN KEY 절이 없다</span>
+  image TEXT NOT NULL, sha TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', error TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))  <span style="color:var(--accent-ink)">← UTC 기준</span>
+);</pre>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>스키마 관리 방식</summary>
+      <div class="layer2-body">
+        <p>스키마 관리는 <code>CREATE TABLE IF NOT EXISTS</code> 뿐이며, 생성자 실행 시마다 <span class="gloss" tabindex="0">멱등<span class="gloss-note">같은 접수증을 몇 번 다시 내밀어도 결과가 달라지지 않는 성질</span></span>하게 실행된다. 별도의 <span class="gloss" tabindex="0">마이그레이션<span class="gloss-note">장부의 칸 구성 자체를 바꾸는 개조 공사 — 이 시스템에는 그 개조 도구가 없다</span></span> 도구는 없다. <code>id</code> 컬럼의 AUTOINCREMENT는 새 줄마다 번호표가 자동으로 올라가는 방식이고, <code>status</code>는 <code>updateDeploymentStatus</code>가 허용하는 값만 들어간다: <code>'pending' | 'success' | 'failed' | 'rolled_back'</code>. rollback 요청의 <code>sha</code> 컬럼에는 리터럴 문자열 <code>'rollback'</code>이 그대로 들어간다. <code>created_at</code>의 <code>datetime('now')</code>는 <span class="gloss" tabindex="0">UTC 기준<span class="gloss-note">장부에 시각을 적을 때 한국 시간이 아니라 세계 표준시로 적는다는 규칙</span></span>이다 — 한국 시간(KST)보다 9시간 이르게 찍힌다.</p>
+        <span class="cite">근거: packages/deployer/src/store.ts:21-33 · 05-DB-설계서.md § 3.1</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 6. 최근 20건 창 도해 ================= -->
+  <section class="doc-section" id="window">
+    <h2 class="section-title"><span class="section-num">6</span>일지를 펼치면 최근 20줄만 보인다 — 장부 창 도해</h2>
+    <p class="lede"><b>1층.</b> <code>GET /status/:project</code>로 일지를 펼치면 전체가 다 나오는 게 아니라, 가장 최근 20줄만 유리창 너머로 보인다. 그보다 오래된 줄은 여전히 장부 속에 있지만, 이 창구로는 보이지 않는다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 170" role="img" aria-labelledby="winTitle">
+        <title id="winTitle">deployments 최근 20건만 노출되는 조회 창</title>
+        <text x="10" y="18" font-size="9.5" fill="var(--ink-faint)">id 내림차순(최신이 왼쪽)</text>
+        <g id="rowsGroup"></g>
+        <rect x="18" y="26" width="330" height="66" fill="none" stroke="var(--accent)" stroke-width="3"/>
+        <text x="183" y="112" text-anchor="middle" font-size="10" fill="var(--accent-ink)" font-weight="700">LIMIT 20 · id DESC — 이 창 안쪽만 응답에 포함</text>
+        <text x="500" y="60" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">이 바깥의 더 오래된 행은</text>
+        <text x="500" y="74" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">장부에 남아 있지만</text>
+        <text x="500" y="88" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">이 창구로는 안 보인다</text>
+      </svg>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>어느 API가 이 창을 쓰는가</summary>
+      <div class="layer2-body">
+        <p><code>listDeployments</code> 기본 <code>limit=20</code>은 <code>GET /status/:project</code>에서만 쓰인다. <code>GET /status</code>(전체 목록)는 <code>projects</code> 테이블만 <code>SELECT * FROM projects ORDER BY name</code>으로 읽으며 배포 이력 자체를 포함하지 않는다 — 이 창은 "프로젝트 하나의 이력"에만 해당한다.</p>
+        <span class="cite">근거: 05-DB-설계서.md § 5 · 04-API-명세서.md § GET /status/:project</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 7. 확인 안 되어 제외한 항목 ================= -->
+  <section class="doc-section" id="not-said">
+    <h2 class="section-title"><span class="section-num">7</span>확인 안 되어 제외한 항목</h2>
+    <p class="lede"><b>1층.</b> 장부실 규정에 없는 것은 "없다"고 우기지 않고 빈 도장칸으로 남긴다 — 원문이 스스로 밝힌 한계다.</p>
+
+    <div class="not-said-grid">
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>SQLite 파일 크기/VACUUM 정책</b> — 코드상 별도 처리 없음</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>백업 정책</b> — 소스에 관련 코드 없음</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>WAL 외 추가 PRAGMA</b> — <code>journal_mode</code> 외 PRAGMA 설정 없음</p></div>
+    </div>
+    <p style="margin-top:var(--sp-4);font-size:.86rem;color:var(--ink-soft)">01번 문서의 미구현 3건, 07번 문서의 잔여 위험 4건과 같은 원칙 — 확인되지 않은 것을 확인된 것처럼 채우지 않는다.</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/05-DB-설계서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="04-API-명세서.html">← 04 API 명세서</a>
+        <a href="06-인터페이스-정의서.html">06 인터페이스 정의서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- 두 권의 장부 펼침면: 끊긴 실 + 고아 행 시뮬레이션 ---------- */
+  function drawThread(){
+    var svg = document.getElementById("threadSvg");
+    var root = document.getElementById("ledgerRoot");
+    var a = document.getElementById("row-name").getBoundingClientRect();
+    var b = document.getElementById("row-project").getBoundingClientRect();
+    var r = root.getBoundingClientRect();
+    svg.setAttribute("viewBox", "0 0 " + r.width + " " + r.height);
+    var x1 = a.right - r.left, y1 = a.top - r.top + a.height/2;
+    var x2 = b.left - r.left,  y2 = b.top - r.top + b.height/2;
+    var midx = (x1+x2)/2;
+    var gap = 10;
+    svg.innerHTML =
+      '<line x1="'+x1+'" y1="'+y1+'" x2="'+(midx-gap)+'" y2="'+((y1+y2)/2)+'" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>' +
+      '<line x1="'+(midx+gap)+'" y1="'+((y1+y2)/2)+'" x2="'+x2+'" y2="'+y2+'" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>' +
+      '<g transform="translate('+midx+','+((y1+y2)/2)+')">' +
+        '<line x1="-6" y1="-8" x2="6" y2="8" stroke="var(--state-failed)" stroke-width="3"/>' +
+        '<line x1="-6" y1="8" x2="6" y2="-8" stroke="var(--state-failed)" stroke-width="3"/>' +
+      '</g>' +
+      '<rect x="'+(midx-46)+'" y="'+((y1+y2)/2 - 26)+'" width="92" height="18" rx="9" fill="var(--paper)" stroke="var(--state-failed)"/>' +
+      '<text x="'+midx+'" y="'+((y1+y2)/2 - 13)+'" text-anchor="middle" font-size="9.5" fill="var(--state-failed)" font-weight="700">FK 없음 · 끊긴 실</text>';
+  }
+  window.addEventListener("resize", drawThread);
+  drawThread();
+  setTimeout(drawThread, 60);
+
+  var orphanBtn = document.getElementById("orphanBtn");
+  var resetBtn = document.getElementById("orphanResetBtn");
+  var caption = document.getElementById("orphanCaption");
+  var nameRow = document.getElementById("row-name");
+  var projectRow = document.getElementById("row-project");
+
+  orphanBtn.addEventListener("click", function(){
+    nameRow.classList.add("removed");
+    document.getElementById("val-name").textContent = "(DELETE 처리됨)";
+    projectRow.classList.add("orphan");
+    caption.innerHTML = '<span class="stamp stamp--reject" style="font-size:.72rem">고아 행</span> 세대 대장에서 <code>my-app</code>이 지워졌다. 배송 일지의 <code>project = my-app</code> 행은 <b>그대로 남아</b> 이제 아무 세대도 가리키지 않는 고아 행이 되었다.';
+    orphanBtn.setAttribute("aria-pressed","true");
+  });
+  resetBtn.addEventListener("click", function(){
+    nameRow.classList.remove("removed");
+    document.getElementById("val-name").textContent = "my-app";
+    projectRow.classList.remove("orphan");
+    caption.innerHTML = '지금은 정상 상태 — 두 장부 모두 <code>my-app</code>을 기록하고 있다.';
+    orphanBtn.setAttribute("aria-pressed","false");
+  });
+
+  /* ---------- 최근 20건 창 도해: 30개 중 20개만 창 안 ---------- */
+  var rowsGroup = document.getElementById("rowsGroup");
+  var total = 30, within = 20;
+  var htmlRows = "";
+  for (var i=0;i<total;i++){
+    var x = 24 + i*11;
+    var inWindow = i < within;
+    htmlRows += '<rect x="'+x+'" y="34" width="8" height="50" rx="1" fill="'+(inWindow?'var(--accent-soft)':'var(--paper-deep)')+'" stroke="'+(inWindow?'var(--accent)':'var(--rule)')+'" stroke-width="1"/>';
+  }
+  rowsGroup.innerHTML = htmlRows;
+
+  /* ---------- 상태 전이 그래프 ---------- */
+  var SCENARIOS = {
+    "1": {path:"p1", dot:{cx:490,cy:60}, chip:"chip1", label:"① pending → success (orchestrator.ts:127, swapContainer 성공)"},
+    "2": {path:"p2", dot:{cx:490,cy:165}, chip:"chip2", label:"② pending → failed (orchestrator.ts:119, swapContainer 실패)"},
+    "3": {path:"p3", dot:{cx:490,cy:165}, chip:"chip3", label:"③ pending → failed (orchestrator.ts:131, execute() catch — 예외)"},
+    "4": {path:"p4", dot:{cx:490,cy:245}, chip:"chip4", label:"④ pending → rolled_back (orchestrator.ts:150, swapContainer 성공)"},
+    "5": {path:"p5", dot:{cx:490,cy:165}, chip:"chip5", label:"⑤ pending → failed (orchestrator.ts:146, doRollback() swapContainer 실패)"},
+    "6": {path:"p6", dot:{cx:490,cy:165}, chip:"chip6", label:"⑥ pending → failed (orchestrator.ts:154, doRollback() catch — 예외)"}
+  };
+  var allPaths = ["p1","p2","p3","p4","p5","p6"];
+  var allChips = ["chip1","chip2","chip3","chip4","chip5","chip6"];
+  var dot = document.getElementById("movingDot");
+  var sgCaption = document.getElementById("sgCaption");
+  var scBtns = document.querySelectorAll(".scenario-btn");
+
+  function runScenario(id){
+    var sc = SCENARIOS[id];
+    if (!sc) return;
+    allPaths.forEach(function(p){
+      var el = document.getElementById(p);
+      el.setAttribute("stroke", p===sc.path ? "var(--accent)" : "var(--rule)");
+      el.setAttribute("stroke-width", p===sc.path ? "3.5" : "2");
+    });
+    allChips.forEach(function(c){
+      var g = document.getElementById(c);
+      g.style.opacity = c===sc.chip ? "1" : ".45";
+    });
+    dot.setAttribute("cx", 90);
+    dot.setAttribute("cy", 150);
+    window.requestAnimationFrame(function(){
+      window.requestAnimationFrame(function(){
+        dot.setAttribute("cx", sc.dot.cx);
+        dot.setAttribute("cy", sc.dot.cy);
+      });
+    });
+    sgCaption.textContent = sc.label;
+    scBtns.forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-sc")===id ? "true":"false"); });
+  }
+
+  scBtns.forEach(function(b){
+    b.addEventListener("click", function(){ runScenario(b.getAttribute("data-sc")); });
+  });
+})();
+</script>
+</body>
+</html>

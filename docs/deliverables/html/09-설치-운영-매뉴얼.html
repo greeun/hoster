@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09. 설치·운영 매뉴얼 — hoster 산출물</title>
+<style>
+/* ============================================================
+   hoster 산출물 시리즈 — 공통 디자인 시스템 (08번과 동일 토큰)
+   모티프: 아파트 단지 관리사무소의 종이 서식·도장·단지 배치도
+   ============================================================ */
+:root{
+  --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+  --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+  --rule:#c7bb9c; --rule-strong:#a89877;
+  --st-success:#2f5233; --st-fail:#b83a1f; --st-pending:#8b8577;
+  --st-rollback:#8a5a2c; --st-skipped:#aca493;
+  --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+  --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c;
+  --ac-09:#c0851d; --ac-10:#5b9bd8;
+  --accent:var(--ac-09); /* 이 문서(09)의 accent: 안전 황토 */
+  --font-body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  --font-serif:"AppleMyungjo","Batang","Nanum Myeongjo",serif;
+  --font-mono:ui-monospace,"SF Mono","D2Coding","Consolas","Menlo",monospace;
+  --fs-doctitle:clamp(1.55rem,1.2rem + 1.3vw,2.25rem);
+  --fs-section:clamp(1.2rem,1.05rem + 0.5vw,1.5rem);
+  --fs-sub:1.08rem; --fs-body:1rem; --fs-caption:0.82rem; --fs-code:0.85rem;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
+}
+*,*::before,*::after{box-sizing:border-box;}
+html{background:var(--paper);}
+body{
+  margin:0;background:var(--paper);
+  background-image:repeating-linear-gradient(0deg,rgba(169,151,108,0.08) 0px,rgba(169,151,108,0.08) 1px,transparent 1px,transparent 28px);
+  color:var(--ink);font-family:var(--font-body);font-size:var(--fs-body);line-height:1.7;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+h1,h2,h3{font-family:var(--font-serif);color:var(--ink);margin:0 0 var(--sp-3) 0;font-weight:700;}
+p{margin:0 0 var(--sp-4) 0;}
+.skip-link{position:absolute;left:-999px;top:0;background:var(--ink);color:var(--paper);padding:var(--sp-2) var(--sp-4);z-index:200;}
+.skip-link:focus{left:var(--sp-3);top:var(--sp-3);}
+a{color:inherit;}
+table{border-collapse:collapse;width:100%;}
+th,td{border:1px solid var(--rule);padding:var(--sp-2) var(--sp-3);text-align:left;font-size:0.94rem;vertical-align:top;}
+th{background:var(--paper-deep);font-weight:700;}
+code,kbd{font-family:var(--font-mono);font-size:var(--fs-code);background:var(--paper-deep);padding:0.1em 0.35em;border-radius:2px;}
+.scrollbox{overflow-x:auto;border:1px solid var(--rule);background:var(--paper-card);}
+.scrollbox table{min-width:640px;}
+
+/* 헤더 + 색인 탭 */
+.site-header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:2px solid var(--ink);}
+.header-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);padding:var(--sp-4) var(--sp-5) var(--sp-2);flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:var(--sp-3);}
+.brand-mark{width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:1.1rem;flex:none;}
+.brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+.brand-title{margin:0;font-size:1.15rem;}
+.doc-meta-chip{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);white-space:nowrap;}
+.index-tabs{max-width:1180px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;scrollbar-width:thin;}
+.tab{--tab-ac:var(--ink);flex:none;font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);padding:var(--sp-2) var(--sp-3) var(--sp-2);background:var(--paper-deep);border:1px solid var(--rule-strong);border-bottom:none;clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);transform:translateY(3px);transition:transform .12s ease;white-space:nowrap;}
+.tab:hover{transform:translateY(0);color:var(--ink);}
+.tab--current{background:var(--paper);color:var(--ink);border-color:var(--ink);border-bottom:3px solid var(--tab-ac);transform:translateY(0);font-weight:800;}
+.tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+main{max-width:1180px;margin:0 auto;padding:var(--sp-6) var(--sp-5) var(--sp-8);}
+.section{margin-top:var(--sp-8);padding-top:var(--sp-6);border-top:1px solid var(--rule);}
+.section-kicker{display:inline-block;font-size:var(--fs-caption);color:var(--accent);font-weight:700;letter-spacing:0.08em;margin-bottom:var(--sp-2);}
+.section h2{font-size:var(--fs-section);}
+.section h3{font-size:var(--fs-sub);margin-top:var(--sp-5);}
+.lead{color:var(--ink-soft);font-size:1.02rem;max-width:74ch;}
+
+.hero{border:2px solid var(--ink);background:var(--paper-card);padding:var(--sp-6);display:grid;grid-template-columns:1.3fr 1fr;gap:var(--sp-6);align-items:center;}
+.hero-text .anchor-line{font-size:var(--fs-caption);color:var(--ink-soft);margin-bottom:var(--sp-2);}
+.hero-text h1{font-size:var(--fs-doctitle);margin-bottom:var(--sp-3);}
+.hero-meta{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-4);font-size:var(--fs-caption);}
+.hero-meta span{border:1px solid var(--rule-strong);padding:2px var(--sp-2);background:var(--paper);}
+.hero-stamp-wrap{display:flex;justify-content:center;min-width:0;overflow:hidden;}
+.stamp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid currentColor;border-radius:50%;width:8.5rem;height:8.5rem;text-align:center;transform:rotate(-6deg);font-family:var(--font-serif);position:relative;}
+.stamp::before{content:"";position:absolute;inset:6px;border:1px solid currentColor;border-radius:50%;opacity:0.55;}
+.stamp .stamp-num{font-size:1.35rem;font-weight:800;line-height:1.1;}
+.stamp .stamp-sub{font-size:0.66rem;letter-spacing:0.04em;margin-top:2px;}
+.stamp.pass{color:var(--st-success);} .stamp.fail{color:var(--st-fail);} .stamp.pending{color:var(--st-pending);} .stamp.rollback{color:var(--st-rollback);}
+
+.layer1{font-size:0.95rem;color:var(--ink);background:var(--paper-deep);border-left:3px solid var(--accent);padding:var(--sp-2) var(--sp-3);margin:var(--sp-3) 0 var(--sp-2);}
+details.layer2{margin:var(--sp-2) 0 var(--sp-5);border:1px dashed var(--rule-strong);background:var(--paper-card);}
+details.layer2>summary{cursor:pointer;list-style:none;padding:var(--sp-2) var(--sp-3);font-size:var(--fs-caption);font-weight:700;color:var(--ink-soft);display:flex;align-items:center;gap:var(--sp-2);}
+details.layer2>summary::-webkit-details-marker{display:none;}
+details.layer2>summary::before{content:"▸";color:var(--accent);transition:transform .15s;}
+details.layer2[open]>summary::before{transform:rotate(90deg);}
+details.layer2>summary:hover{color:var(--ink);}
+.layer2-body{padding:0 var(--sp-4) var(--sp-4);font-size:0.92rem;}
+.layer2-body p{margin:0 0 var(--sp-2);}
+.layer2-body ul{margin:0 0 var(--sp-2);padding-left:1.2em;}
+.src{font-size:0.78rem;color:var(--ink-faint);font-family:var(--font-mono);}
+.term{font-weight:700;}
+.gloss{display:inline;font-size:0.86em;color:var(--ink-soft);font-style:normal;}
+.gloss::before{content:" — ";}
+.field{border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-3);position:relative;}
+.field-label{position:absolute;top:-0.65em;left:var(--sp-3);background:var(--paper);padding:0 var(--sp-1);font-size:var(--fs-caption);color:var(--ink-soft);font-weight:700;}
+.visual{margin:var(--sp-5) 0;border:1px solid var(--rule);background:var(--paper-card);padding:var(--sp-5);}
+.visual-cap{font-size:var(--fs-caption);color:var(--ink-soft);margin-top:var(--sp-3);}
+.badge{display:inline-block;font-size:0.72rem;font-weight:700;padding:2px var(--sp-2);border-radius:2px;}
+.badge.success{background:color-mix(in srgb,var(--st-success) 18%,var(--paper));color:var(--st-success);border:1px solid var(--st-success);}
+.badge.fail{background:color-mix(in srgb,var(--st-fail) 18%,var(--paper));color:var(--st-fail);border:1px solid var(--st-fail);}
+.badge.pending{background:color-mix(in srgb,var(--st-pending) 18%,var(--paper));color:var(--st-pending);border:1px solid var(--st-pending);}
+p code,li code,dd code,.anno{overflow-wrap:anywhere;}
+.code-panel{background:#2b2620;color:#efe6cf;border:1px solid var(--ink);padding:var(--sp-4);font-family:var(--font-mono);font-size:var(--fs-code);overflow-x:auto;position:relative;}
+.code-panel .cp-title{font-family:var(--font-body);color:#efe6cf;opacity:0.7;font-size:0.72rem;margin-bottom:var(--sp-2);}
+.code-panel pre{margin:0;white-space:pre;}
+.code-panel .anno{color:#9ec98a;}
+.code-panel .num{color:#e2b866;}
+.code-panel .an-list{list-style:none;margin:var(--sp-3) 0 0;padding:0;font-family:var(--font-body);font-size:0.82rem;color:#d8cdae;}
+.code-panel .an-list li{padding:2px 0;border-top:1px dashed #55503f;}
+.code-panel .an-list b{color:#efe6cf;}
+
+/* ---------- VIS1: 준비물 배치도 ---------- */
+.prereq-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);}
+@media (max-width:760px){.prereq-cols{grid-template-columns:1fr;}}
+.prereq-col{border:1px solid var(--rule-strong);background:var(--paper);}
+.prereq-col-head{background:var(--paper-deep);padding:var(--sp-2) var(--sp-3);font-weight:700;font-size:0.9rem;border-bottom:1px solid var(--rule-strong);display:flex;justify-content:space-between;}
+.prereq-item{padding:var(--sp-2) var(--sp-3);border-top:1px solid var(--rule);font-size:0.84rem;}
+.prereq-item:first-of-type{border-top:none;}
+.prereq-item .pi-name{font-weight:700;display:block;}
+.prereq-item .pi-check{font-family:var(--font-mono);font-size:0.72rem;color:var(--ink-soft);display:block;margin-top:2px;}
+.prereq-item .pi-fail{font-size:0.74rem;color:var(--st-fail);display:block;margin-top:2px;}
+.hardcode-note{margin-top:var(--sp-4);border:1px dashed var(--st-fail);background:color-mix(in srgb,var(--st-fail) 6%,var(--paper));padding:var(--sp-3);font-size:0.84rem;}
+
+/* ---------- VIS2: 12단계 진행 띠 (시그니처) ---------- */
+.ribbon{display:flex;flex-direction:column;gap:2px;}
+.rstep{border:1px solid var(--rule-strong);background:var(--paper);}
+.rstep[open]{border-color:var(--accent);}
+.rstep>summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:2.4rem 6rem 1fr auto;gap:var(--sp-3);align-items:center;padding:var(--sp-2) var(--sp-3);}
+.rstep>summary::-webkit-details-marker{display:none;}
+.rstep .rnum{font-family:var(--font-mono);font-weight:800;color:var(--accent);font-size:0.95rem;}
+.rstep .rtype{font-size:0.68rem;font-weight:700;text-align:center;padding:2px 4px;border:1px solid var(--rule-strong);background:var(--paper-deep);white-space:nowrap;}
+.rstep .rtitle{font-size:0.88rem;}
+.rstep .rtoggle{color:var(--ink-faint);font-size:0.9rem;}
+.rstep[open] .rtoggle::before{content:"▾";}
+.rstep:not([open]) .rtoggle::before{content:"▸";}
+.rstep-body{padding:0 var(--sp-3) var(--sp-3) calc(2.4rem + 6rem + var(--sp-3)*2);font-size:0.84rem;}
+@media (max-width:640px){
+  .rstep>summary{grid-template-columns:2rem 4.6rem 1fr auto;}
+  .rstep-body{padding-left:var(--sp-3);}
+}
+.rstep-body .rf-row{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-bottom:var(--sp-1);min-width:0;}
+.rstep-body .rf-row code{overflow-wrap:anywhere;}
+.rstep-body .rf-k{flex:none;width:4.2rem;color:var(--ink-soft);font-weight:700;}
+.rstep.hot{outline:2px solid var(--accent);outline-offset:2px;}
+.step10-note{font-size:0.72rem;color:var(--accent);font-weight:700;}
+
+/* ---------- VIS3: 인과 도해 (11단계) ---------- */
+.causal-chain{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+.causal-box{flex:1 1 180px;border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-3);}
+.causal-box.warn{border-color:var(--st-fail);background:color-mix(in srgb,var(--st-fail) 6%,var(--paper));}
+.causal-box h4{margin:0 0 var(--sp-1);font-size:0.86rem;}
+.causal-box p{margin:0;font-size:0.78rem;color:var(--ink-soft);}
+.causal-arrow{flex:0 0 2.2rem;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:1.2rem;}
+@media (max-width:700px){.causal-arrow{flex-basis:100%;transform:rotate(90deg);height:1.4rem;}}
+
+/* ---------- VIS4: HMAC 불일치 도장 대비 ---------- */
+.mismatch{display:flex;align-items:center;justify-content:center;gap:var(--sp-6);flex-wrap:wrap;padding:var(--sp-4) 0;}
+.mismatch .vs{font-family:var(--font-serif);font-size:1.4rem;color:var(--ink-faint);}
+.mismatch .mstamp{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);}
+.mismatch .mstamp .cap{font-size:0.8rem;text-align:center;max-width:11rem;color:var(--ink-soft);}
+
+/* ---------- VIS5: 장애 결정 트리 ---------- */
+.dtree{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3);}
+@media (max-width:900px){.dtree{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:520px){.dtree{grid-template-columns:1fr;}}
+.dbranch{display:flex;flex-direction:column;align-items:stretch;}
+.dnode{border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-2);font-size:0.78rem;text-align:center;}
+.dnode.symptom{background:var(--paper-deep);font-weight:700;}
+.dnode.cause{color:var(--ink-soft);}
+.dnode.action{border-color:var(--st-success);background:color-mix(in srgb,var(--st-success) 10%,var(--paper));}
+.darrow{text-align:center;color:var(--ink-faint);font-size:0.95rem;padding:2px 0;}
+
+/* ---------- VIS6: 백업 조립 도해 ---------- */
+.assembly{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);flex-wrap:wrap;}
+.apiece{flex:1 1 150px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-2) var(--sp-3);font-size:0.78rem;max-width:180px;}
+.apiece b{display:block;font-size:0.8rem;margin-bottom:2px;}
+.a-arrow{color:var(--ink-faint);font-size:1.1rem;flex:0 0 1.6rem;text-align:center;}
+.a-target{flex:1 1 180px;border:2px solid var(--st-success);background:color-mix(in srgb,var(--st-success) 10%,var(--paper));padding:var(--sp-3);font-size:0.82rem;max-width:200px;text-align:center;}
+@media (max-width:760px){.assembly{flex-direction:column;} .a-arrow{transform:rotate(90deg);}}
+
+/* ---------- VIS8: 컨테이너 상태 보드 ---------- */
+.stateboard{display:flex;gap:var(--sp-4);flex-wrap:wrap;}
+.snode{flex:1 1 180px;border:1px solid var(--rule-strong);background:var(--paper);padding:var(--sp-3);text-align:center;}
+.snode .sdot{width:12px;height:12px;border-radius:50%;background:var(--st-success);display:inline-block;margin-right:6px;}
+.snode h4{margin:0 0 var(--sp-1);font-size:0.86rem;font-family:var(--font-mono);}
+.snode p{margin:0;font-size:0.76rem;color:var(--ink-soft);}
+
+/* ---------- VIS9: 다루는것/안다루는것 ---------- */
+.contrast{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);}
+@media (max-width:640px){.contrast{grid-template-columns:1fr;}}
+.contrast .col{border:1px solid var(--rule-strong);padding:var(--sp-4);}
+.contrast .col.yes{background:color-mix(in srgb,var(--st-success) 6%,var(--paper));}
+.contrast .col.no{background:color-mix(in srgb,var(--ink-faint) 6%,var(--paper));}
+.contrast h4{margin:0 0 var(--sp-2);font-size:0.9rem;}
+.contrast ul{margin:0;padding-left:1.1em;font-size:0.84rem;}
+.contrast li{margin-bottom:var(--sp-1);}
+
+.honesty-banner{border:2px dashed var(--st-fail);background:color-mix(in srgb,var(--st-fail) 6%,var(--paper));padding:var(--sp-4);margin-bottom:var(--sp-5);}
+.honesty-banner b{color:var(--st-fail);}
+
+.site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+.footer-inner{max-width:1180px;margin:0 auto;}
+.footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+.footer-prevnext{display:flex;gap:var(--sp-4);}
+.footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+.footer-source{margin-top:var(--sp-3);font-family:var(--font-mono);font-size:0.76rem;color:var(--ink-faint);}
+.footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">09 · 설치·운영 매뉴얼 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="hero-text">
+      <p class="anchor-line">앵커 비유 — <b>새 건물 설비 시공·개통 순서표</b>: 열쇠 사본(설정 파일)을 개통 확인보다 먼저 금고에 넣는 이유가 있다.</p>
+      <h1>09. 설치·운영 매뉴얼</h1>
+      <p class="lead">관리사무소가 새 단지에 <span class="term">설비(hoster 스택)</span>를 처음 들이는 개통 절차와, 입주 이후 평소 점검·장애 대응·백업까지를 다룬다. 대상 독자는 NAS/Cloudflare/GitHub 인프라를 직접 관리하는 운영자다.</p>
+      <div class="hero-meta">
+        <span>개통 12단계</span>
+        <span>장애 대응 5증상</span>
+        <span>백업 대상 4종</span>
+      </div>
+    </div>
+    <div class="hero-stamp-wrap">
+      <div class="stamp pending" role="img" aria-label="개통 절차 12단계 진행 도장">
+        <span class="stamp-num">12단계</span>
+        <span class="stamp-sub">개통 절차</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= §1 사전 요구사항 (VIS1) ================= -->
+  <section class="section" id="sec-prereq">
+    <span class="section-kicker">01</span>
+    <h2>준비물 배치도 — 어디에 무엇이 갖춰져 있어야 하나</h2>
+    <p class="lead">개통 전 세 곳(로컬 Mac · NAS · 외부 서비스)에 총 9종의 준비물이 갖춰져 있어야 한다. 하나라도 빠지면 12단계 중 특정 단계에서 걸린다. 이 개통 절차(<code>hoster init</code>)는 평소에 반복하는 일이 아니라, 맨 처음 딱 한 번만 치르는 <span class="term">부트스트랩<span class="gloss">아무것도 없는 상태에서 최소한의 것부터 차례로 갖춰 나가 전체를 처음 일으켜 세우는 절차 — 새 건물의 최초 준공·개통과 같다</span></span>이다.</p>
+
+    <div class="visual" data-vis="1" data-vis-type="schematic-map">
+      <h3>준비물 소재지 9종</h3>
+      <div class="prereq-cols">
+        <div class="prereq-col">
+          <div class="prereq-col-head">로컬 (Mac) <span>4종</span></div>
+          <div class="prereq-item"><span class="pi-name">Node.js 22</span><span class="pi-check">node -v</span></div>
+          <div class="prereq-item"><span class="pi-name">pnpm (workspace)</span><span class="pi-check">pnpm -v</span></div>
+          <div class="prereq-item"><span class="pi-name">Docker + <span class="term">buildx<span class="gloss">여러 CPU 종류(아키텍처)용 이미지를 만들 수 있는 Docker의 빌드 도구</span></span></span><span class="pi-check">docker buildx version</span><span class="pi-fail">→ 없으면 8단계(이미지 빌드) 실패</span></div>
+          <div class="prereq-item"><span class="pi-name">GitHub CLI(gh) 인증</span><span class="pi-check">gh auth status</span><span class="pi-fail">→ hoster add의 시크릿 설정에 필요</span></div>
+        </div>
+        <div class="prereq-col">
+          <div class="prereq-col-head">NAS <span>3종</span></div>
+          <div class="prereq-item"><span class="pi-name">SSH 접속 (포트 2222)</span><span class="pi-check">키 인증 — 2022는 배너만 응답</span><span class="pi-fail">→ 없으면 1단계부터 실패</span></div>
+          <div class="prereq-item"><span class="pi-name">sudo docker <span class="term">NOPASSWD<span class="gloss">비밀번호 입력 없이 특정 명령(docker)만 실행할 수 있게 허용해 둔 설정</span></span></span><span class="pi-check">sudo -n /usr/local/bin/docker</span><span class="pi-fail">→ 없으면 1단계 sudo 권한 실패</span></div>
+          <div class="prereq-item"><span class="pi-name">Container Manager</span><span class="pi-check">compose 플러그인 포함 설치</span><span class="pi-fail">→ 없으면 2단계 실패</span></div>
+        </div>
+        <div class="prereq-col">
+          <div class="prereq-col-head">외부 서비스 <span>2종</span></div>
+          <div class="prereq-item"><span class="pi-name">Cloudflare API 토큰</span><span class="pi-check">Zone.DNS Edit + Account.Cloudflare Tunnel Edit · Account ID/Zone ID</span><span class="pi-fail">→ 없으면 3~5단계 실패</span></div>
+          <div class="prereq-item"><span class="pi-name">GitHub PAT</span><span class="pi-check">read:packages 권한</span><span class="pi-fail">→ NAS deployer가 ghcr.io private 이미지 pull 시 사용</span></div>
+        </div>
+      </div>
+      <div class="hardcode-note">
+        <b>접속 정보 지정</b> — NAS 접속 정보는 CLI 옵션이 아니라 환경변수로 지정한다. <code>packages/cli/src/config.ts</code>의 <code>defaultNas()</code>가 <code>HOSTER_NAS_HOST</code> / <code>HOSTER_NAS_PORT</code> / <code>HOSTER_NAS_USER</code>를 읽고, 미지정 시 예시값 <code>{ host: '192.168.1.100', port: 22, user: 'admin' }</code>을 쓴다. <code>hoster init</code> 전에 세 값을 지정할 것 — <code>hoster init</code>이 끝나면 <code>~/.hoster/config.json</code>에 저장되므로 이후 명령에는 환경변수가 필요 없다. SFTP/SCP는 비활성화 — 파일 전송은 <span class="term">tar over ssh<span class="gloss">파일을 하나의 tar 뭉치로 묶어 ssh 연결의 표준입력으로 그대로 흘려보내는 전송 방식</span></span>로만 동작한다.
+      </div>
+      <p class="layer1">🖋 1층 — 이사 오기 전 관리사무소가 확인하는 준비물 목록과 같다. 열쇠(Mac), 출입증(NAS 접속), 그리고 외부 기관 서류(Cloudflare·GitHub) 세 종류가 모두 있어야 개통을 시작할 수 있다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 — 사전 점검 명령 3종 펼치기</summary>
+        <div class="layer2-body">
+          <div class="code-panel">
+            <p class="cp-title">init 실행 전 수동으로 먼저 돌려볼 수 있는 점검 명령 (planInit() 1~2단계와 동일)</p>
+<pre>ssh -p 2222 admin@192.168.1.100 'uname -m'
+<span class="anno"># → x86_64(또는 호환) 확인. 다른 아키텍처(ARM 등)면 init 진행 불가</span>
+
+ssh -p 2222 admin@192.168.1.100 \
+  'sudo -n /usr/local/bin/docker version --format {{.Server.Version}}'
+<span class="anno"># → 1단계와 동일한 명령, 사전 실행 가능</span>
+
+ssh -p 2222 admin@192.168.1.100 'sudo -n /usr/local/bin/docker compose version'
+<span class="anno"># → 2단계와 동일한 명령</span></pre>
+          </div>
+          <p class="src">근거: 09-설치-운영-매뉴얼.md §1 사전 요구사항, §2 사전 점검</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §2 개통 12단계 (VIS2, signature) ================= -->
+  <section class="section" id="sec-ribbon">
+    <span class="section-kicker">02 · 시그니처</span>
+    <h2>개통 12단계 진행 띠 — <code>hoster init</code></h2>
+    <p class="lead">각 단계를 누르면 실패 시 증상과 복구 조치가 펼쳐진다. <code>hoster init --dry-run --stack-dir stack/</code>로 실행 전 계획만 미리 볼 수 있다(<span class="term">드라이런<span class="gloss">실제로 아무것도 바꾸지 않고 "이렇게 할 것이다"만 미리 보여주는 실행</span></span>).</p>
+
+    <div class="visual" data-vis="2" data-vis-type="step-sequence-interactive">
+      <h3>12단계 — 종류별 표식 (local-exec / nas-exec / cf-api / nas-transfer / write-config)</h3>
+      <div class="ribbon">
+        <details class="rstep"><summary><span class="rnum">1</span><span class="rtype">local-exec</span><span class="rtitle">NAS 접속 및 docker 권한 사전 점검</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">실패 증상</span>ssh 실패, sudo 권한 없음</div><div class="rf-row"><span class="rf-k">복구</span>SSH 키/포트(2222)/<code>sudo -n</code> NOPASSWD 설정 재확인</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">2</span><span class="rtype">nas-exec</span><span class="rtitle">docker compose 플러그인 확인</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">실패 증상</span>Container Manager 미설치/구버전</div><div class="rf-row"><span class="rf-k">복구</span>DSM에서 Container Manager 설치·업데이트</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">3</span><span class="rtype">cf-api</span><span class="rtitle">Cloudflare <span class="term">터널<span class="gloss">정문을 열지 않고 안에서 밖으로 미리 뚫어 둔 전용 통로</span></span> "hoster" 생성</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">실패 증상</span><code>already exists</code>/<code>duplicate</code> 패턴 매치 시 전용 안내문</div><div class="rf-row"><span class="rf-k">복구</span>아래 "터널 이름 충돌" 절 참고 — <code>--reuse-tunnel</code></div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">4</span><span class="rtype">cf-api</span><span class="rtitle">터널 인그레스 설정</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><code>hoster.&lt;domain&gt;</code> → deployer, <code>*.&lt;domain&gt;</code> → traefik</div><div class="rf-row"><span class="rf-k">실패 증상</span>Cloudflare API 원본 오류 그대로 노출</div><div class="rf-row"><span class="rf-k">복구</span>토큰의 <code>Account.Cloudflare Tunnel Edit</code> 스코프 확인</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">5</span><span class="rtype">cf-api</span><span class="rtitle">DNS CNAME 설정</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><span class="term">DNS<span class="gloss">이름(도메인)을 실제 주소로 바꿔 주는 인터넷의 주소록</span></span> <span class="term">CNAME<span class="gloss">"이 이름으로 오면 저 주소로 가라"고 주소록에 적어 두는 별칭 등록</span></span>: <code>hoster.&lt;domain&gt;</code> → <code>&lt;터널ID&gt;.cfargotunnel.com</code></div><div class="rf-row"><span class="rf-k">실패 증상</span>Cloudflare API 원본 오류 그대로 노출</div><div class="rf-row"><span class="rf-k">복구</span>토큰의 <code>Zone.DNS Edit</code> 스코프, Zone ID 확인</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">6</span><span class="rtype">nas-exec</span><span class="rtitle"><code>hoster-net</code> docker 네트워크 생성</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">실패 증상</span>없음 — 이미 존재하면 "hoster-net 네트워크가 이미 존재합니다 — 무시합니다." 로그만 출력하고 계속</div><div class="rf-row"><span class="rf-k">복구</span>조치 불필요</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">7</span><span class="rtype">nas-transfer</span><span class="rtitle">상태 디렉터리 준비 + stack/ 전송</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><code>/volume1/docker/hoster/state/env</code> 준비, tar over ssh로 <code>stack/</code> 전송</div><div class="rf-row"><span class="rf-k">실패 증상</span>ssh/tar 실패</div><div class="rf-row"><span class="rf-k">복구</span>네트워크·NAS 디스크 여유 확인 후 재실행</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">8</span><span class="rtype">local-exec</span><span class="rtitle">deployer 이미지 buildx 빌드 후 NAS 전송</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><span class="term">buildx<span class="gloss">여러 CPU 종류(아키텍처)용 이미지를 만들 수 있는 Docker의 빌드 도구</span></span>로 <code>linux/amd64</code> 고정 빌드. <b>NAS에서 직접 빌드하지 않는다</b> — Mac에서 빌드 후 전송.</div><div class="rf-row"><span class="rf-k">실패 증상</span>로컬 buildx 실패 또는 전송 실패</div><div class="rf-row"><span class="rf-k">복구</span><code>docker buildx version</code> 확인 후 재실행</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">9</span><span class="rtype">nas-exec</span><span class="rtitle">.env 작성 + compose up -d</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><code>.env</code>(0600)에 <span class="term">터널 토큰(TUNNEL_TOKEN)<span class="gloss">이 전용 통로(터널)를 우리 것이라고 증명해 열어 주는 출입증 문자열</span></span>/<code>HMAC_SECRET</code>/<code>GHCR_PAT</code>/<code>BASE_DOMAIN</code> 기록 후 <code>docker compose up -d</code></div><div class="rf-row"><span class="rf-k">실패 증상</span>compose up 실패</div><div class="rf-row"><span class="rf-k">복구</span>NAS에서 <code>docker compose logs</code>로 원인 확인</div></div>
+        </details>
+        <details class="rstep hot"><summary><span class="rnum">10</span><span class="rtype">write-config</span><span class="rtitle">~/.hoster/config.json 저장(0600) <span class="step10-note">← 11·12보다 먼저</span></span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">실패 증상</span>거의 실패하지 않음</div><div class="rf-row"><span class="rf-k">위치의 의미</span>이후 11~12단계가 실패해도 로컬 설정 저장을 막지 않는다 — 재시도 시 터널 이름 충돌을 피하기 위해 의도적으로 먼저 배치됨</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">11</span><span class="rtype">nas-exec</span><span class="rtitle"><code>hoster-net</code> 외부 통신 진단</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><code>wget -T 10 https://one.one.one.one</code></div><div class="rf-row"><span class="rf-k">실패 증상</span><b style="color:var(--st-fail)">경고만 출력하고 계속 진행 — 무시 가능한 실패 아님.</b> cloudflared 자체가 hoster-net에서 외부로 나가야 하므로, 실패 시 12단계 healthz도 반드시 실패</div><div class="rf-row"><span class="rf-k">복구</span>DSM 방화벽/IP forward 설정 확인 — §5 장애 대응 참고</div></div>
+        </details>
+        <details class="rstep"><summary><span class="rnum">12</span><span class="rtype">local-exec</span><span class="rtitle">터널 경유 /healthz 확인</span><span class="rtoggle"></span></summary>
+          <div class="rstep-body"><div class="rf-row"><span class="rf-k">내용</span><code>https://hoster.&lt;domain&gt;/healthz</code>, 10초 간격 최대 6회 재시도</div><div class="rf-row"><span class="rf-k">실패 증상</span>"healthz 확인 실패 (6회 재시도): ..."</div><div class="rf-row"><span class="rf-k">복구</span><span class="term">DNS 전파<span class="gloss">방금 등록한 주소록 항목이 인터넷 곳곳의 사본 주소록까지 퍼져 나가는 데 걸리는 시차</span></span> 대기 후 curl만 재실행, 또는 NAS <code>docker compose logs</code> 확인. <b>config는 10단계에서 이미 저장됐으므로 init을 처음부터 재시도할 필요 없음</b></div></div>
+        </details>
+      </div>
+      <p class="layer1">🖋 1층 — 설비 시공 순서표다. 10번째 칸(열쇠 사본을 금고에 넣기)이 11·12번(개통 확인)보다 먼저 있는 이유는, 뒤에서 확인이 실패해도 이미 넣어둔 열쇠 사본 덕분에 처음부터 다시 시공하지 않아도 되기 때문이다.</p>
+      <details class="layer2">
+        <summary>2층 — 프롬프트 입력 순서 (원문 그대로, 단정하지 않음)</summary>
+        <div class="layer2-body">
+          <p>프롬프트 입력 순서: 기본 도메인 → Cloudflare API 토큰 → Cloudflare Account ID → Cloudflare Zone ID → GHCR PAT (<code>HMAC_SECRET</code>은 자동 생성, 입력 없음).</p>
+          <p class="src">근거: 09-설치-운영-매뉴얼.md §3 설치 절차. 이 순서는 09 원문의 표현이며, 03번 문서(상세 설계서) §4.10의 서술과 이 문서 맨 아래 "확인 못 한 것"에서 다시 다룬다.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §3 11단계 인과 도해 (VIS3) ================= -->
+  <section class="section" id="sec-causal">
+    <span class="section-kicker">03</span>
+    <h2>11단계 진단, "경고만"이라는 말에 속지 말 것</h2>
+    <p class="lead">CLI는 11단계 진단 실패를 경고로만 표시하고 계속 진행한다. 그러나 이것이 "무시해도 되는 실패"라는 뜻은 아니다 — 이 문서에서 가장 중요한 운영 지식이다.</p>
+
+    <div class="visual" data-vis="3" data-vis-type="flowchart-causal">
+      <h3>인과 사슬 — 왜 11단계 실패가 12단계를 반드시 무너뜨리는가</h3>
+      <div class="causal-chain">
+        <div class="causal-box warn"><h4>11단계 진단 실패</h4><p><code>wget -T 10 https://one.one.one.one</code> 실패, 경고만 출력</p></div>
+        <div class="causal-arrow" aria-hidden="true">→</div>
+        <div class="causal-box"><h4>터널이 밖으로 못 나감</h4><p><code>hoster-cloudflared</code>가 <code>hoster-net</code>에서 Cloudflare로 나가는 아웃바운드 연결을 반드시 필요로 함</p></div>
+        <div class="causal-arrow" aria-hidden="true">→</div>
+        <div class="causal-box warn"><h4>12단계 healthz 실패</h4><p>터널 경유 요청 자체가 도달하지 못함</p></div>
+        <div class="causal-arrow" aria-hidden="true">→</div>
+        <div class="causal-box warn"><h4>이후 모든 배포 실패</h4><p>같은 통로로 앱 배포 요청도 들어와야 하므로</p></div>
+      </div>
+      <p class="layer1">🖋 1층 — 후문 전용 통로(터널)가 애초에 밖으로 뚫려 있지 않으면, "문이 열렸는지 확인"(12단계)도 "물건을 들이는 것"(이후 모든 배포)도 전부 막힌다. 경고 문구 하나가 조용히 지나가지만 그 뒤에 있는 문제는 조용하지 않다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p>조치: <span class="term">NOPASSWD sudo<span class="gloss">비밀번호 입력 없이 특정 명령(docker)만 실행할 수 있게 허용해 둔 설정</span></span>가 아니라 <b>DSM 방화벽 / IP forward</b> 설정을 확인해야 한다 (§5 장애 대응 표의 첫 항목과 동일 원인).</p>
+          <p class="src">근거: 09-설치-운영-매뉴얼.md §3 설치 절차 표 11행, §5 장애 대응</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §4 HMAC 재생성 (VIS4) ================= -->
+  <section class="section" id="sec-hmac">
+    <span class="section-kicker">04</span>
+    <h2>재실행의 위험 — <code>HMAC_SECRET</code>이 다시 찍힌다</h2>
+    <p class="lead"><code>hoster init</code>을 다시 돌리면 새 <span class="term">HMAC<span class="gloss">우리 둘만 아는 인주로 찍는 도장 — 본문과 시각을 섞어 계산하는 서명값</span></span> 비밀키가 생긴다. 이미 등록된 레포의 GitHub 시크릿은 옛 값 그대로 남는다.</p>
+
+    <div class="visual" data-vis="4" data-vis-type="invented-stamp-mismatch">
+      <h3>도장 불일치 — NAS의 새 도장 vs 레포에 남은 옛 도장</h3>
+      <div class="mismatch">
+        <div class="mstamp">
+          <div class="stamp rollback"><span class="stamp-num">NEW</span><span class="stamp-sub">HMAC_SECRET</span></div>
+          <p class="cap">재실행 직후 NAS <code>.env</code>와 <code>~/.hoster/config.json</code>에 반영된 새 비밀키</p>
+        </div>
+        <div class="vs">≠</div>
+        <div class="mstamp">
+          <div class="stamp fail"><span class="stamp-num">OLD</span><span class="stamp-sub">HOSTER_DEPLOY_SECRET</span></div>
+          <p class="cap">등록된 레포의 GitHub 시크릿은 그대로 — 서명 검증 실패 (401 <code>invalid signature</code>)</p>
+        </div>
+      </div>
+      <div class="field" style="margin-top:var(--sp-3);">
+        <span class="field-label">재동기화 조치</span>
+        재실행 후 등록된 레포마다 <code>hoster add</code>(또는 수동 <code>gh secret set HOSTER_DEPLOY_SECRET</code>)로 시크릿을 다시 맞춘다.
+      </div>
+      <p class="layer1" style="margin-top:var(--sp-3);"><b>경고</b> — 업그레이드 목적으로 <code>hoster init</code> 전체를 재실행하지 말 것. 업그레이드 절차는 §7에 따로 있다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p class="src">근거: 09-설치-운영-매뉴얼.md §3.3 재실행 시 주의</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §5 NAS 운영 (VIS8) ================= -->
+  <section class="section" id="sec-ops">
+    <span class="section-kicker">05</span>
+    <h2>NAS 스택 운영 — 평소 확인</h2>
+    <p class="lead">compose 파일은 <code>/volume1/docker/hoster</code>에 있다. 세 컨테이너 모두 <code>restart: unless-stopped</code>라 NAS 재부팅 시 자동 복구되고, 상태(SQLite)는 <span class="term">볼륨 마운트<span class="gloss">컨테이너 내부 폴더를 NAS의 실제 폴더에 그대로 연결해, 컨테이너를 지워도 데이터가 남게 하는 것</span></span>로 영속된다.</p>
+
+    <div class="visual" data-vis="8" data-vis-type="state-board">
+      <h3>컨테이너 3종 상태 보드</h3>
+      <div class="stateboard">
+        <div class="snode"><h4><span class="sdot"></span>hoster-cloudflared</h4><p>터널 연결 담당 · Up 상태여야 정상</p></div>
+        <div class="snode"><h4><span class="sdot"></span>hoster-traefik</h4><p>리버스 프록시(경비실 안내데스크) · Up 상태여야 정상</p></div>
+        <div class="snode"><h4><span class="sdot"></span>hoster-deployer</h4><p>배포 처리(관리사무소) · Up 상태여야 정상</p></div>
+      </div>
+      <div class="scrollbox" style="margin-top:var(--sp-3);">
+        <table>
+          <thead><tr><th>목적</th><th>명령</th></tr></thead>
+          <tbody>
+            <tr><td>상태 확인</td><td><code>ssh -p 2222 admin@192.168.1.100 'sudo -n /usr/local/bin/docker ps'</code></td></tr>
+            <tr><td>로그 확인(compose)</td><td><code>cd /volume1/docker/hoster && sudo -n /usr/local/bin/docker compose logs -f [cloudflared|traefik|deployer]</code></td></tr>
+            <tr><td>앱 로그(로컬에서)</td><td><code>hoster logs &lt;project&gt; [--tail &lt;n&gt;]</code> — 기본 tail 200</td></tr>
+            <tr><td>전체 재기동</td><td><code>cd /volume1/docker/hoster && sudo -n /usr/local/bin/docker compose --env-file .env up -d</code></td></tr>
+            <tr><td>개별 재시작</td><td><code>sudo -n /usr/local/bin/docker restart hoster-&lt;cloudflared|traefik|deployer&gt;</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="layer1">🖋 1층 — 세 설비실 계기판이 모두 "가동 중"이어야 단지가 정상이다. 정전(재부팅)이 나도 설비는 스스로 다시 켜지지만(<code>unless-stopped</code>), 장부(SQLite)는 별도 캐비닛에 있어 설비를 갈아도 지워지지 않는다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body"><p class="src">근거: 09-설치-운영-매뉴얼.md §4 NAS 스택 운영</p></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §6 장애 대응 (VIS5) ================= -->
+  <section class="section" id="sec-symptoms">
+    <span class="section-kicker">06</span>
+    <h2>장애 대응 — 증상에서 시작해 조치로</h2>
+
+    <div class="visual" data-vis="5" data-vis-type="flowchart-decisiontree">
+      <h3>5증상 결정 트리</h3>
+      <div class="dtree">
+        <div class="dbranch">
+          <div class="dnode symptom">hoster-net 외부 통신 불가</div>
+          <div class="darrow">↓</div>
+          <div class="dnode cause">DSM 방화벽/IP forward 문제 (과거 이력 있음)</div>
+          <div class="darrow">↓</div>
+          <div class="dnode action"><code>hoster doctor</code> 재진단 → DSM 설정 확인. 해결 전까지 모든 배포/healthz 실패</div>
+        </div>
+        <div class="dbranch">
+          <div class="dnode symptom"><code>-old</code> 컨테이너 잔존, 배포 계속 실패</div>
+          <div class="darrow">↓</div>
+          <div class="dnode cause">구버전 deployer — 304에서 예외 던져 롤백 중단(현재는 해소, <code>2e04ed1</code>/<code>b72a15d</code>)</div>
+          <div class="darrow">↓</div>
+          <div class="dnode action">최신 이미지로 업그레이드(§7). <code>docker ps -a --filter name=-old</code>로 확인 후 수동 정리</div>
+        </div>
+        <div class="dbranch">
+          <div class="dnode symptom">터널 다운 — 전 프로젝트 무응답</div>
+          <div class="darrow">↓</div>
+          <div class="dnode cause">hoster-cloudflared 장애 또는 hoster-net 외부 통신 문제</div>
+          <div class="darrow">↓</div>
+          <div class="dnode action"><code>docker ps</code> 확인 → 안 되면 <code>compose up -d</code>. Cloudflare 대시보드에서 터널 상태 확인</div>
+        </div>
+        <div class="dbranch">
+          <div class="dnode symptom">deployer 다운 — CLI 전체 실패</div>
+          <div class="darrow">↓</div>
+          <div class="dnode cause">hoster-deployer 컨테이너 장애</div>
+          <div class="darrow">↓</div>
+          <div class="dnode action"><code>docker ps</code>→<code>up -d</code>, <code>logs deployer</code> 확인. 401이면 §4(HMAC 불일치) 확인, 허용 오차 5분</div>
+        </div>
+        <div class="dbranch">
+          <div class="dnode symptom">재시도 시 터널 이름 충돌</div>
+          <div class="darrow">↓</div>
+          <div class="dnode cause">"hoster" 터널이 Cloudflare에 이미 존재</div>
+          <div class="darrow">↓</div>
+          <div class="dnode action">대시보드에서 기존 터널 삭제 후 재실행, 또는 <code>--reuse-tunnel &lt;터널ID&gt;</code></div>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — 민원이 들어오면 증상부터 원인, 조치까지 세로로 따라 내려가면 된다. 다섯 갈래 모두 실제로 겪었던 상황이다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body"><p class="src">근거: 09-설치-운영-매뉴얼.md §5 장애 대응</p></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §7 백업·복구 (VIS6) + 업그레이드 (VIS7) ================= -->
+  <section class="section" id="sec-backup">
+    <span class="section-kicker">07</span>
+    <h2>백업·복구 조립 도해</h2>
+    <p class="lead">4개의 조각이 모두 있어야 서비스가 되살아난다. state 디렉터리(<code>/volume1/docker/hoster/state</code>)는 <code>docker-compose.yml</code>에서 <code>/state</code>로 마운트된다. 장부(<code>hoster.db</code>)는 <span class="term">WAL<span class="gloss">쓰는 도중 정전이 나도 장부가 찢어지지 않게, 변경 내용을 먼저 별도 쪽지에 적어 둔 뒤 나중에 본책에 옮겨 적는 저널 방식</span></span> 모드로 기록된다.</p>
+
+    <div class="visual" data-vis="6" data-vis-type="invented-assembly">
+      <h3>백업 4조각 → 복구 조립</h3>
+      <div class="assembly">
+        <div class="apiece"><b>hoster.db</b>프로젝트 등록·배포 이력·현재/직전 이미지<br><span class="src">better-sqlite3, WAL</span></div>
+        <div class="a-arrow" aria-hidden="true">＋</div>
+        <div class="apiece"><b>env/*.env</b>프로젝트별 환경변수 (0600)</div>
+        <div class="a-arrow" aria-hidden="true">＋</div>
+        <div class="apiece"><b>NAS .env</b>TUNNEL_TOKEN/HMAC_SECRET/GHCR_PAT/BASE_DOMAIN (0600)</div>
+        <div class="a-arrow" aria-hidden="true">＋</div>
+        <div class="apiece"><b>로컬 config.json</b>NAS 접속정보, CF 인증정보, hmacSecret, ghcrPat (Mac, 0600)</div>
+        <div class="a-arrow" aria-hidden="true">→</div>
+        <div class="a-target"><b>정상 가동 복귀</b><br><code>docker compose --env-file .env up -d</code></div>
+      </div>
+      <p class="layer1" style="margin-top:var(--sp-3);">🖋 1층 — 장부, 세대별 서류, 관리사무소 도장, 그리고 관리소장의 개인 열쇠 사본 — 네 가지가 다 있어야 단지가 다시 문을 연다. 방법은 DSM 표준 백업 도구(Hyper Backup 등)로 <code>/volume1/docker/hoster</code> 전체를 포함하는 것. <code>config.json</code>은 시크릿을 담고 있으니 따로 안전하게(암호화 저장 권장) 보관한다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p><code>~/.hoster/config.json</code> 복원 전에는 로컬 CLI가 "설정 파일이 없습니다 (...). hoster init을 먼저 실행하세요." 오류로 즉시 종료된다.</p>
+          <p class="src">근거: 09-설치-운영-매뉴얼.md §6 백업·복구</p>
+        </div>
+      </details>
+    </div>
+
+    <h3>업그레이드 — deployer 이미지 재빌드·재전송</h3>
+    <p class="lead">3절 8단계와 동일한 명령을 그대로 재사용한다.</p>
+    <div class="visual" data-vis="7" data-vis-type="annotated-code-panel">
+      <h3>업그레이드 명령</h3>
+      <div class="code-panel">
+        <p class="cp-title">Mac에서 빌드·전송 → NAS에서 재기동</p>
+<pre>docker buildx build --platform linux/amd64 \
+  -f packages/deployer/Dockerfile -t hoster-deployer:latest --load .
+<span class="anno"># linux/amd64로 고정 빌드 — NAS 자체에서는 빌드하지 않음</span>
+
+docker save hoster-deployer:latest | gzip | \
+  ssh -p 2222 admin@192.168.1.100 'gunzip | sudo -n /usr/local/bin/docker load'
+<span class="anno"># save|gzip|ssh|load — 이미지를 압축해 통째로 NAS에 밀어넣는다</span>
+
+cd /volume1/docker/hoster && sudo -n /usr/local/bin/docker compose --env-file .env up -d
+<span class="anno"># 태그가 hoster-deployer:latest로 고정이므로 load 직후 up -d가 새 이미지로 재기동</span></pre>
+        <ul class="an-list">
+          <li><code>state/</code>(hoster.db, env/)는 볼륨 마운트이므로 컨테이너 재기동과 무관하게 보존된다.</li>
+          <li><b>업그레이드 목적으로 <code>hoster init</code> 전체를 재실행하지 말 것</b> — <code>HMAC_SECRET</code>이 재생성되어 기존 레포 시크릿과 불일치(§4)가 생긴다. 업그레이드는 이 세 명령의 수동 반복만으로 충분하다.</li>
+        </ul>
+      </div>
+      <p class="visual-cap">시각물 7 · 주석 코드 패널 — 3절 8단계와 동일 명령의 재사용임을 강조.</p>
+      <p class="layer1">🖋 1층 — 설비를 새 것으로 바꿀 때, 장부(state/)가 든 캐비닛은 그대로 두고 설비 본체만 통째로 새로 들여와 갈아 끼우는 것과 같다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p>이미지 태그가 <code>hoster-deployer:latest</code>로 고정이므로 <code>docker load</code> 직후 <code>up -d</code>가 새 이미지로 재기동한다. 3절 8단계와 정확히 동일한 명령을 재사용한다.</p>
+          <p class="src">근거: 09-설치-운영-매뉴얼.md §7 업그레이드</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= §8 이 문서가 말하지 않는 것 (VIS9) ================= -->
+  <section class="section" id="sec-scope">
+    <span class="section-kicker">08 · 이 문서가 말하지 않는 것</span>
+    <h2>다루는 것과 다루지 않는 것</h2>
+    <div class="honesty-banner">
+      <p style="margin:0"><b>확인 못 한 사실</b> — 09번 §3은 <code>hoster init</code> 프롬프트 순서를 "기본 도메인 → Cloudflare API 토큰 → Account ID → Zone ID → GHCR PAT" 5개로 적었다. 03번 문서(상세 설계서) §4.10 <code>runInit</code> 실행 흐름은 4개만 적어 <b>기본 도메인 프롬프트가 빠져 있다</b>. 소스 코드는 이번 범위에서 확인하지 않았다 — 이 문서는 09 원문의 순서를 그대로 따르고, 어느 쪽이 맞는지 단정하지 않는다.</p>
+    </div>
+
+    <div class="visual" data-vis="9" data-vis-type="comparison-matrix">
+      <h3>이 문서의 범위</h3>
+      <div class="contrast">
+        <div class="col yes">
+          <h4>이 문서가 다루는 것</h4>
+          <ul>
+            <li>설치 12단계와 각 단계의 실패/복구</li>
+            <li>NAS 운영 명령(상태·로그·재기동)</li>
+            <li>장애 대응 5증상</li>
+            <li>백업 대상 4종과 복구 순서</li>
+            <li>업그레이드(이미지 재빌드·재전송) 절차</li>
+          </ul>
+        </div>
+        <div class="col no">
+          <h4>이 문서가 다루지 않는 것</h4>
+          <ul>
+            <li>자동 백업 스케줄 — hoster는 제공하지 않음. DSM 표준 도구(Hyper Backup 등)에 위임</li>
+            <li>모니터링·알림 체계 — <code>doctor</code>/<code>logs</code>를 사람이 수동으로 실행해야 함</li>
+            <li><code>docs/e2e-checklist.md</code>의 내용 — 경로·역할만 언급, 안의 내용은 지어내지 않음</li>
+            <li>프로젝트 등록·배포 사용법 — <a href="10-사용자-매뉴얼.html">10. 사용자 매뉴얼</a> 참고</li>
+          </ul>
+        </div>
+      </div>
+      <p class="layer1">🖋 1층 — 이 서식철은 "단지를 처음 짓고 유지·보수하는 법"만 다룬다. "입주민이 짐을 어떻게 옮기는지"는 다음 서식철(10번) 몫이다.</p>
+      <details class="layer2">
+        <summary>2층 기술 상세 펼치기</summary>
+        <div class="layer2-body">
+          <p class="src">근거: 09-설치-운영-매뉴얼.md 전체 + §6.6 확인하지 못한 사실 1번</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/09-설치-운영-매뉴얼.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="08-테스트-결과-보고서.html">← 08 테스트 결과 보고서</a>
+        <a href="10-사용자-매뉴얼.html">10 사용자 매뉴얼 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

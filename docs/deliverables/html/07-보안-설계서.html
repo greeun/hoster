@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07. 보안 설계서 — hoster 산출물</title>
+<style>
+  :root{
+    --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+    --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+    --rule:#c7bb9c; --rule-soft:#ded1ac; --rule-strong:#a89877;
+    --state-success:#2f5233; --state-success-bg:#e2e9df;
+    --state-failed:#b83a1f;  --state-failed-bg:#f2e0d8;
+    --state-pending:#8b8577; --state-pending-bg:#e6e2d6;
+    --state-rolledback:#8a5a2c; --state-rolledback-bg:#ecdfcb;
+    --state-skipped:#aca493; --state-skipped-bg:#eae5da;
+    --accent:#7a1f2b; --accent-ink:#4a1019; --accent-soft:#ecd9dc; --accent-line:#7a1f2b;
+    --accent-02:#2b5d88;
+    --sev-critical:#3d0d12; --sev-critical-bg:#e9d3d6;
+    --sev-high:#8a2116; --sev-high-bg:#f0ddd8;
+    --sev-medium:#a66a1f; --sev-medium-bg:#f1e2c9;
+    --sev-low:#8a8370; --sev-low-bg:#eae5da;
+    --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+    --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+    --ff-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --ff-title: "AppleMyungjo", "Apple SD Gothic Neo", "Batang", "New Batang", "Noto Serif KR", serif;
+    --ff-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "D2Coding", monospace;
+    --fs-doctitle: clamp(1.7rem, 1.35rem + 1.4vw, 2.3rem);
+    --fs-section: clamp(1.2rem, 1.05rem + .6vw, 1.5rem);
+    --fs-sub: 1.08rem;
+    --fs-body: 1rem;
+    --fs-caption: .8125rem;
+    --fs-code: .875rem;
+    --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2rem; --sp-7:3rem; --sp-8:4rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--ff-body);
+    font-size:var(--fs-body); line-height:1.62; overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-attachment:local;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 var(--sp-5);}
+  a{color:var(--accent-ink)}
+  a:not(.tab):not(.crumb-link){text-underline-offset:2px}
+  h1,h2,h3,h4{font-family:var(--ff-title); font-weight:700; margin:0 0 var(--sp-3); color:var(--ink)}
+  p{margin:0 0 var(--sp-4)}
+  code, pre, .mono{font-family:var(--ff-mono)}
+  svg text{font-family:var(--ff-body)}
+  :focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+
+  .site-header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:2px solid var(--ink);}
+  .header-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);padding:var(--sp-4) var(--sp-5) var(--sp-2);flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:var(--sp-3);}
+  .brand-mark{width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--ff-title);font-size:1.1rem;flex:none;}
+  .brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+  .brand-title{margin:0;font-size:1.15rem;}
+  .doc-meta-chip{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);white-space:nowrap;}
+  .index-tabs{max-width:1180px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;scrollbar-width:thin;}
+  .tab{--tab-ac:var(--ink);flex:none;font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);padding:var(--sp-2) var(--sp-3) var(--sp-2);background:var(--paper-deep);border:1px solid var(--rule-strong);border-bottom:none;clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);transform:translateY(3px);transition:transform .12s ease;white-space:nowrap;}
+  .tab:hover{transform:translateY(0);color:var(--ink);}
+  .tab--current{background:var(--paper);color:var(--ink);border-color:var(--ink);border-bottom:3px solid var(--tab-ac);transform:translateY(0);font-weight:800;}
+  .tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+  .doc-hero{padding:var(--sp-6) 0 var(--sp-5); border-bottom:1px dashed var(--rule);}
+  .doc-kicker{font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; margin-bottom:6px;}
+  .doc-title{font-size:var(--fs-doctitle); margin-bottom:var(--sp-2); line-height:1.25;}
+  .doc-anchor{font-size:var(--fs-sub); color:var(--ink-soft); max-width:62ch; margin-bottom:var(--sp-3)}
+  .meta-line{font-size:var(--fs-caption); color:var(--ink-faint); border-top:1px solid var(--rule-soft); padding-top:var(--sp-2); display:flex; flex-wrap:wrap; gap:4px 14px;}
+  .meta-line code{color:var(--ink-soft)}
+
+  .locator{display:flex; gap:var(--sp-5); align-items:center; flex-wrap:wrap; margin:var(--sp-5) 0 0; padding:var(--sp-4); background:var(--paper-card); border:1px solid var(--rule); border-radius:4px;}
+  .locator__map{flex:0 0 auto; width:min(340px,100%);}
+  .locator__cap{flex:1 1 240px; font-size:var(--fs-caption); color:var(--ink-soft);}
+  .locator__cap strong{color:var(--ink); font-family:var(--ff-title)}
+
+  main{padding-bottom:var(--sp-8)}
+  section.doc-section{padding:var(--sp-7) 0; border-bottom:1px dashed var(--rule-soft);}
+  section.doc-section:last-of-type{border-bottom:none}
+  .section-num{display:inline-block; font-family:var(--ff-mono); font-size:var(--fs-caption); color:var(--paper); background:var(--ink); padding:2px 7px; border-radius:2px; margin-right:8px; vertical-align:2px;}
+  .section-title{font-size:var(--fs-section);}
+  .lede{font-size:var(--fs-sub); color:var(--ink-soft); max-width:74ch; margin-bottom:var(--sp-5); position:relative; padding-left:16px; border-left:3px solid var(--accent);}
+  .lede b{color:var(--ink)}
+
+  .gloss{border-bottom:1px dotted var(--ink-faint); cursor:help; position:relative;}
+  .gloss-note{display:inline; font-size:.94em; color:var(--ink-soft); background:var(--accent-soft); padding:1px 6px; border-radius:3px; margin:0 2px;}
+
+  details.layer2{margin-top:var(--sp-4); border:1px solid var(--rule); border-radius:4px; background:var(--paper-card);}
+  details.layer2>summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:var(--fs-caption); font-weight:700; color:var(--accent-ink); display:flex; align-items:center; gap:8px; user-select:none;}
+  details.layer2>summary::-webkit-details-marker{display:none}
+  details.layer2>summary:before{content:"▸"; display:inline-block; transition:transform .15s;}
+  details.layer2[open]>summary:before{transform:rotate(90deg);}
+  details.layer2>summary .layer2-label{text-transform:uppercase; letter-spacing:.05em; font-size:.72rem; color:var(--ink-faint); font-weight:700;}
+  .layer2-body{padding:0 16px 16px; font-size:.94rem; color:var(--ink-soft);}
+  .layer2-body table{margin-top:6px}
+  .layer2-body code{background:var(--paper-deep); padding:1px 5px; border-radius:3px; color:var(--ink)}
+  .cite{display:inline-block; font-family:var(--ff-mono); font-size:.72rem; color:var(--ink-faint); background:var(--paper-deep); padding:1px 6px; border-radius:3px; margin-top:6px;}
+
+  table{border-collapse:collapse; width:100%; font-size:.92rem;}
+  caption{caption-side:top; text-align:left; font-size:var(--fs-caption); color:var(--ink-faint); margin-bottom:4px; font-style:normal;}
+  th,td{border:1px solid var(--rule); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--paper-deep); font-weight:700; font-size:.85rem;}
+  td code{font-size:.82em}
+  .table-scroll{overflow-x:auto; border-radius:4px;}
+
+  .chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--ff-mono); font-size:.78rem; background:var(--paper); border:1px solid var(--ink-soft); border-radius:3px; padding:3px 8px; color:var(--ink);}
+  .chip-accent{display:inline-block; font-family:var(--ff-title); font-weight:700; font-size:.82rem; background:var(--accent-soft); color:var(--accent-ink); border:1px solid var(--accent); border-radius:3px; padding:3px 10px;}
+
+  .stamp{display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:.78rem; padding:4px 10px; border-radius:3px; letter-spacing:.02em; white-space:nowrap;}
+  .stamp--pass{color:var(--state-success); background:var(--state-success-bg); border:2px double var(--state-success);}
+  .stamp--reject{color:var(--state-failed); background:var(--state-failed-bg); border:2px double var(--state-failed);}
+  .stamp--pending{color:var(--state-pending); background:var(--state-pending-bg); border:2px dashed var(--state-pending);}
+  .stamp--info{color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent);}
+  .stamp--sev-critical{color:var(--sev-critical); background:var(--sev-critical-bg); border:2px double var(--sev-critical);}
+  .stamp--sev-high{color:var(--sev-high); background:var(--sev-high-bg); border:2px solid var(--sev-high);}
+  .stamp--sev-medium{color:var(--sev-medium); background:var(--sev-medium-bg); border:2px solid var(--sev-medium);}
+  .stamp--sev-low{color:var(--sev-low); background:var(--sev-low-bg); border:2px dashed var(--sev-low);}
+
+  .code-panel{background:#efe6cf; border:1px solid var(--rule); border-radius:4px; padding:var(--sp-4); position:relative; overflow-x:auto;}
+  .code-panel pre{margin:0; font-size:var(--fs-code); line-height:1.55; overflow-x:auto; color:var(--ink);}
+
+  .diagram-wrap{overflow-x:auto; overflow-y:visible; padding:4px 2px 10px;}
+  .diagram-wrap svg{display:block; min-width:560px; width:100%; height:auto;}
+  figure{margin:0}
+  figcaption{font-size:var(--fs-caption); color:var(--ink-faint); margin-top:6px;}
+
+  /* ---------- boundary map (07 signature context) ---------- */
+  .boundary-map{border:1px solid var(--rule); border-radius:4px; padding:8px; background:var(--paper);}
+
+  /* ---------- stamp trial widget (07 signature) ---------- */
+  .stampwidget{border:2px solid var(--ink); background:var(--paper-card); border-radius:6px; padding:var(--sp-5);}
+  .sw-mode{font-size:var(--fs-caption); font-weight:700; padding:3px 10px; border-radius:3px; display:inline-block; margin-bottom:var(--sp-3);}
+  .sw-mode.mode-real{color:var(--state-success); background:var(--state-success-bg); border:1px solid var(--state-success);}
+  .sw-mode.mode-demo{color:var(--sev-medium); background:var(--sev-medium-bg); border:1px solid var(--sev-medium);}
+  .sw-grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);}
+  .sw-field{display:flex; flex-direction:column; gap:4px; margin-bottom:var(--sp-3);}
+  .sw-field label{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint);}
+  .sw-field input[type=text]{
+    font-family:var(--ff-mono); font-size:.92rem; padding:7px 8px; border:1.5px solid var(--ink-soft);
+    border-radius:3px; background:var(--paper); color:var(--ink); width:100%;
+  }
+  .sw-field .fixed-note{font-family:var(--ff-mono); font-size:.8rem; padding:7px 8px; border:1.5px dashed var(--rule); border-radius:3px; background:var(--paper-deep); color:var(--ink-soft);}
+  .sw-skew{display:flex; align-items:center; gap:10px;}
+  .sw-skew input[type=range]{flex:1;}
+  .sw-skew output{font-family:var(--ff-mono); font-weight:700; min-width:4.2rem; text-align:right;}
+  .sw-signing-string{font-family:var(--ff-mono); font-size:.82rem; background:var(--paper); border:1px solid var(--rule); border-radius:3px; padding:8px 10px; word-break:break-all; margin-top:6px;}
+  .sw-hexrow{display:grid; grid-template-columns:7rem 1fr; gap:8px; align-items:center; font-size:.82rem; margin-top:6px;}
+  .sw-hexrow .hexlabel{color:var(--ink-faint); font-size:.72rem;}
+  .sw-hex{font-family:var(--ff-mono); background:var(--paper); border:1px solid var(--rule); border-radius:3px; padding:6px 8px; word-break:break-all;}
+  .sw-verdict{margin-top:var(--sp-4); padding:var(--sp-4); border:2px solid var(--ink); border-radius:4px; background:var(--paper); text-align:center;}
+  .sw-hint{font-size:.78rem; color:var(--ink-faint); margin-top:var(--sp-3);}
+
+  /* ---------- lifecycle flow (secret lifecycle) ---------- */
+  .lifecycle{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp-3);}
+  .lifecycle > *{min-width:0;}
+  .lc-stage .stamp{white-space:normal;}
+  .lc-stage{border:1px solid var(--rule); border-radius:5px; padding:12px; background:var(--paper-card); position:relative;}
+  .lc-stage .lc-title{font-family:var(--ff-mono); font-size:.78rem; letter-spacing:.02em; color:var(--accent-ink); margin:0 0 6px;}
+  .lc-stage p{font-size:.82rem; margin:0 0 8px; color:var(--ink-soft);}
+  .lc-stage:not(:last-child):after{content:"→"; position:absolute; right:-1.1rem; top:50%; transform:translateY(-50%); font-size:1.2rem; color:var(--ink-faint);}
+
+  /* ---------- gate placement (7종 + heuristic) ---------- */
+  .gate-lineup{display:flex; flex-direction:column; gap:8px;}
+  .gate-row{display:grid; grid-template-columns:9.5rem 1fr 1fr; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--rule); border-radius:4px; background:var(--paper);}
+  .gate-row .g-name{font-family:var(--ff-mono); font-size:.8rem; font-weight:700;}
+  .gate-row .g-risk{font-size:.82rem; color:var(--state-failed);}
+  .gate-row .g-loc{font-size:.76rem; color:var(--ink-faint);}
+  .gate-row.heuristic{border-style:dashed; border-color:var(--ink-faint); background:var(--paper-deep);}
+
+  /* ---------- timing comparison bars ---------- */
+  .timing-bars{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);}
+  .timing-col{border:1px solid var(--rule); border-radius:5px; padding:12px; background:var(--paper-card);}
+  .timing-col .tc-title{font-family:var(--ff-mono); font-size:.78rem; margin:0 0 8px;}
+  .tbar-row{display:grid; grid-template-columns:5rem 1fr; gap:8px; align-items:center; margin-bottom:6px; font-size:.72rem;}
+  .tbar{height:12px; border-radius:2px; background:var(--accent);}
+
+  /* ---------- severity timeline ---------- */
+  .sev-timeline{overflow-x:auto;}
+  .sev-grid{display:grid; grid-template-columns:repeat(8, minmax(6.5rem,1fr)); gap:2px; min-width:760px;}
+  .sev-col-head{font-family:var(--ff-mono); font-size:.68rem; color:var(--ink-faint); text-align:center; padding:4px 2px; border-bottom:2px solid var(--ink);}
+  .sev-lane-label{font-family:var(--ff-mono); font-size:.7rem; font-weight:700; padding:6px 4px; display:flex; align-items:center;}
+  .sev-cell{min-height:38px; border:1px solid var(--rule-soft); display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px; padding:2px; font-size:.66rem;}
+  .sev-mark{width:1.5rem; height:1.5rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--ff-mono); font-weight:800; font-size:.66rem; color:var(--paper);}
+  .sev-mark.c{background:var(--sev-critical);}
+  .sev-mark.h{background:var(--sev-high);}
+  .sev-mark.m{background:var(--sev-medium);}
+  .sev-mark.l{background:var(--sev-low); color:var(--ink);}
+
+  .not-said-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--sp-3); margin-top:var(--sp-4);}
+  .not-said{border:2px dashed var(--ink-faint); border-radius:6px; padding:var(--sp-3); background:var(--paper);}
+  .not-said .stampmark{display:block; font-family:var(--ff-title); font-size:.72rem; color:var(--ink-faint); letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px;}
+  .not-said p{margin:0; font-size:.88rem; color:var(--ink-soft);}
+
+  .residual-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--sp-3); margin-top:var(--sp-4);}
+  .residual-card{border:2px dashed var(--sev-high); border-radius:6px; padding:var(--sp-3); background:var(--sev-high-bg);}
+  .residual-card .stampmark{display:block; font-family:var(--ff-title); font-size:.72rem; color:var(--sev-high); letter-spacing:.08em; margin-bottom:4px; font-weight:700;}
+  .residual-card p{margin:0; font-size:.85rem; color:var(--ink);}
+
+  .site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+  .footer-inner{max-width:1180px;margin:0 auto;}
+  .footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+  .footer-prevnext{display:flex;gap:var(--sp-4);}
+  .footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+  .footer-source{margin-top:var(--sp-3);font-family:var(--ff-mono);font-size:0.76rem;color:var(--ink-faint);}
+  .footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+  @media (max-width:900px){
+    .sw-grid{grid-template-columns:1fr;}
+    .lifecycle{grid-template-columns:1fr 1fr;}
+    .lc-stage:nth-child(2):after{display:none;}
+    .timing-bars{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 var(--sp-4)}
+    .lifecycle{grid-template-columns:1fr;}
+    .lc-stage:after{display:none !important;}
+    .gate-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">07 · 보안 설계서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <div class="doc-kicker">택배 접수증의 도장과 시각 · 봉인 심홍</div>
+    <h1 class="doc-title">07. 보안 설계서</h1>
+    <p class="doc-anchor">택배 접수증의 <span class="gloss" tabindex="0">도장과 시각<span class="gloss-note">우리 둘만 아는 인주로 찍은 도장(서명) + 접수 시각 — 둘 다 맞아야 창구가 받아 준다</span></span>이 이 문서의 뼈대다. 이 도장의 정체가 <span class="gloss" tabindex="0">HMAC<span class="gloss-note">비밀키를 섞어 계산한, 위조하기 어려운 디지털 도장 — 흔히 "서명"이라고 부른다</span></span>이다. 도장이 다르거나 시각이 5분 넘게 어긋나면 창구에서 그냥 반려한다 — 무엇이 이 시스템을 지키고, 무엇은 아직 지키지 못하는지 숨김없이 적는다.</p>
+    <div class="meta-line">
+      <span>대상: <code>@hoster/deployer</code> (NAS 상주 API), <code>@hoster/cli</code> (로컬 운영 CLI)</span>
+      <span>버전 1.0</span>
+      <span>작성일 2026-08-13</span>
+      <span>원문: <code>docs/deliverables/07-보안-설계서.md</code></span>
+    </div>
+
+    <div class="locator">
+      <svg class="locator__map" viewBox="0 0 320 170" role="img" aria-labelledby="locatorTitle07">
+        <title id="locatorTitle07">단지 배치도 축약판 — 신뢰 경계선 강조</title>
+        <rect x="0" y="0" width="320" height="170" fill="#efe6cf" rx="4"/>
+        <rect x="130" y="10" width="180" height="150" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <text x="220" y="24" font-size="7" fill="var(--accent-ink)" text-anchor="middle">NAS 내부(SSH) 경계</text>
+        <rect x="8" y="16" width="60" height="26" fill="none" stroke="#8b8271" stroke-width="1.3" stroke-dasharray="2 2" rx="3"/>
+        <text x="38" y="33" font-size="7.5" fill="#8b8271" text-anchor="middle">로컬 CLI</text>
+        <rect x="8" y="52" width="60" height="26" fill="none" stroke="#8b8271" stroke-width="1.3" stroke-dasharray="2 2" rx="3"/>
+        <text x="38" y="69" font-size="7.5" fill="#8b8271" text-anchor="middle">Actions</text>
+        <rect x="8" y="88" width="60" height="26" fill="none" stroke="#8b8271" stroke-width="1.3" stroke-dasharray="2 2" rx="3"/>
+        <text x="38" y="105" font-size="7.5" fill="#8b8271" text-anchor="middle">외부 인터넷</text>
+        <path d="M68 29 C110 29,140 58,166 78" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#loc07arrow)"/>
+        <path d="M68 65 C110 65,140 70,166 82" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#loc07arrow)"/>
+        <path d="M68 101 C110 101,140 92,166 86" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#loc07arrow)"/>
+        <rect x="168" y="60" width="122" height="70" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5" rx="4"/>
+        <text x="229" y="80" font-size="9" fill="var(--accent-ink)" text-anchor="middle" font-weight="700">관리사무소</text>
+        <text x="229" y="93" font-size="7.5" fill="var(--accent-ink)" text-anchor="middle">(NAS · deployer)</text>
+        <text x="229" y="107" font-size="6.5" fill="var(--accent-ink)" text-anchor="middle">HMAC 관문 ← 지금 여기</text>
+        <text x="229" y="119" font-size="6.5" fill="var(--accent-ink)" text-anchor="middle">docker.sock 마운트</text>
+        <defs><marker id="loc07arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+      </svg>
+      <div class="locator__cap"><strong>지금 보고 있는 곳:</strong> 단지 배치도(02번 문서 자산의 축약판) 위에 신뢰 경계선을 겹친 것. 관리사무소(deployer)로 들어오는 모든 화살표는 도장(HMAC) 관문을 지나야 하고, NAS 담장 안쪽 전체가 SSH 접속·<span class="gloss" tabindex="0">소켓 마운트<span class="gloss-note">관리사무소 컨테이너 안에 NAS 전체를 조종하는 리모컨(docker.sock)을 통째로 넣어 준 것 — 그 컨테이너가 뚫리면 NAS 전체가 뚫린다</span></span>이라는 별도 경계다.</div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ================= 1. 신뢰 경계 4개 ================= -->
+  <section class="doc-section" id="trust-boundary">
+    <h2 class="section-title"><span class="section-num">1</span>신뢰 경계 4개 — 어디로 들어오고 어디서 막는가</h2>
+    <p class="lede"><b>1층.</b> <span class="gloss" tabindex="0">신뢰 경계<span class="gloss-note">"여기서부터는 남이 보낸 것일 수 있다"고 가정하고 반드시 확인하는 선 — 관리사무소의 접수 창구 같은 것</span></span> 4개가 있다. 넷 다 관리사무소(deployer)로 이어지지만, 들어오는 입력의 성격과 막는 방법이 다르다.</p>
+
+    <figure class="visual">
+      <div class="boundary-map diagram-wrap">
+        <svg viewBox="0 0 720 300" role="img" aria-labelledby="tb07title">
+          <title id="tb07title">신뢰 경계 4개와 각 경계의 방어 지점</title>
+          <rect x="16" y="16" width="150" height="60" rx="5" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.4"/>
+          <text x="91" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">외부 인터넷</text>
+          <text x="91" y="58" text-anchor="middle" font-size="9" fill="var(--ink-faint)">Cloudflare Tunnel 경유</text>
+
+          <rect x="16" y="120" width="150" height="60" rx="5" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.4"/>
+          <text x="91" y="146" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">GitHub Actions</text>
+          <text x="91" y="162" text-anchor="middle" font-size="9" fill="var(--ink-faint)">POST /deploy</text>
+
+          <rect x="16" y="224" width="150" height="60" rx="5" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.4"/>
+          <text x="91" y="250" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">로컬 CLI</text>
+          <text x="91" y="266" text-anchor="middle" font-size="9" fill="var(--ink-faint)">개발자 프롬프트 입력</text>
+
+          <rect x="290" y="70" width="200" height="160" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.2"/>
+          <text x="390" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent-ink)">deployer</text>
+          <text x="390" y="114" text-anchor="middle" font-size="9.5" fill="var(--accent-ink)">HMAC 서명 검증 미들웨어</text>
+          <text x="390" y="128" text-anchor="middle" font-size="9.5" fill="var(--accent-ink)">/healthz만 예외(등록 순서)</text>
+          <rect x="310" y="146" width="160" height="26" rx="3" fill="var(--paper)" stroke="var(--accent)" stroke-dasharray="2 2"/>
+          <text x="390" y="163" text-anchor="middle" font-size="9" fill="var(--accent-ink)">PROJECT_NAME_RE 재검증</text>
+
+          <rect x="16" y="70" width="150" height="1" fill="none"/>
+          <path d="M166,46 C230,46 250,90 290,120" fill="none" stroke="var(--ink-soft)" stroke-width="1.8" marker-end="url(#tb07a)"/>
+          <path d="M166,150 C230,150 250,150 290,150" fill="none" stroke="var(--ink-soft)" stroke-width="1.8" marker-end="url(#tb07a)"/>
+
+          <rect x="530" y="30" width="180" height="240" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="4 3"/>
+          <text x="620" y="50" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--accent-ink)">NAS 내부(SSH) 경계</text>
+          <path d="M166,254 C300,270 420,260 530,180" fill="none" stroke="var(--ink-soft)" stroke-width="1.8" stroke-dasharray="3 2" marker-end="url(#tb07a)"/>
+          <text x="330" y="272" font-size="9" fill="var(--ink-faint)">CLI → Nas.exec/Nas.docker (SSH)</text>
+
+          <rect x="550" y="70" width="140" height="40" rx="4" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+          <text x="620" y="94" text-anchor="middle" font-size="9.5" fill="var(--ink)">shQuote 전 값 예외 없음</text>
+          <rect x="550" y="130" width="140" height="40" rx="4" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+          <text x="620" y="154" text-anchor="middle" font-size="9.5" fill="var(--ink)">sudo -n 절대경로 고정</text>
+          <rect x="550" y="190" width="140" height="40" rx="4" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+          <text x="620" y="214" text-anchor="middle" font-size="9.5" fill="var(--ink)">baseDomain/host/user/port</text>
+
+          <defs><marker id="tb07a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"/></marker></defs>
+        </svg>
+      </div>
+      <figcaption>단지 배치도 위에 <b>경계선</b>을 겹친 그림이다 — 외부 인터넷·GitHub Actions는 같은 HMAC 도장 관문을 지나 관리사무소로 들어오고, 로컬 CLI는 SSH로 NAS 담장 안까지 직접 들어가므로 별도 경계로 취급한다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>경계별 유입 입력 · 방어 표</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>경계</th><th>유입 경로</th><th>유입 입력</th><th>방어</th></tr></thead>
+            <tbody>
+              <tr><td>외부 인터넷</td><td>Cloudflare Tunnel → hoster.&lt;baseDomain&gt;</td><td>HTTP 요청 전체(/deploy, /projects, /env/:project 등)</td><td>HMAC-SHA256 서명 검증 미들웨어(app.ts:48-58). /healthz만 예외(app.ts:44-49, 라우트 등록 순서로 우회)</td></tr>
+              <tr><td>GitHub Actions</td><td>workflow.yml.tpl → HOSTER_DEPLOY_URL/SECRET로 POST /deploy</td><td>project, image, sha</td><td>서버측 PROJECT_NAME_RE 재검증(app.ts:64), 동일 HMAC 미들웨어</td></tr>
+              <tr><td>로컬 CLI</td><td>개발자 프롬프트 입력, git remote get-url origin, package.json</td><td>baseDomain, apiToken, --branch, --project, repo 문자열</td><td>parseGitHubRepo/isValidBranchName/isValidProjectName(repo.ts), shQuote/substitutePlaceholders(shell.ts)</td></tr>
+              <tr><td>NAS 내부(SSH)</td><td>CLI → Nas.exec/Nas.docker → ssh -p &lt;port&gt; user@host &lt;remoteCmd&gt;</td><td>baseDomain, NAS host/user/port, 시크릿 값</td><td>보간 값 전부에 shQuote 적용(예외 없음, commands/init.ts:48-51), sudo -n 절대경로 고정</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: 07-보안-설계서.md § 2. 위협 모델 &gt; 2.1 신뢰 경계</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 시그니처: 도장 실습기 ================= -->
+  <section class="doc-section" id="stamp-trial">
+    <h2 class="section-title"><span class="section-num">시그니처</span>도장 실습기 — 손으로 확인하는 HMAC</h2>
+    <p class="lede"><b>1층.</b> 아래 서식에서 <b>본문</b>·<b>비밀키</b>·<b>시각 오차</b>를 직접 바꿔 보라. 관리사무소(NAS)가 실제로 갖고 있는 열쇠는 왼쪽 아래 고정칸에 적혀 있다 — 손님이 보내는 열쇠가 이것과 다르면, 또는 접수 시각이 5분 넘게 어긋나면, 서명이 아무리 그럴듯해도 반려 도장이 찍힌다.</p>
+
+    <div class="stampwidget" id="sw">
+      <span id="swMode" class="sw-mode mode-demo">계산 방식 확인 중…</span>
+      <div class="sw-grid">
+        <div>
+          <div class="sw-field">
+            <label for="swBody">본문(body) — 접수 서류 내용물</label>
+            <input type="text" id="swBody" value='{"project":"my-app","image":"ghcr.io/o/my-app:abc123","sha":"abc123"}' autocomplete="off" spellcheck="false">
+          </div>
+          <div class="sw-field">
+            <label for="swClientSecret">보내는 쪽이 쓰는 비밀키(클라이언트)</label>
+            <input type="text" id="swClientSecret" value="hoster-hmac-demo-secret" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="sw-field">
+            <label>관리사무소(NAS)가 실제로 갖고 있는 열쇠</label>
+            <div class="fixed-note" id="swServerSecret">hoster-hmac-demo-secret</div>
+          </div>
+        </div>
+        <div>
+          <div class="sw-field">
+            <label for="swSkew">시각 오차 (분) — 실제 접수 시각과의 차이</label>
+            <div class="sw-skew">
+              <input type="range" id="swSkew" min="-8" max="8" value="0" step="1">
+              <output id="swSkewOut">+0분</output>
+            </div>
+          </div>
+          <div class="sw-field">
+            <label><input type="checkbox" id="swGetLike"> GET/DELETE처럼 취급 (본문을 빈 문자열로 서명)</label>
+          </div>
+          <div class="sw-field">
+            <label>서명 대상 문자열 — <code>${timestampMs}.${body}</code></label>
+            <div class="sw-signing-string" id="swSigningString"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sw-hexrow"><span class="hexlabel">보내는 쪽 서명</span><span class="sw-hex" id="swClientSig"></span></div>
+      <div class="sw-hexrow"><span class="hexlabel">관리사무소 기대값</span><span class="sw-hex" id="swServerSig"></span></div>
+
+      <div class="sw-verdict" id="swVerdict" aria-live="polite"></div>
+      <p class="sw-hint"><noscript>JavaScript가 꺼져 있어 이 실습기는 동작하지 않습니다. 판정 규칙(서명 불일치·시각 초과 시 반려)은 아래 "2층 · 기술 상세"에 원문 그대로 있습니다.</noscript> 비밀키를 한 글자만 바꿔도, 본문을 한 글자만 바꿔도 서명 값이 완전히 달라진다. 시각 오차를 5분(±5) 밖으로 옮기면 서명이 맞아도 반려된다 — 이렇게 시각을 못박아 두는 이유가 <span class="gloss" tabindex="0">재전송(replay) 공격<span class="gloss-note">과거에 도청한 진짜 접수증을 나중에 그대로 다시 접수처에 들이미는 수법 — 오래된 접수 시각이면 도장이 맞아도 반려해 막는다</span></span> 방지다.</p>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>서명 생성/검증 함수 원문</summary>
+      <div class="layer2-body">
+        <div class="code-panel"><pre>// packages/deployer/src/hmac.ts:3-4, packages/cli/src/hmac.ts:3-4 (동일 로직 독립 구현)
+export function signPayload(body: string, timestampMs: number, secret: string): string {
+  return createHmac('sha256', secret).update(`${timestampMs}.${body}`).digest('hex');
+}</pre></div>
+        <p>검증(hmac.ts:7-29): ① <code>Number.isFinite(timestampMs)</code> 아니면 즉시 실패 → ② <code>Math.abs(nowMs - timestampMs) &gt; maxSkewMs</code>(기본 300_000ms = 5분) 이면 실패 → ③ 서명 hex 파싱 실패 시 예외 없이 <code>false</code> 반환 → ④ 길이 비교 후 <code>timingSafeEqual</code>(원리는 §3). 시크릿 생성은 <code>randomBytes(32).toString('hex')</code>(256비트 엔트로피, commands/init.ts:308-309).</p>
+        <span class="cite">근거: 07-보안-설계서.md § 3. 인증 설계(HMAC-SHA256)</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 2. timingSafeEqual ================= -->
+  <section class="doc-section" id="timing">
+    <h2 class="section-title"><span class="section-num">2</span>왜 <code>timingSafeEqual</code>인가</h2>
+    <p class="lede"><b>1층.</b> 일반 문자열 비교는 앞에서 몇 글자가 맞았는지에 따라 걸리는 시간이 미묘하게 달라진다 — 공격자가 이 시간차를 반복 관찰하면 한 글자씩 정답을 알아낼 수 있다(<span class="gloss" tabindex="0">타이밍 공격<span class="gloss-note">비교에 걸리는 시간의 미세한 차이를 반복 측정해 정답을 한 글자씩 추측해 내는 공격</span></span>). <span class="gloss" tabindex="0">상수 시간 비교<span class="gloss-note">정답과 몇 글자가 같든 항상 똑같은 시간이 걸리게 만든 비교 방식</span></span>는 몇 글자가 맞든 항상 같은 시간이 걸리게 만들어 이 정보 유출을 막는다.</p>
+
+    <figure class="visual">
+      <div class="timing-bars">
+        <div class="timing-col">
+          <p class="tc-title">일반 비교 — 앞부분 일치 시 더 오래 걸림</p>
+          <div class="tbar-row"><span>0글자 일치</span><div class="tbar" style="width:15%"></div></div>
+          <div class="tbar-row"><span>16글자 일치</span><div class="tbar" style="width:55%"></div></div>
+          <div class="tbar-row"><span>32글자 일치</span><div class="tbar" style="width:80%"></div></div>
+          <div class="tbar-row"><span>전부 일치</span><div class="tbar" style="width:100%"></div></div>
+        </div>
+        <div class="timing-col">
+          <p class="tc-title">timingSafeEqual — 항상 동일한 시간</p>
+          <div class="tbar-row"><span>0글자 일치</span><div class="tbar" style="width:60%;background:var(--state-success)"></div></div>
+          <div class="tbar-row"><span>16글자 일치</span><div class="tbar" style="width:60%;background:var(--state-success)"></div></div>
+          <div class="tbar-row"><span>32글자 일치</span><div class="tbar" style="width:60%;background:var(--state-success)"></div></div>
+          <div class="tbar-row"><span>전부 일치</span><div class="tbar" style="width:60%;background:var(--state-success)"></div></div>
+        </div>
+      </div>
+      <figcaption>막대 길이는 개념을 보여주기 위한 상대적 예시이며 실측값이 아니다 — 요점은 오른쪽이 <b>내용과 무관하게 일정하다</b>는 것.</figcaption>
+    </figure>
+
+    <h3 style="font-size:var(--fs-sub); margin-top:var(--sp-6);">길이 체크가 먼저 오는 이유 — 순서가 있는 3단계</h3>
+    <p class="lede" style="margin-bottom:var(--sp-3)"><b>1층.</b> Node의 <code>timingSafeEqual</code>은 두 버퍼의 <b>길이가 다르면 예외를 던진다.</b> 그래서 상수 시간 비교를 호출하기 <em>전에</em> 길이부터 맞춰 봐야 한다 — 순서를 지키지 않으면 프로그램이 죽는다.</p>
+    <figure class="visual">
+      <div class="seq-steps" style="max-width:640px">
+        <div class="seq-step"><div class="seq-step__dot">1</div><div class="seq-step__body"><p class="step-title">서명 hex 파싱 시도</p><p>파싱 실패 시 예외 없이 즉시 <code>false</code> 반환 — 이후 단계로 가지 않음</p></div></div>
+        <div class="seq-step"><div class="seq-step__dot">2</div><div class="seq-step__body"><p class="step-title">길이 비교</p><p>두 버퍼 길이가 다르면 즉시 거부 — <code>timingSafeEqual</code>조차 호출하지 않는다(호출하면 예외로 죽는다)</p></div></div>
+        <div class="seq-step"><div class="seq-step__dot">3</div><div class="seq-step__body"><p class="step-title">timingSafeEqual 비교</p><p>길이가 같을 때만 도달 — 상수 시간으로 내용을 비교</p></div></div>
+      </div>
+      <figcaption>접수증 도장을 대조하기 전에 <b>종이 크기부터</b> 맞춰 보는 것과 같다 — 크기가 다른 종이를 억지로 겹쳐 대조하려 들면 그 자체가 오류다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>hmac.ts 검증 함수 순서</summary>
+      <div class="layer2-body">
+        <p>순서는 ① <code>Number.isFinite(timestampMs)</code> 확인 → ② 시각 오차(5분) 확인 → ③ hex 파싱 시도 → ④ 길이 비교 → ⑤ <code>timingSafeEqual</code>. 셋째~다섯째가 위 3단계 시퀀스에 해당한다.</p>
+        <span class="cite">근거: 07-보안-설계서.md § 3. 인증 설계, packages/deployer/src/hmac.ts:7-29</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 3. 입력 검증 관문 ================= -->
+  <section class="doc-section" id="gates">
+    <h2 class="section-title"><span class="section-num">3</span>입력 검증 관문 7종 — 막지 않으면 무슨 일이 나는가</h2>
+    <p class="lede"><b>1층.</b> 정규식 원문 해부는 03·06번 문서의 몫이다. 여기서는 <b>이 관문을 안 막으면 실제로 무슨 사고가 나는가</b>에 집중한다 — 이를테면 <span class="gloss" tabindex="0">경로 순회<span class="gloss-note">지정된 서랍 밖으로 나가는 이름("../../다른서랍")을 넣어, 원래는 못 여는 다른 파일을 열게 만드는 수법</span></span>나 <span class="gloss" tabindex="0">인젝션<span class="gloss-note">서식 칸에 값이 아니라 명령·코드를 몰래 끼워 넣어 시스템이 그걸 실행하게 만드는 수법(셸 명령·YAML·.env 파일 등에 끼워 넣는 형태가 있다)</span></span> 같은 것이다. 원문 표는 8행이지만 마지막 행은 관문이 아니라 <b>에러 메시지 판별용 휴리스틱</b>이다 — 아래에서 점선으로 따로 표시했다.</p>
+
+    <figure class="visual">
+      <div class="lifecycle" style="grid-template-columns:1fr 1fr; max-width:640px;">
+        <div class="lc-stage" style="border-color:var(--accent); background:var(--accent-soft);">
+          <p class="lc-title" style="color:var(--accent-ink)">관문(7종) — 접수 전에 막는다</p>
+          <p>서식이 창구에 닿기도 <b>전에</b> 판정한다. 틀리면 400/401로 즉시 반려하고 처리 자체가 시작되지 않는다.</p>
+        </div>
+        <div class="lc-stage" style="border-style:dashed;">
+          <p class="lc-title">휴리스틱(1종) — 받은 뒤에 해석한다</p>
+          <p>Cloudflare가 이미 보낸 에러 메시지를 <b>사후에</b> 읽어 "터널 이름 충돌"인지 판별할 뿐, 아무것도 막지 않는다.</p>
+        </div>
+      </div>
+      <figcaption>왼쪽은 접수창구의 검문, 오른쪽은 이미 온 답장을 읽고 해석하는 사무 — 작동 시점 자체가 다르다.</figcaption>
+    </figure>
+
+    <figure class="visual">
+      <div class="gate-lineup">
+        <div class="gate-row"><span class="g-name">PROJECT_NAME_RE (deployer)</span><span class="g-risk">안 막으면: 경로 순회 — envDir 밖에 파일 쓰기(과거 Critical, §5 #1)</span><span class="g-loc">app.ts:18</span></div>
+        <div class="gate-row"><span class="g-name">HOSTNAME_RE</span><span class="g-risk">안 막으면: Traefik 라우터 라벨에 백틱·괄호 삽입(라벨 주입)</span><span class="g-loc">app.ts:20</span></div>
+        <div class="gate-row"><span class="g-name">ENV_KEY_RE</span><span class="g-risk">안 막으면: .env 파일에 예상 밖 키 이름 주입</span><span class="g-loc">app.ts:22</span></div>
+        <div class="gate-row"><span class="g-name">env 값 개행 거부 /[\r\n]/</span><span class="g-risk">안 막으면: .env 파일에 새 줄 삽입(.env 인젝션)</span><span class="g-loc">app.ts:143</span></div>
+        <div class="gate-row"><span class="g-name">GITHUB_SEGMENT_RE</span><span class="g-risk">안 막으면: workflow.yml.tpl에 YAML·셸 주입(과거 High, §5 #13)</span><span class="g-loc">repo.ts:7</span></div>
+        <div class="gate-row"><span class="g-name">PROJECT_NAME_RE (cli)</span><span class="g-risk">deployer와 동일 규칙 — 한쪽만 막으면 다른 쪽에서 뚫림</span><span class="g-loc">repo.ts:28</span></div>
+        <div class="gate-row"><span class="g-name">SAFE_BRANCH_RE</span><span class="g-risk">안 막으면: 워크플로 트리거 브랜치에 경로·패턴 주입(..·//·/ 로 끝남)</span><span class="g-loc">repo.ts:37,40-43</span></div>
+        <div class="gate-row heuristic"><span class="g-name">TUNNEL_NAME_CONFLICT_RE</span><span class="g-risk"><span class="stamp stamp--info">관문 아님</span> Cloudflare 에러 메시지를 판별하는 휴리스틱일 뿐, 입력을 막지 않는다</span><span class="g-loc">commands/init.ts:199</span></div>
+      </div>
+      <figcaption>일곱 관문은 "틀린 서류를 받지 않는" 창구고, 점선 행은 "받은 뒤 에러 메시지를 해석하는" 별개의 장치다 — 관문으로 착각하면 §8 잔여 위험을 놓친다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>입력 검증 표 원문(8행)</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>검증 대상</th><th>정규식/규칙</th><th>적용 위치</th></tr></thead>
+            <tbody>
+              <tr><td>project 이름(deployer)</td><td>/^[a-z0-9][a-z0-9-]{0,62}$/</td><td>packages/deployer/src/app.ts:18</td></tr>
+              <tr><td>domain(POST /projects)</td><td>/^(?=.{1,253}$)(...)+$/i</td><td>packages/deployer/src/app.ts:20</td></tr>
+              <tr><td>env 키</td><td>/^[A-Za-z_][A-Za-z0-9_]*$/</td><td>packages/deployer/src/app.ts:22</td></tr>
+              <tr><td>env 값</td><td>/[\r\n]/ 매치 시 거부</td><td>packages/deployer/src/app.ts:143</td></tr>
+              <tr><td>GitHub owner/repo</td><td>/^[A-Za-z0-9._-]+$/</td><td>packages/cli/src/repo.ts:7</td></tr>
+              <tr><td>project 이름(cli)</td><td>/^[a-z0-9][a-z0-9-]{0,62}$/(deployer와 동일해야 함)</td><td>packages/cli/src/repo.ts:28</td></tr>
+              <tr><td>브랜치명</td><td>/^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/ +..·//미포함, /·.lock으로 안 끝남</td><td>packages/cli/src/repo.ts:37,40-43</td></tr>
+              <tr><td>터널 이름 충돌 휴리스틱</td><td>/already exists|duplicate/i</td><td>packages/cli/src/commands/init.ts:199</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: 07-보안-설계서.md § 4. 입력 검증</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 4. 시크릿의 일생 ================= -->
+  <section class="doc-section" id="secret-life">
+    <h2 class="section-title"><span class="section-num">4</span>시크릿의 일생 — 생성부터 비노출까지</h2>
+    <p class="lede"><b>1층.</b> 도장의 인주(비밀키)가 태어날 때부터 <span class="gloss" tabindex="0">엔트로피<span class="gloss-note">얼마나 무작위(예측 불가능)한지를 나타내는 값 — 256비트면 찍을 수 있는 도장 모양의 경우의 수가 사실상 무한대에 가깝다</span></span> 256비트짜리 난수로 만들어져, 어디에 <span class="gloss" tabindex="0">파일 권한 0600<span class="gloss-note">이 서랍(파일)은 나(소유자)만 열어 볼 수 있고 남은 아예 못 연다는 잠금 표시</span></span>으로 보관되고, 어떻게 건네지고, 왜 로그에 안 새는지 — 네 구간을 따라간다.</p>
+
+    <figure class="visual">
+      <div class="lifecycle">
+        <div class="lc-stage">
+          <p class="lc-title">① 생성</p>
+          <p><code>randomBytes(32)</code> — 256비트 엔트로피. <code>hoster init</code> 1회 실행 시 자동 생성.</p>
+          <span class="stamp stamp--pass" style="font-size:.68rem">여기서 안 새는 이유: 난수 생성기만 씀</span>
+        </div>
+        <div class="lc-stage">
+          <p class="lc-title">② 저장</p>
+          <p>NAS .env, deployer 프로젝트별 .env, CLI <code>~/.hoster/config.json</code> — 전부 <code>mode 0600</code>.</p>
+          <span class="stamp stamp--pass" style="font-size:.68rem">여기서 안 새는 이유: 파일 권한 0600 + 덮어쓸 때 chmodSync 재강제</span>
+        </div>
+        <div class="lc-stage">
+          <p class="lc-title">③ 전달</p>
+          <p><code>gh secret set</code>은 값을 <b>stdin</b>으로(argv 아님), NAS .env는 <code>shQuote</code> 인용 후 원격 <code>printf</code>로.</p>
+          <span class="stamp stamp--pass" style="font-size:.68rem">여기서 안 새는 이유: ps 등 프로세스 목록에 노출 안 됨</span>
+        </div>
+        <div class="lc-stage">
+          <p class="lc-title">④ 비노출</p>
+          <p><code>planInit()</code>은 시크릿을 인자로 받지 않는 순수 함수. <code>printRecoveryNote</code>·Cloudflare 에러 메시지에도 값 미포함.</p>
+          <span class="stamp stamp--pass" style="font-size:.68rem">여기서 안 새는 이유: dry-run·로그·에러 경로에 값 자체가 존재 안 함</span>
+        </div>
+      </div>
+      <figcaption>접수증에 도장을 찍는 인주가 어디서 만들어지고, 어느 서랍(0600)에 잠기고, 누구 손(stdin)을 거쳐 전달되고, 왜 영수증 사본(로그)에는 안 찍히는지의 흐름이다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>저장 경로·전달 코드 원문</summary>
+      <div class="layer2-body">
+        <ul>
+          <li>NAS <code>.env</code>(<code>/volume1/docker/hoster/.env</code>): <code>printf ... &gt; .env &amp;&amp; chmod 600 .env</code>(commands/init.ts:53-56)</li>
+          <li>deployer <code>.env</code>(프로젝트별, PUT /env): <code>writeFileSync(..., { mode: 0o600 })</code> 후 <code>chmodSync(file, 0o600)</code>로 재강제(app.ts:170-177)</li>
+          <li>CLI 설정(<code>~/.hoster/config.json</code>): <code>writeFileSync(..., { mode: 0o600 })</code> + <code>chmodSync</code>(config.ts:25-31)</li>
+          <li>GitHub Actions 시크릿: <code>gh secret set HOSTER_DEPLOY_URL/HOSTER_DEPLOY_SECRET --repo &lt;repo&gt;</code>, stdin 전달(add.ts:71-73, 213-226)</li>
+        </ul>
+        <span class="cite">근거: 07-보안-설계서.md § 5. 시크릿 관리</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 5. 취약점 이력 + 잔여 위험 ================= -->
+  <section class="doc-section" id="vuln-history">
+    <h2 class="section-title"><span class="section-num">5</span>취약점 이력 14건 — 심각도 밴드</h2>
+    <p class="lede"><b>1층.</b> Critical 1 / High 8 / Medium 3 / Low 2, 총 14건이 발견되고 고쳐졌다. 가로축은 수정 커밋(원문 표에 나온 순서), 세로축은 심각도 밴드다. 같은 칸에 번호가 여럿이면 그 커밋 하나로 여러 건이 함께 고쳐진 것이다.</p>
+
+    <figure class="visual sev-timeline">
+      <div class="sev-grid">
+        <div class="sev-lane-label" style="visibility:hidden">.</div>
+        <div class="sev-col-head">45c2e2f</div>
+        <div class="sev-col-head">02d84cd</div>
+        <div class="sev-col-head">2eba716</div>
+        <div class="sev-col-head">420281e</div>
+        <div class="sev-col-head">2e04ed1</div>
+        <div class="sev-col-head">dfa8835</div>
+        <div class="sev-col-head">e07bfc8</div>
+        <div class="sev-col-head">4bcfe43</div>
+
+        <div class="sev-lane-label">Critical</div>
+        <div class="sev-cell"><span class="sev-mark c" title="경로 순회(/env/:project)">1</span></div>
+        <div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div>
+
+        <div class="sev-lane-label">High</div>
+        <div class="sev-cell"><span class="sev-mark h" title="env CR/LF 삽입">2</span><span class="sev-mark h" title="domain 미검증 → 라벨 주입">3</span></div>
+        <div class="sev-cell"></div>
+        <div class="sev-cell"><span class="sev-mark h" title="running 락 영구 고착">5</span><span class="sev-mark h" title="rollback이 큐 무시">6</span></div>
+        <div class="sev-cell"><span class="sev-mark h" title="Docker 304(정지) 미무시">8</span></div>
+        <div class="sev-cell"></div>
+        <div class="sev-cell"><span class="sev-mark h" title="stop(oldName)이 보호 try 밖">10</span></div>
+        <div class="sev-cell"><span class="sev-mark h" title="NAS 접속정보 shQuote 미적용">12</span></div>
+        <div class="sev-cell"><span class="sev-mark h" title="parseGitHubRepo 문자 제한 느슨">13</span></div>
+
+        <div class="sev-lane-label">Medium</div>
+        <div class="sev-cell"><span class="sev-mark m" title="env 파일 0644">4</span></div>
+        <div class="sev-cell"><span class="sev-mark m" title="0644 보완(기존 파일 덮어쓰기)">4·보완</span></div>
+        <div class="sev-cell"><span class="sev-mark m" title="rollback 중 unhandled rejection">7</span></div>
+        <div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div>
+        <div class="sev-cell"><span class="sev-mark m" title="deleteDnsRecord type 필터 없음">14</span></div>
+
+        <div class="sev-lane-label">Low</div>
+        <div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div>
+        <div class="sev-cell"><span class="sev-mark l" title="docker logs 8바이트 헤더 미제거">11</span></div>
+        <div class="sev-cell"><span class="sev-mark l" title="Docker 304 on start 미무시">9</span></div>
+        <div class="sev-cell"></div><div class="sev-cell"></div><div class="sev-cell"></div>
+      </div>
+      <figcaption>가로축 순서는 원문 표에 적힌 순서를 그대로 따른 것이며, 실제 커밋 시각 순서를 새로 단정하지 않았다. 번호는 아래 2층 표의 행 번호와 같다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>취약점 이력 14건 원문 표</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>취약점</th><th>심각도</th><th>수정 커밋</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>/env/:project 경로 순회 — %2F가 /로 디코드되어 envDir 밖에 파일 쓰기 가능</td><td><span class="stamp stamp--sev-critical">Critical</span></td><td>45c2e2f</td></tr>
+              <tr><td>2</td><td>env 값에 CR/LF 삽입 가능(.env 파일 인젝션)</td><td><span class="stamp stamp--sev-high">High</span></td><td>45c2e2f</td></tr>
+              <tr><td>3</td><td>POST /projects domain 미검증 → Traefik 라우터 라벨에 그대로 삽입</td><td><span class="stamp stamp--sev-high">High</span></td><td>45c2e2f</td></tr>
+              <tr><td>4</td><td>env 파일 0644로 생성/유지</td><td><span class="stamp stamp--sev-medium">Medium</span></td><td>45c2e2f, 02d84cd</td></tr>
+              <tr><td>5</td><td>오케스트레이터 running 락 영구 고착(예외 시 해제 안 됨)</td><td><span class="stamp stamp--sev-high">High</span></td><td>2eba716</td></tr>
+              <tr><td>6</td><td>rollback()이 큐를 무시하고 진행 중인 deploy와 동시 실행</td><td><span class="stamp stamp--sev-high">High</span></td><td>2eba716</td></tr>
+              <tr><td>7</td><td>rollback 중 docker 에러가 unhandled rejection으로 전파</td><td><span class="stamp stamp--sev-medium">Medium</span></td><td>2eba716</td></tr>
+              <tr><td>8</td><td>Docker 304(이미 정지됨) 미무시 — -old 컨테이너 영구 잔류</td><td><span class="stamp stamp--sev-high">High</span></td><td>420281e</td></tr>
+              <tr><td>9</td><td>Docker 304 on start 미무시 — 롤백 후 실제 원인이 가려짐</td><td><span class="stamp stamp--sev-low">Low</span></td><td>2e04ed1</td></tr>
+              <tr><td>10</td><td>Traefik 등록해제 stop(oldName)이 롤백 보호 try 블록 밖</td><td><span class="stamp stamp--sev-high">High</span></td><td>dfa8835</td></tr>
+              <tr><td>11</td><td>docker logs 멀티플렉스 스트림 8바이트 헤더 미제거</td><td><span class="stamp stamp--sev-low">Low</span></td><td>420281e</td></tr>
+              <tr><td>12</td><td>NAS 접속정보(host/port/user)가 shQuote 미적용 — 유일한 예외였음</td><td><span class="stamp stamp--sev-high">High</span></td><td>e07bfc8</td></tr>
+              <tr><td>13</td><td>parseGitHubRepo가 [^/]+로만 제한 — YAML/셸 주입 가능</td><td><span class="stamp stamp--sev-high">High</span></td><td>4bcfe43</td></tr>
+              <tr><td>14</td><td>deleteDnsRecord가 type 필터 없이 name만으로 조회·삭제</td><td><span class="stamp stamp--sev-medium">Medium</span></td><td>4bcfe43</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: 07-보안-설계서.md § 7. 발견·수정된 취약점 이력</span>
+      </div>
+    </details>
+
+    <h3 style="font-size:var(--fs-sub); margin-top:var(--sp-6);">잔여 위험 4건 — 아직 도장이 안 찍힌 칸</h3>
+    <p class="lede" style="margin-bottom:var(--sp-3)"><b>1층.</b> 아래 넷은 "고쳤다"가 아니라 <b>"아직 못 고쳤다, 또는 구조적으로 남는다"</b>고 원문이 그대로 인정하는 항목이다. 축소하거나 미화하지 않는다.</p>
+    <div class="residual-grid">
+      <div class="residual-card"><span class="stampmark">잔여 위험</span><p><b>HMAC 시크릿 단일 공유</b> — CLI 로컬 설정과 각 레포의 <code>HOSTER_DEPLOY_SECRET</code>이 같은 값. 저장소 하나 유출이 전체 deployer API 위조로 이어짐</p></div>
+      <div class="residual-card"><span class="stampmark">잔여 위험</span><p><b>docker.sock 마운트</b> — deployer 컨테이너에 rw로 마운트. 사실상 NAS 호스트의 root 권한과 동급</p></div>
+      <div class="residual-card"><span class="stampmark">잔여 위험</span><p><b>컨테이너 root 실행</b> — deployer Dockerfile에 USER 지정 없음. 기본 root로 실행됨</p></div>
+      <div class="residual-card"><span class="stampmark">잔여 위험</span><p><b>터널 충돌 정규식 휴리스틱</b> — Cloudflare 응답 문구가 비공식이라 관찰 기반으로 좁게 매치. 오탐·미탐 가능성이 정규식 특성상 완전히 배제되지 않음</p></div>
+    </div>
+  </section>
+
+  <!-- ================= 6. 말하지 않는 것 ================= -->
+  <section class="doc-section" id="not-said">
+    <h2 class="section-title"><span class="section-num">6</span>이 문서가 말하지 않는 것 / 확인 못 한 것</h2>
+    <div class="not-said-grid">
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p>침투 테스트·외부 감사 결과는 다루지 않는다 — 원문은 코드·테스트·git log 기반 자체 점검이다.</p></div>
+      <div class="not-said"><span class="stampmark">다른 문서 몫</span><p>정규식 원문의 문자 단위 해부는 03번, 검증 지점의 파일 위치 지도는 06번 문서를 본다.</p></div>
+      <div class="not-said"><span class="stampmark">단정 금지</span><p>취약점 표의 커밋 순서를 실제 시각 순서로 새로 단정하지 않았다 — 원문 표에 적힌 순서만 그대로 옮겼다.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/07-보안-설계서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="06-인터페이스-정의서.html">← 06 인터페이스 정의서</a>
+        <a href="08-테스트-결과-보고서.html">08 테스트 결과 보고서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var bodyEl = document.getElementById("swBody");
+  var clientSecretEl = document.getElementById("swClientSecret");
+  var serverSecretEl = document.getElementById("swServerSecret");
+  var skewEl = document.getElementById("swSkew");
+  var skewOut = document.getElementById("swSkewOut");
+  var getLikeEl = document.getElementById("swGetLike");
+  var signingStringEl = document.getElementById("swSigningString");
+  var clientSigEl = document.getElementById("swClientSig");
+  var serverSigEl = document.getElementById("swServerSig");
+  var verdictEl = document.getElementById("swVerdict");
+  var modeEl = document.getElementById("swMode");
+
+  var SERVER_SECRET = serverSecretEl.textContent;
+  var pageLoadNow = Date.now();
+  var realCrypto = false;
+
+  function toHex(buf){
+    var bytes = new Uint8Array(buf), out = "";
+    for (var i=0;i<bytes.length;i++){ out += bytes[i].toString(16).padStart(2,"0"); }
+    return out;
+  }
+
+  function realHmac(secret, msg){
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey("raw", enc.encode(secret), {name:"HMAC", hash:"SHA-256"}, false, ["sign"])
+      .then(function(key){ return crypto.subtle.sign("HMAC", key, enc.encode(msg)); })
+      .then(toHex);
+  }
+
+  // 시연용 계산 — 실제 SHA-256이 아니다. Web Crypto를 쓸 수 없는 환경에서만 쓰이며,
+  // 그 사실이 화면(모드 배지)에 항상 명시된다. 눈사태 효과(입력 1글자 변화 → 출력 전체 변화)만 흉내낸다.
+  function demoHash(secret, msg){
+    var s = secret + "" + msg;
+    var h1 = 0x811c9dc5, h2 = 0x9e3779b9;
+    for (var i=0;i<s.length;i++){
+      var c = s.charCodeAt(i);
+      h1 = (h1 ^ c) >>> 0; h1 = Math.imul(h1, 16777619) >>> 0;
+      h2 = (h2 + c) >>> 0; h2 = Math.imul(h2 ^ (h2>>>13), 0x85ebca6b) >>> 0;
+      h1 = ((h1<<7) | (h1>>>25)) >>> 0;
+    }
+    var out = "", a = h1, b = h2;
+    for (var r=0;r<8;r++){
+      a = Math.imul(a ^ b, 2654435761) >>> 0;
+      b = Math.imul(b + r + 1, 2246822519) >>> 0;
+      out += a.toString(16).padStart(8,"0");
+    }
+    return out;
+  }
+
+  var reqSeq = 0;
+  function recompute(){
+    var seq = ++reqSeq;
+    var bodyRaw = bodyEl.value;
+    var body = getLikeEl.checked ? "" : bodyRaw;
+    var skewMin = Number(skewEl.value);
+    skewOut.textContent = (skewMin > 0 ? "+" : "") + skewMin + "분";
+    var ts = pageLoadNow + skewMin * 60000;
+    var signingString = ts + "." + body;
+    signingStringEl.textContent = signingString.length > 140 ? signingString.slice(0,140) + "…" : signingString;
+
+    var clientSecret = clientSecretEl.value;
+
+    function finish(clientHex, serverHex){
+      if (seq !== reqSeq) return;
+      clientSigEl.textContent = clientHex;
+      serverSigEl.textContent = serverHex;
+      var diffMs = Math.abs(Date.now() - ts);
+      var overSkew = diffMs > 300000;
+      var sigMatch = clientHex === serverHex;
+      if (overSkew){
+        verdictEl.innerHTML = '<span class="stamp stamp--reject">반려</span> 시각 오차 5분(300,000ms) 초과 — 서명이 맞아도 거부된다';
+      } else if (!sigMatch){
+        verdictEl.innerHTML = '<span class="stamp stamp--reject">반려</span> 서명 불일치 — 비밀키가 다르면 통과하지 못한다';
+      } else {
+        verdictEl.innerHTML = '<span class="stamp stamp--pass">통과</span> 서명·시각 모두 유효';
+      }
+    }
+
+    if (realCrypto){
+      Promise.all([realHmac(clientSecret, signingString), realHmac(SERVER_SECRET, signingString)])
+        .then(function(r){ finish(r[0], r[1]); })
+        .catch(function(){
+          realCrypto = false;
+          modeEl.textContent = "시연용 계산 — 실제 SHA-256 아님(브라우저 계산 실패)";
+          modeEl.classList.remove("mode-real"); modeEl.classList.add("mode-demo");
+          finish(demoHash(clientSecret, signingString), demoHash(SERVER_SECRET, signingString));
+        });
+    } else {
+      finish(demoHash(clientSecret, signingString), demoHash(SERVER_SECRET, signingString));
+    }
+  }
+
+  function detectRealCrypto(){
+    try {
+      if (window.crypto && window.crypto.subtle && typeof window.crypto.subtle.importKey === "function"){
+        realHmac("t","t").then(function(){
+          realCrypto = true;
+          modeEl.textContent = "실제 SHA-256 계산 (브라우저 Web Crypto API)";
+          modeEl.classList.remove("mode-demo"); modeEl.classList.add("mode-real");
+          recompute();
+        }).catch(function(){
+          realCrypto = false;
+          modeEl.textContent = "시연용 계산 — 실제 SHA-256 아님(이 브라우저는 Web Crypto 미지원)";
+          modeEl.classList.add("mode-demo");
+          recompute();
+        });
+        return;
+      }
+    } catch(e){ /* fall through to demo */ }
+    realCrypto = false;
+    modeEl.textContent = "시연용 계산 — 실제 SHA-256 아님(이 브라우저는 Web Crypto 미지원)";
+    modeEl.classList.add("mode-demo");
+    recompute();
+  }
+
+  [bodyEl, clientSecretEl, skewEl, getLikeEl].forEach(function(el){
+    el.addEventListener("input", recompute);
+    el.addEventListener("change", recompute);
+  });
+
+  detectRealCrypto();
+})();
+</script>
+
+</body>
+</html>

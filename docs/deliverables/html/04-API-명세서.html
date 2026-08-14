@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04. API 명세서 — hoster 산출물</title>
+<style>
+  :root{
+    --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+    --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+    --rule:#c7bb9c; --rule-soft:#ded1ac; --rule-strong:#a89877;
+    --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+    --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+    --state-success:#2f5233; --state-success-bg:#e2e9df;
+    --state-failed:#b83a1f;  --state-failed-bg:#f2e0d8;
+    --state-pending:#8b8577; --state-pending-bg:#e6e2d6;
+    --state-rolledback:#8a5a2c; --state-rolledback-bg:#ecdfcb;
+    --state-skipped:#aca493; --state-skipped-bg:#eae5da;
+    --accent:#1f8f5c; --accent-ink:#0f5636; --accent-soft:#dceee3; --accent-line:#1f8f5c;
+    --ff-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --ff-title: "AppleMyungjo", "Apple SD Gothic Neo", "Batang", "New Batang", "Noto Serif KR", serif;
+    --ff-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "D2Coding", monospace;
+    --fs-doctitle: clamp(1.7rem, 1.35rem + 1.4vw, 2.3rem);
+    --fs-section: clamp(1.2rem, 1.05rem + .6vw, 1.5rem);
+    --fs-sub: 1.08rem;
+    --fs-body: 1rem;
+    --fs-caption: .8125rem;
+    --fs-code: .875rem;
+    --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2rem; --sp-7:3rem; --sp-8:4rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--ff-body);
+    font-size:var(--fs-body); line-height:1.62; overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-attachment:local;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 var(--sp-5);}
+  a{color:var(--accent-ink)}
+  a:not(.tab):not(.crumb-link){text-underline-offset:2px}
+  h1,h2,h3,h4{font-family:var(--ff-title); font-weight:700; margin:0 0 var(--sp-3); color:var(--ink)}
+  p{margin:0 0 var(--sp-4); overflow-wrap:break-word;}
+  code, pre, .mono{font-family:var(--ff-mono)}
+  code{overflow-wrap:break-word;}
+  svg text{font-family:var(--ff-body)}
+
+  /* ---------- 헤더 + 색인 탭 (시리즈 공통 — 08~10/index와 동일) ---------- */
+  .site-header{
+    position:sticky;top:0;z-index:100;
+    background:var(--paper);
+    border-bottom:2px solid var(--ink);
+  }
+  .header-top{
+    max-width:1180px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+    padding:var(--sp-4) var(--sp-5) var(--sp-2);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:var(--sp-3);}
+  .brand-mark{
+    width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-family:var(--ff-title);
+    font-size:1.1rem;flex:none;
+  }
+  .brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+  .brand-title{margin:0;font-size:1.15rem;}
+  .doc-meta-chip{
+    margin:0;font-size:var(--fs-caption);color:var(--ink-soft);
+    border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);
+    white-space:nowrap;
+  }
+  .index-tabs{
+    max-width:1180px;margin:0 auto;
+    display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;
+    scrollbar-width:thin;
+  }
+  .tab{
+    --tab-ac:var(--ink);
+    flex:none;
+    font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);
+    padding:var(--sp-2) var(--sp-3) var(--sp-2);
+    background:var(--paper-deep);
+    border:1px solid var(--rule-strong);border-bottom:none;
+    clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);
+    transform:translateY(3px);
+    transition:transform .12s ease;
+    white-space:nowrap;
+  }
+  .tab:hover{transform:translateY(0);color:var(--ink);}
+  .tab--current{
+    background:var(--paper);
+    color:var(--ink);
+    border-color:var(--ink);
+    border-bottom:3px solid var(--tab-ac);
+    transform:translateY(0);
+    font-weight:800;
+  }
+  .tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+  .tab--current b{color:var(--accent-ink)}
+
+  /* ---------- hero / meta ---------- */
+  .doc-hero{padding:var(--sp-6) 0 var(--sp-5); border-bottom:1px dashed var(--rule);}
+  .doc-kicker{font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; margin-bottom:6px;}
+  .doc-title{font-size:var(--fs-doctitle); margin-bottom:var(--sp-2); line-height:1.25;}
+  .doc-anchor{font-size:var(--fs-sub); color:var(--ink-soft); max-width:62ch; margin-bottom:var(--sp-3)}
+  .meta-line{font-size:var(--fs-caption); color:var(--ink-faint); border-top:1px solid var(--rule-soft); padding-top:var(--sp-2); display:flex; flex-wrap:wrap; gap:4px 14px;}
+  .meta-line code{color:var(--ink-soft)}
+
+  /* ---------- locator (shared site-plan reuse) ---------- */
+  .locator{display:flex; gap:var(--sp-5); align-items:center; flex-wrap:wrap; margin:var(--sp-5) 0; padding:var(--sp-4); background:var(--paper-card); border:1px solid var(--rule); border-radius:4px;}
+  .locator__map{flex:0 0 auto; width:min(320px,100%);}
+  .locator__cap{flex:1 1 240px; font-size:var(--fs-caption); color:var(--ink-soft);}
+  .locator__cap strong{color:var(--ink); font-family:var(--ff-title)}
+
+  /* ---------- sections ---------- */
+  main{padding-bottom:var(--sp-8)}
+  section.doc-section{padding:var(--sp-7) 0; border-bottom:1px dashed var(--rule-soft);}
+  section.doc-section:last-of-type{border-bottom:none}
+  .section-num{display:inline-block; font-family:var(--ff-mono); font-size:var(--fs-caption); color:var(--paper); background:var(--ink); padding:2px 7px; border-radius:2px; margin-right:8px; vertical-align:2px;}
+  .section-title{font-size:var(--fs-section);}
+  .lede{font-size:var(--fs-sub); color:var(--ink-soft); max-width:70ch; margin-bottom:var(--sp-5); position:relative; padding-left:16px; border-left:3px solid var(--accent);}
+  .lede b{color:var(--ink)}
+
+  /* ---------- gloss ---------- */
+  .gloss{border-bottom:1px dotted var(--ink-faint); cursor:help; position:relative;}
+  .gloss-note{display:inline; font-size:.94em; color:var(--ink-soft); background:var(--accent-soft); padding:1px 6px; border-radius:3px; margin:0 2px;}
+
+  /* ---------- disclosure / two-layer ---------- */
+  details.layer2{margin-top:var(--sp-4); border:1px solid var(--rule); border-radius:4px; background:var(--paper-card);}
+  details.layer2>summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:var(--fs-caption); font-weight:700; color:var(--accent-ink); display:flex; align-items:center; gap:8px; user-select:none;}
+  details.layer2>summary::-webkit-details-marker{display:none}
+  details.layer2>summary:before{content:"▸"; display:inline-block; transition:transform .15s;}
+  details.layer2[open]>summary:before{transform:rotate(90deg);}
+  details.layer2>summary .layer2-label{text-transform:uppercase; letter-spacing:.05em; font-size:.72rem; color:var(--ink-faint); font-weight:700;}
+  .layer2-body{padding:0 16px 16px; font-size:.94rem; color:var(--ink-soft);}
+  .layer2-body table{margin-top:6px}
+  .layer2-body code{background:var(--paper-deep); padding:1px 5px; border-radius:3px; color:var(--ink)}
+  .cite{display:inline-block; font-family:var(--ff-mono); font-size:.72rem; color:var(--ink-faint); background:var(--paper-deep); padding:1px 6px; border-radius:3px; margin-top:6px;}
+
+  /* ---------- tables ---------- */
+  table{border-collapse:collapse; width:100%; font-size:.92rem;}
+  caption{caption-side:top; text-align:left; font-size:var(--fs-caption); color:var(--ink-faint); margin-bottom:4px; font-style:normal;}
+  th,td{border:1px solid var(--rule); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--paper-deep); font-weight:700; font-size:.85rem;}
+  td code{font-size:.82em}
+  .table-scroll{overflow-x:auto; border-radius:4px;}
+
+  /* ---------- chips / stamps / labels ---------- */
+  .chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--ff-mono); font-size:.78rem; background:var(--paper); border:1px solid var(--ink-soft); border-radius:3px; padding:3px 8px; color:var(--ink);}
+  .chip .method{font-weight:800; color:var(--accent-ink)}
+  .chip.chip--btn{cursor:pointer;}
+  .chip.chip--btn:hover{background:var(--accent-soft); border-color:var(--accent)}
+
+  .stamp{display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:.78rem; padding:4px 10px; border-radius:3px; letter-spacing:.02em; white-space:nowrap;}
+  .stamp--pass{color:var(--state-success); background:var(--state-success-bg); border:2px double var(--state-success);}
+  .stamp--reject{color:var(--state-failed); background:var(--state-failed-bg); border:2px double var(--state-failed);}
+  .stamp--pending{color:var(--state-pending); background:var(--state-pending-bg); border:2px dashed var(--state-pending);}
+  .stamp--skipped{color:var(--state-skipped); background:var(--state-skipped-bg); border:2px dashed var(--state-skipped); text-decoration:line-through;}
+  .stamp--info{color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent);}
+
+  /* ---------- form-field motif ---------- */
+  .field{display:flex; flex-direction:column; gap:2px; min-width:120px;}
+  .field label{font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint);}
+  .field .blank{border-bottom:1.5px solid var(--ink-soft); padding:4px 2px; font-family:var(--ff-mono); font-size:.85rem; min-height:1.4em;}
+
+  /* ---------- panels ---------- */
+  .panel{background:var(--paper-card); border:1px solid var(--rule); border-radius:4px; padding:var(--sp-4);}
+  .code-panel{background:#efe6cf; border:1px solid var(--rule); border-radius:4px; padding:var(--sp-4); position:relative;}
+  .code-panel pre{margin:0; font-size:var(--fs-code); line-height:1.55; overflow-x:auto; color:var(--ink);}
+  .callout-row{margin-top:8px; padding-top:8px; border-top:1px dashed var(--rule-soft); font-size:.82rem; color:var(--ink-soft); overflow-wrap:break-word;}
+  .callout-row .tick{display:inline-block; font-family:var(--ff-mono); color:var(--accent-ink); font-weight:700; margin-right:8px;}
+  .callout-row code{overflow-wrap:break-word;}
+
+  /* ---------- grid utilities ---------- */
+  .diagram-wrap{overflow-x:auto; overflow-y:visible; padding:4px 2px 10px;}
+  .diagram-wrap svg{display:block; min-width:560px; width:100%; height:auto;}
+  figure{margin:0}
+  figcaption{font-size:var(--fs-caption); color:var(--ink-faint); margin-top:6px;}
+
+  /* ---------- matrix (등록 안내판) ---------- */
+  .matrix{display:grid; grid-template-columns:110px 1fr 1fr; grid-template-rows:auto auto auto; gap:0; border:2px solid var(--ink); background:var(--paper);}
+  .matrix .hd{background:var(--ink); color:var(--paper); font-family:var(--ff-title); font-size:.85rem; padding:8px 10px; display:flex; align-items:center; justify-content:center; text-align:center;}
+  .matrix .rowlabel{background:var(--paper-deep); font-family:var(--ff-title); font-size:.85rem; padding:10px; display:flex; align-items:center; border-top:1px solid var(--rule); writing-mode:horizontal-tb;}
+  .matrix .cell{border-top:1px solid var(--rule); border-left:1px solid var(--rule); padding:12px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; min-height:78px;}
+  .matrix .cell.exception{grid-column:1/4; background:var(--accent-soft); border-top:2px dashed var(--accent); display:flex; align-items:center; gap:10px;}
+
+  /* ---------- gate widget ---------- */
+  .gatewidget{border:2px solid var(--ink); background:var(--paper-card); border-radius:6px; padding:var(--sp-5); margin-top:var(--sp-4);}
+  .gw-head{display:flex; flex-wrap:wrap; gap:12px 20px; align-items:flex-end; margin-bottom:var(--sp-4); padding-bottom:var(--sp-3); border-bottom:1px solid var(--rule);}
+  .gw-select{min-width:0; flex:1 1 240px; max-width:100%;}
+  .gw-select label{display:block; font-size:.72rem; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px;}
+  .gw-select select{font-family:var(--ff-mono); font-size:.92rem; padding:6px 8px; border:1.5px solid var(--ink); border-radius:3px; background:var(--paper); width:100%; max-width:100%; box-sizing:border-box;}
+  .gw-endpoint-note{font-size:.82rem; color:var(--ink-soft); flex:1 1 220px; min-width:0;}
+  .gw-toggles{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-4);}
+  .gw-gate{display:grid; grid-template-columns:26px 1fr auto; gap:4px 12px; align-items:center; padding:8px 10px; background:var(--paper); border:1px solid var(--rule-soft); border-radius:4px;}
+  .gw-gate__n{font-family:var(--ff-mono); font-weight:800; color:var(--ink-faint); text-align:center;}
+  .gw-gate__label{font-size:.9rem;}
+  .gw-gate__label small{display:block; color:var(--ink-faint); font-size:.74rem;}
+  .gw-gate__ctl{display:flex; gap:6px; flex-wrap:wrap;}
+  .gw-btn{font-size:.78rem; padding:5px 10px; border:1.5px solid var(--ink-soft); background:var(--paper); border-radius:3px; cursor:pointer; font-family:var(--ff-body);}
+  .gw-btn[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .gw-btn.is-fail[aria-pressed="true"]{background:var(--state-failed); border-color:var(--state-failed);}
+  .gw-btn.is-pass[aria-pressed="true"]{background:var(--state-success); border-color:var(--state-success);}
+  .gw-stampzone{grid-column:1/4; margin-top:4px;}
+  .gw-verdict{margin-top:var(--sp-3); padding:var(--sp-4); border:2px solid var(--ink); border-radius:4px; background:var(--paper);}
+  .gw-verdict__http{font-family:var(--ff-mono); font-weight:800; font-size:1.3rem;}
+  .gw-verdict__http.ok{color:var(--state-success)}
+  .gw-verdict__http.bad{color:var(--state-failed)}
+  .gw-verdict pre{margin:8px 0 0; background:var(--paper-deep); padding:10px 12px; border-radius:4px; font-size:var(--fs-code); overflow-x:auto;}
+  .gw-fallback{margin-top:10px; font-size:.78rem; color:var(--ink-faint);}
+
+  /* ---------- misc ---------- */
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:.9rem;}
+  .kv dt{color:var(--ink-faint); font-family:var(--ff-mono); font-size:.8rem;}
+  .kv dd{margin:0}
+  .not-said-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--sp-3); margin-top:var(--sp-4);}
+  .not-said{border:2px dashed var(--ink-faint); border-radius:6px; padding:var(--sp-3); background:var(--paper);}
+  .not-said .stampmark{display:block; font-family:var(--ff-title); font-size:.72rem; color:var(--ink-faint); letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px;}
+  .not-said p{margin:0; font-size:.88rem; color:var(--ink-soft);}
+
+  .regbadges{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:var(--sp-3);}
+  .regbadge{border:1px solid var(--rule); border-radius:4px; padding:var(--sp-3); background:var(--paper);}
+  .regbadge h3{font-family:var(--ff-mono); font-size:.8rem; margin:0 0 6px; color:var(--accent-ink); font-weight:700;}
+  .regbadge code.rx{display:block; font-size:.76rem; background:var(--paper-deep); padding:6px 8px; border-radius:3px; overflow-x:auto; margin-bottom:8px;}
+  .regbadge .ex{display:flex; gap:8px; font-size:.78rem; flex-wrap:wrap;}
+
+  .seq-steps{display:flex; flex-direction:column; gap:0; counter-reset:step;}
+  .seq-step{display:grid; grid-template-columns:34px 1fr; gap:12px; position:relative; padding-bottom:var(--sp-4);}
+  .seq-step:not(:last-child):before{content:""; position:absolute; left:16px; top:34px; bottom:0; width:2px; background:var(--rule);}
+  .seq-step__dot{width:34px; height:34px; border-radius:50%; border:2px solid var(--ink); background:var(--paper); display:flex; align-items:center; justify-content:center; font-family:var(--ff-mono); font-weight:800; z-index:1;}
+  .seq-step__body{padding-top:4px;}
+  .seq-step__body h3{margin:0 0 4px; font-size:.98rem; font-family:var(--ff-body); font-weight:700;}
+  .seq-step__body p{margin:0; font-size:.88rem; color:var(--ink-soft);}
+
+  /* ---------- 푸터 (시리즈 공통) ---------- */
+  .site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+  .footer-inner{max-width:1180px;margin:0 auto;}
+  .footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+  .footer-prevnext{display:flex;gap:var(--sp-4);}
+  .footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+  .footer-source{margin-top:var(--sp-3);font-family:var(--ff-mono);font-size:0.76rem;color:var(--ink-faint);}
+  .footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+  @media (max-width:640px){
+    .wrap{padding:0 var(--sp-4)}
+    .matrix{grid-template-columns:80px 1fr; }
+    .matrix .hd:nth-child(1){display:none}
+    .matrix .cell.exception{grid-column:1/3}
+    .gw-gate{grid-template-columns:22px 1fr; }
+    .gw-gate__ctl{grid-column:1/3;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">04 · API 명세서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <div class="doc-kicker">관리사무소 민원 창구 · 창구 초록</div>
+    <h1 class="doc-title">04. API 명세서</h1>
+    <p class="doc-anchor">deployer가 여는 <b>관리사무소 민원 창구</b>다. 창구마다 정해진 <span class="gloss" tabindex="0">서식<span class="gloss-note">라벨 + 밑줄 칸으로 된 기입란 — 요청 본문·파라미터를 담는 그릇</span></span>이 있고, 서식마다 필수 기입란과 반려 사유가 미리 정해져 있다. 서식이 창구 규정과 하나라도 어긋나면 접수 자체가 반려된다.</p>
+    <div class="meta-line">
+      <span>대상: <code>packages/deployer</code> (Hono 기반 HTTP API)</span>
+      <span>버전 1.0</span>
+      <span>작성일 2026-08-13</span>
+      <span>원문: <code>docs/deliverables/04-API-명세서.md</code></span>
+    </div>
+
+    <div class="locator">
+      <svg class="locator__map" viewBox="0 0 320 170" role="img" aria-labelledby="locatorTitle04">
+        <title id="locatorTitle04">단지 배치도 축약판 — 관리사무소 강조</title>
+        <rect x="0" y="0" width="320" height="170" fill="#efe6cf" rx="4"/>
+        <!-- 정문(잠김) -->
+        <rect x="8" y="70" width="26" height="30" fill="none" stroke="#8b8271" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="21" y="112" font-size="8" fill="#8b8271" text-anchor="middle">정문·잠김</text>
+        <!-- 외부 인터넷 -->
+        <text x="21" y="24" font-size="8" fill="#8b8271" text-anchor="middle">외부</text>
+        <!-- 터널 경로 -->
+        <path d="M40 40 C 90 10, 150 10, 190 34" fill="none" stroke="#8b8271" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="110" y="16" font-size="8" fill="#8b8271" text-anchor="middle">후문 전용 통로(터널)</text>
+        <!-- 경비실 -->
+        <rect x="188" y="30" width="46" height="30" fill="#e7ddc3" stroke="#8b8577" stroke-width="1.5" rx="3"/>
+        <text x="211" y="49" font-size="8" fill="#4a4038" text-anchor="middle">경비실</text>
+        <!-- 관리사무소 -->
+        <rect x="188" y="78" width="110" height="70" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5" rx="4"/>
+        <text x="243" y="94" font-size="9" fill="var(--accent-ink)" text-anchor="middle" font-weight="700">관리사무소</text>
+        <text x="243" y="108" font-size="7.5" fill="var(--accent-ink)" text-anchor="middle">(deployer · 이 문서)</text>
+        <rect x="198" y="116" width="90" height="24" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 2" rx="2"/>
+        <text x="243" y="131" font-size="7" fill="var(--accent-ink)" text-anchor="middle">민원 창구(API) ← 지금 여기</text>
+        <!-- 각 동 -->
+        <rect x="60" y="78" width="100" height="70" fill="#e7ddc3" stroke="#8b8577" stroke-width="1.2" rx="3" opacity=".55"/>
+        <text x="110" y="116" font-size="8" fill="#8b8271" text-anchor="middle" opacity=".8">각 동(앱 컨테이너)</text>
+        <path d="M188 60 L 90 78" stroke="#8b8271" stroke-width="1.2" fill="none" opacity=".6"/>
+      </svg>
+      <div class="locator__cap"><strong>지금 보고 있는 곳:</strong> 단지 배치도(02번 문서 자산의 축약판) 위에서, 이 문서는 <strong>관리사무소 접수 창구</strong> — 즉 deployer가 밖으로 노출하는 HTTP 엔드포인트 9종을 다룬다. 상세한 통행 경로·경비실 구조는 02번 아키텍처 설계서를 확인.</div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ================= 시그니처: 요청 판정 왕복도 ================= -->
+  <section class="doc-section" id="roundtrip">
+    <h2 class="section-title"><span class="section-num">시그니처</span>민원 서식 왕복도</h2>
+    <p class="lede"><b>1층.</b> 창구에 서식을 내밀면, 접수 담당자가 순서대로 도장을 검사한다 — 서명 도장이 맞는지, 봉투 속 서류가 제대로 접혀 있는지, 이름칸이 규정에 맞는지(<span class="gloss" tabindex="0">정규식 검증<span class="gloss-note">글자가 정해진 칸 모양에 맞는지 자로 재는 규칙</span></span>), 나머지 칸이 채워졌는지. 하나라도 어긋나면 그 자리에서 반려 도장이 찍히고 뒤 칸은 보지도 않는다. 아래에서 창구를 고르고 칸을 직접 틀려 보면, 실제로 어느 단계에서 반려되는지 확인할 수 있다.</p>
+
+    <div class="gatewidget" id="gw" data-endpoint="deploy">
+      <div class="gw-head">
+        <div class="gw-select">
+          <label for="gwEndpointSelect">창구(엔드포인트) 선택</label>
+          <select id="gwEndpointSelect" aria-describedby="gwEndpointNote"></select>
+        </div>
+        <div class="gw-endpoint-note" id="gwEndpointNote"></div>
+      </div>
+      <div class="gw-toggles" id="gwGates" aria-live="polite"></div>
+      <div class="gw-verdict" id="gwVerdict" aria-live="polite"></div>
+      <p class="gw-fallback"><noscript>JavaScript가 꺼져 있어 이 왕복도는 동작하지 않습니다. 같은 정보(관문 순서 · 반려 사유 · 예시 응답)는 아래 "엔드포인트 9종 상세 서류철"의 각 카드에 정적 표로 그대로 있습니다.</noscript> 각 관문의 버튼을 눌러 정상/결함 값을 바꾸면 판정이 실시간으로 다시 계산된다 — 색만 바뀌는 연출이 아니라, 실제 검증 순서(서명 → JSON → 이름 정규식 → 개별 필드 → 처리)를 그대로 실행한 결과다.</p>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>왕복도가 구현하는 실제 검증 순서</summary>
+      <div class="layer2-body">
+        <p>모든 인증 라우트의 공통 순서: ① HMAC 서명 검증(<code>verifySignature</code>, 실패 시 401) → ② body가 있는 라우트는 JSON 파싱(실패 시 400 <code>invalid json</code>) → ③ <code>PROJECT_NAME_RE</code> 매칭(실패 시 400 <code>invalid project name</code>) → ④ 라우트별 개별 필드 검증 → ⑤ 실제 처리. 이 순서는 <code>packages/deployer/src/app.ts</code>의 라우트 핸들러 코드 순서를 그대로 옮긴 것이며, 각 엔드포인트마다 적용되는 관문의 부분집합만 다르다(예: GET 계열은 body가 없어 JSON 파싱 관문이 없음).</p>
+        <span class="cite">근거: docs/deliverables/04-API-명세서.md § 엔드포인트별 명세</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 1. 엔드포인트 지형 매트릭스 ================= -->
+  <section class="doc-section" id="matrix">
+    <h2 class="section-title"><span class="section-num">1</span>엔드포인트 9종의 지형 — 창구 안내판</h2>
+    <p class="lede"><b>1층.</b> 관리사무소에는 창구가 9개 있는데, 나란히 늘어선 똑같은 창구가 아니다. 어떤 창구는 <b>보기만</b> 하고(읽기 전용), 어떤 창구는 <b>서류를 새로 만들거나 바꾼다</b>(상태 변경). 그리고 딱 하나, 서명 도장 없이도 들여보내 주는 예외 창구가 있다.</p>
+
+    <div class="matrix" role="table" aria-label="엔드포인트 9종을 인증 여부·성격 축으로 배치한 안내판">
+      <div class="hd" role="columnheader"></div>
+      <div class="hd" role="columnheader">읽기 전용 — 보기만 한다</div>
+      <div class="hd" role="columnheader">상태 변경 — 서류를 만들거나 바꾼다</div>
+
+      <div class="rowlabel" role="rowheader">인증 필요</div>
+      <div class="cell" role="cell">
+        <button class="chip chip--btn" data-goto="status"><span class="method">GET</span>/status</button>
+        <button class="chip chip--btn" data-goto="statusProject"><span class="method">GET</span>/status/:project</button>
+        <button class="chip chip--btn" data-goto="logs"><span class="method">GET</span>/logs/:project</button>
+      </div>
+      <div class="cell" role="cell">
+        <button class="chip chip--btn" data-goto="deploy"><span class="method">POST</span>/deploy</button>
+        <button class="chip chip--btn" data-goto="projects"><span class="method">POST</span>/projects</button>
+        <button class="chip chip--btn" data-goto="deleteProject"><span class="method">DELETE</span>/projects/:name</button>
+        <button class="chip chip--btn" data-goto="rollback"><span class="method">POST</span>/rollback/:project</button>
+        <button class="chip chip--btn" data-goto="env"><span class="method">PUT</span>/env/:project</button>
+      </div>
+
+      <div class="cell exception" role="cell">
+        <span class="stamp stamp--info">라우트 등록 순서 예외</span>
+        <button class="chip chip--btn" data-goto="healthz"><span class="method">GET</span>/healthz</button>
+        <span style="font-size:.8rem;color:var(--ink-soft)">— 인증 미들웨어보다 먼저 등록되어, 서명 없이도 통과한다(§4 참고)</span>
+      </div>
+    </div>
+    <figcaption>칩을 누르면 위 왕복도가 그 창구로 바뀌고, 아래 상세 서류철로 스크롤한다. 9개를 나란히 늘어놓지 않고 <b>성격(축)에 따라 위치</b>로 의미를 준 배치다. <code>DELETE /projects/:name</code>은 같은 이름으로 몇 번을 다시 접수해도 결과가 항상 같다 — <span class="gloss" tabindex="0">멱등<span class="gloss-note">같은 접수증을 몇 번 다시 내밀어도 결과가 달라지지 않는 성질 — 두 번 찍어도 도장 자국은 하나</span></span>한 창구다(§8 상세 참고).</figcaption>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>왜 안내판이 이렇게 나뉘는가</summary>
+      <div class="layer2-body">
+        <p><span class="gloss" tabindex="0">엔드포인트<span class="gloss-note">민원 창구 하나하나 — 어떤 창구는 접수만, 어떤 창구는 서류를 새로 만들어 준다</span></span> 9종: <code>GET /healthz</code>, <code>POST /deploy</code>, <code>POST /projects</code>, <code>DELETE /projects/:name</code>, <code>GET /status</code>, <code>GET /status/:project</code>, <code>GET /logs/:project</code>, <code>POST /rollback/:project</code>, <code>PUT /env/:project</code>. 인증 적용 범위는 <code>GET /healthz</code>를 제외한 전 라우트이며, 예외는 인증 <span class="gloss" tabindex="0">미들웨어<span class="gloss-note">안내데스크를 지나야 안쪽 사무실로 들어갈 수 있는 것처럼, 모든 요청이 공통으로 거치는 검문 절차</span></span>(<code>app.use('*', ...)</code>)보다 <code>/healthz</code> 라우트가 먼저 등록되어 있기 때문이다(자세한 파이프라인은 §3).</p>
+        <span class="cite">근거: 04-API-명세서.md § 공통 사항 &gt; 인증</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 2. 서명 규칙 문자열 조립 도해 ================= -->
+  <section class="doc-section" id="signature">
+    <h2 class="section-title"><span class="section-num">2</span>서명 규칙 — 문자열 조립 도해</h2>
+    <p class="lede"><b>1층.</b> 접수증에 찍는 <span class="gloss" tabindex="0">도장(HMAC 서명)<span class="gloss-note">우리 둘만 아는 인주로 찍은 도장 — 도장 모양이 같아야 진짜 접수증으로 인정된다</span></span>은 아무 곳에나 찍는 게 아니다. <b>접수 시각</b>과 <b>서류 내용물</b>을 이어붙인 종이 위에 찍는다. 내용물이 없는 서류(보기만 하는 요청)는 빈 종이에 시각만 적어 도장을 찍는다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 190" role="img" aria-labelledby="sigDiagTitle">
+        <title id="sigDiagTitle">타임스탬프와 본문을 이어붙여 서명하는 조립 규칙</title>
+        <rect x="10" y="20" width="150" height="46" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="85" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">x-hoster-timestamp</text>
+        <text x="85" y="55" text-anchor="middle" font-size="10" fill="var(--ink-soft)" font-family="ui-monospace">timestampMs</text>
+
+        <text x="182" y="50" text-anchor="middle" font-size="20" fill="var(--accent-ink)" font-weight="700">+</text>
+
+        <rect x="204" y="20" width="40" height="46" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="224" y="49" text-anchor="middle" font-size="14" fill="var(--ink)" font-family="ui-monospace">.</text>
+
+        <text x="266" y="50" text-anchor="middle" font-size="20" fill="var(--accent-ink)" font-weight="700">+</text>
+
+        <rect x="288" y="20" width="150" height="46" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="363" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">요청 본문</text>
+        <text x="363" y="55" text-anchor="middle" font-size="10" fill="var(--ink-soft)" font-family="ui-monospace">rawBody</text>
+
+        <rect x="288" y="76" width="150" height="30" rx="4" fill="var(--state-pending-bg)" stroke="var(--state-pending)" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <text x="363" y="96" text-anchor="middle" font-size="10" fill="var(--state-pending)">GET/DELETE ⇒ 빈 문자열 ''</text>
+
+        <line x1="460" y1="43" x2="510" y2="43" stroke="var(--ink)" stroke-width="2" marker-end="url(#arrow04a)"/>
+
+        <rect x="512" y="14" width="118" height="58" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="571" y="36" text-anchor="middle" font-size="10.5" fill="var(--accent-ink)" font-weight="700">HMAC-SHA256</text>
+        <text x="571" y="52" text-anchor="middle" font-size="9" fill="var(--accent-ink)">secret(HMAC_SECRET)</text>
+        <text x="571" y="64" text-anchor="middle" font-size="9" fill="var(--accent-ink)">과 함께 계산</text>
+
+        <line x1="632" y1="43" x2="676" y2="43" stroke="var(--ink)" stroke-width="2" marker-end="url(#arrow04a)"/>
+
+        <rect x="678" y="20" width="72" height="46" rx="20" fill="none" stroke="var(--state-success)" stroke-width="3" stroke-dasharray="4 2"/>
+        <text x="714" y="40" text-anchor="middle" font-size="9.5" fill="var(--state-success)" font-weight="800">도장 값</text>
+        <text x="714" y="54" text-anchor="middle" font-size="8.5" fill="var(--state-success)">hex 64자</text>
+
+        <text x="10" y="130" font-size="10.5" fill="var(--ink-soft)">헤더로 함께 전송: <tspan font-family="ui-monospace" fill="var(--ink)">x-hoster-timestamp</tspan> (ms epoch 문자열) + <tspan font-family="ui-monospace" fill="var(--ink)">x-hoster-signature</tspan> (위 도장 값, hex)</text>
+        <text x="10" y="152" font-size="10.5" fill="var(--ink-soft)">검증: <tspan font-family="ui-monospace" fill="var(--ink)">Math.abs(now - timestampMs) &gt; 300000</tspan> 이면 허용 오차(5분) 초과로 반려</text>
+        <text x="10" y="174" font-size="10.5" fill="var(--ink-soft)">비교 방식: <tspan font-family="ui-monospace" fill="var(--ink)">timingSafeEqual</tspan> — 길이부터 확인 후 상수 시간 비교(원리는 07번 문서)</text>
+
+        <defs>
+          <marker id="arrow04a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>서명 생성/검증 함수 원문</summary>
+      <div class="layer2-body">
+        <div class="code-panel"><pre>export function signPayload(body: string, timestampMs: number, secret: string): string {
+  return createHmac('sha256', secret).update(`${timestampMs}.${body}`).digest('hex');
+}</pre></div>
+        <p style="margin-top:10px">GET/DELETE 요청은 <code>['GET','DELETE'].includes(c.req.method) ? '' : await c.req.text()</code> 로 <span class="gloss" tabindex="0">본문(페이로드)<span class="gloss-note">봉투 속에 든 서류 내용물</span></span>을 빈 문자열로 취급한 뒤 서명한다. 허용 오차 기본값은 <code>maxSkewMs = 300_000</code>ms(5분). 실패 시 <code>401 {"error":"invalid signature"}</code>.</p>
+        <span class="cite">근거: packages/deployer/src/hmac.ts, 04-API-명세서.md § 공통 사항 &gt; 인증</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 3. healthz 인증 예외 미들웨어 파이프라인 ================= -->
+  <section class="doc-section" id="middleware">
+    <h2 class="section-title"><span class="section-num">3</span><code>/healthz</code> 인증 예외 — 등록 순서 파이프라인</h2>
+    <p class="lede"><b>1층.</b> 안내데스크(인증 검문)는 창구를 지키고 서 있지만, <b>딱 하나의 창구는 안내데스크가 서기 전에 이미 열려 있었다.</b> 그래서 그 창구로 가는 손님만 검문 없이 바로 들어간다 — 규칙이 아니라 <b>순서</b> 때문에 생긴 예외다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 640 260" role="img" aria-labelledby="mwTitle">
+        <title id="mwTitle">라우트/미들웨어 등록 순서와 요청이 지나가는 경로</title>
+        <text x="20" y="26" font-size="11" fill="var(--ink-faint)">등록 순서(위 → 아래, app.ts)</text>
+
+        <rect x="20" y="40" width="230" height="40" rx="4" fill="var(--state-success-bg)" stroke="var(--state-success)" stroke-width="1.5"/>
+        <text x="135" y="65" text-anchor="middle" font-size="11" fill="var(--state-success)" font-weight="700">① app.get('/healthz', ...) 등록</text>
+
+        <rect x="20" y="100" width="230" height="40" rx="4" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="1.5"/>
+        <text x="135" y="120" text-anchor="middle" font-size="11" fill="var(--state-failed)" font-weight="700">② app.use('*', 인증) 등록</text>
+        <text x="135" y="134" text-anchor="middle" font-size="9" fill="var(--state-failed)">— 이후 모든 라우트 앞을 막음</text>
+
+        <rect x="20" y="160" width="230" height="40" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.5"/>
+        <text x="135" y="185" text-anchor="middle" font-size="11" fill="var(--ink)">③ 나머지 8개 라우트 등록</text>
+
+        <line x1="135" y1="80" x2="135" y2="100" stroke="var(--ink)" stroke-width="2" marker-end="url(#arrow04b)"/>
+        <line x1="135" y1="140" x2="135" y2="160" stroke="var(--ink)" stroke-width="2" marker-end="url(#arrow04b)"/>
+
+        <text x="330" y="26" font-size="11" fill="var(--ink-faint)">요청이 실제로 지나가는 경로</text>
+
+        <path d="M330 60 C 380 60, 380 60, 430 60" fill="none" stroke="var(--state-success)" stroke-width="2.5" marker-end="url(#arrow04c)"/>
+        <text x="345" y="52" font-size="9.5" fill="var(--state-success)">GET /healthz →</text>
+        <rect x="432" y="42" width="180" height="36" rx="18" fill="var(--state-success-bg)" stroke="var(--state-success)" stroke-width="2"/>
+        <text x="522" y="65" text-anchor="middle" font-size="10.5" fill="var(--state-success)" font-weight="700">인증 건너뛰고 바로 200</text>
+
+        <path d="M330 150 C 380 150, 380 120, 430 120" fill="none" stroke="var(--state-failed)" stroke-width="2.5" marker-end="url(#arrow04c)"/>
+        <text x="345" y="145" font-size="9.5" fill="var(--ink-soft)">나머지 8개 요청 →</text>
+        <rect x="432" y="102" width="180" height="36" rx="4" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="2"/>
+        <text x="522" y="125" text-anchor="middle" font-size="10.5" fill="var(--state-failed)" font-weight="700">인증 관문 통과해야 진행</text>
+
+        <line x1="250" y1="60" x2="330" y2="60" stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 2"/>
+        <line x1="250" y1="180" x2="330" y2="150" stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 2"/>
+
+        <defs>
+          <marker id="arrow04b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+          <marker id="arrow04c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>등록 순서가 곧 예외인 이유</summary>
+      <div class="layer2-body">
+        <p>Hono 라우터는 요청마다 등록된 순서대로 라우트/미들웨어를 검사한다. <code>app.get('/healthz', ...)</code>가 인증 미들웨어(<code>app.use('*', ...)</code>)보다 먼저 등록돼 있으므로, <code>/healthz</code> 요청은 인증 미들웨어에 닿기도 전에 이미 처리·응답이 끝난다. 이건 URL 패턴으로 예외를 뚫어준 게 아니라 <b>등록 순서</b>로 만들어진 의도된 예외다 — 흔히 놓치는 설계 사실이라 반드시 그림으로 남긴다.</p>
+        <span class="cite">근거: 04-API-명세서.md § 공통 사항 &gt; 인증 (라우트 등록 순서에 의존하는 의도된 예외)</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 4. 상태코드 판정 규칙 ================= -->
+  <section class="doc-section" id="statuscode">
+    <h2 class="section-title"><span class="section-num">4</span>상태코드 판정 규칙 — 결과값 → HTTP 코드 매핑</h2>
+    <p class="lede"><b>1층.</b> 창구가 서류를 다 처리한 뒤에도 도장이 하나 더 남아있다 — 그 서류의 <b>처리 결과</b>가 접수증 겉면의 <b>합격/불합격 도장</b>으로 바뀌는 규칙이다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 720 210" role="img" aria-labelledby="mapTitle">
+        <title id="mapTitle">처리 결과값이 HTTP 상태 코드로 바뀌는 매핑</title>
+
+        <rect x="10" y="16" width="200" height="34" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.2"/>
+        <text x="110" y="38" text-anchor="middle" font-size="10.5">POST /deploy, POST /rollback</text>
+
+        <line x1="210" y1="33" x2="252" y2="33" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow04d)"/>
+        <text x="110" y="66" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">result.status</text>
+
+        <rect x="254" y="0" width="150" height="30" rx="3" fill="var(--state-success-bg)" stroke="var(--state-success)"/>
+        <text x="329" y="20" text-anchor="middle" font-size="10" fill="var(--state-success)" font-weight="700">"success"</text>
+        <rect x="254" y="35" width="150" height="30" rx="3" fill="var(--state-skipped-bg)" stroke="var(--state-skipped)"/>
+        <text x="329" y="55" text-anchor="middle" font-size="10" fill="var(--ink-soft)" font-weight="700" text-decoration="line-through">"skipped"</text>
+        <rect x="254" y="70" width="150" height="30" rx="3" fill="var(--state-failed-bg)" stroke="var(--state-failed)"/>
+        <text x="329" y="90" text-anchor="middle" font-size="10" fill="var(--state-failed)" font-weight="700">"failed"</text>
+
+        <line x1="404" y1="15" x2="450" y2="35" stroke="var(--state-success)" stroke-width="1.5" marker-end="url(#arrow04d)"/>
+        <line x1="404" y1="50" x2="450" y2="35" stroke="var(--state-skipped)" stroke-width="1.5" marker-end="url(#arrow04d)"/>
+        <rect x="452" y="18" width="70" height="34" rx="17" fill="var(--state-success-bg)" stroke="var(--state-success)" stroke-width="2"/>
+        <text x="487" y="40" text-anchor="middle" font-size="13" fill="var(--state-success)" font-weight="800">200</text>
+
+        <line x1="404" y1="85" x2="450" y2="85" stroke="var(--state-failed)" stroke-width="1.5" marker-end="url(#arrow04d)"/>
+        <rect x="452" y="68" width="70" height="34" rx="17" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="2"/>
+        <text x="487" y="90" text-anchor="middle" font-size="13" fill="var(--state-failed)" font-weight="800">500</text>
+
+        <rect x="10" y="130" width="200" height="34" rx="4" fill="var(--paper-card)" stroke="var(--ink)" stroke-width="1.2"/>
+        <text x="110" y="152" text-anchor="middle" font-size="10.5">GET /status/:project</text>
+        <text x="110" y="180" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">프로젝트 존재?</text>
+
+        <line x1="210" y1="147" x2="450" y2="132" stroke="var(--state-success)" stroke-width="1.5" marker-end="url(#arrow04d)"/>
+        <text x="330" y="128" font-size="9" fill="var(--state-success)">있음</text>
+        <rect x="452" y="115" width="70" height="30" rx="15" fill="var(--state-success-bg)" stroke="var(--state-success)" stroke-width="2"/>
+        <text x="487" y="135" text-anchor="middle" font-size="12" fill="var(--state-success)" font-weight="800">200</text>
+
+        <line x1="210" y1="155" x2="450" y2="178" stroke="var(--state-failed)" stroke-width="1.5" marker-end="url(#arrow04d)"/>
+        <text x="330" y="185" font-size="9" fill="var(--state-failed)">없음</text>
+        <rect x="452" y="163" width="70" height="30" rx="15" fill="var(--state-failed-bg)" stroke="var(--state-failed)" stroke-width="2"/>
+        <text x="487" y="183" text-anchor="middle" font-size="12" fill="var(--state-failed)" font-weight="800">404</text>
+
+        <text x="560" y="20" font-size="9.5" fill="var(--ink-faint)" width="140">이 두 라우트 외의</text>
+        <text x="560" y="33" font-size="9.5" fill="var(--ink-faint)">모든 성공 경로는</text>
+        <text x="560" y="46" font-size="9.5" fill="var(--ink-faint)">전부 200 하나뿐</text>
+        <text x="560" y="59" font-size="9.5" fill="var(--ink-faint)">(그 외 실패는</text>
+        <text x="560" y="72" font-size="9.5" fill="var(--ink-faint)">401/400으로</text>
+        <text x="560" y="85" font-size="9.5" fill="var(--ink-faint)">별도 처리, §5)</text>
+
+        <defs><marker id="arrow04d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker></defs>
+      </svg>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>404는 오직 한 곳에서만</summary>
+      <div class="layer2-body">
+        <p><code>404</code>는 시리즈 전체에서 <code>GET /status/:project</code> 프로젝트 미존재 한 곳에서만 등장한다. <code>DELETE /projects/:name</code>은 등록되지 않은 이름이어도 <b>404를 내지 않고 200</b>을 반환한다(§7 정확성 함정 참고) — 같은 "존재하지 않는 프로젝트"인데 라우트에 따라 정반대로 처리된다는 점에 주의.</p>
+        <span class="cite">근거: 04-API-명세서.md § 엔드포인트별 명세, § 에러 코드 표</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 5. 검증 규칙 배지판 ================= -->
+  <section class="doc-section" id="regbadges">
+    <h2 class="section-title"><span class="section-num">5</span>이 창구에서 쓰는 검증 자(잣대) 3종</h2>
+    <p class="lede"><b>1층.</b> 서식 칸에 아무 글자나 써도 되는 게 아니다. 세 가지 자로 칸의 모양을 잰다 — 이름칸, 도메인칸, 환경변수 키칸. (각 자의 눈금 하나하나를 뜯어보는 건 03번 상세 설계서의 몫이고, 여기서는 <b>어느 창구에서 어떤 자를 쓰는지</b>만 본다.)</p>
+
+    <div class="regbadges">
+      <div class="regbadge">
+        <h3>PROJECT_NAME_RE</h3>
+        <code class="rx">/^[a-z0-9][a-z0-9-]&#123;0,62&#125;$/</code>
+        <div class="ex"><span class="stamp stamp--pass" style="font-size:.7rem">my-app ✓</span><span class="stamp stamp--reject" style="font-size:.7rem">My_App ✕</span></div>
+        <p style="margin-top:8px;font-size:.8rem;color:var(--ink-soft)">적용: deploy/project/DELETE:name/status:project/logs:project/rollback:project/env:project — 사실상 전 라우트의 프로젝트명 칸</p>
+      </div>
+      <div class="regbadge">
+        <h3>HOSTNAME_RE</h3>
+        <code class="rx">/^(?=&#123;1,253&#125;)(...)(\.(...))+$/i</code>
+        <div class="ex"><span class="stamp stamp--pass" style="font-size:.7rem">my-app.example.com ✓</span><span class="stamp stamp--reject" style="font-size:.7rem">my app ✕</span></div>
+        <p style="margin-top:8px;font-size:.8rem;color:var(--ink-soft)">적용: <code>POST /projects</code>의 <code>domain</code> — 미지정 시 <code>${name}.${baseDomain}</code>으로 만든 값도 <b>다시</b> 이 자로 잰다</p>
+      </div>
+      <div class="regbadge">
+        <h3>ENV_KEY_RE</h3>
+        <code class="rx">/^[A-Za-z_][A-Za-z0-9_]*$/</code>
+        <div class="ex"><span class="stamp stamp--pass" style="font-size:.7rem">API_KEY ✓</span><span class="stamp stamp--reject" style="font-size:.7rem">1KEY ✕</span></div>
+        <p style="margin-top:8px;font-size:.8rem;color:var(--ink-soft)">적용: <code>PUT /env/:project</code>의 <code>set</code> 객체 키. 값 자체는 정규식이 아니라 개행 문자(<code>\r</code>/<code>\n</code>) 포함 여부만 확인</p>
+      </div>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>정규식과 03번 문서의 관계</summary>
+      <div class="layer2-body">
+        <p>이 세 자 중 <code>PROJECT_NAME_RE</code>는 CLI 쪽에서도 문자열 원문까지 동일하게 정의돼 있어야 한다(03번 문서에서 다룸). 여기서는 각 잣대가 이 창구 안 <b>어디에</b> 쓰이는지만 지도로 보여준다 — 정규식 조각을 쪼개 각 부분이 무엇을 허용/거부하는지 해부하는 것은 03번의 시각물이다.</p>
+        <span class="cite">근거: 04-API-명세서.md § 공통 사항 (프로젝트명/도메인/env 키 검증 정규식)</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 6. 주석 코드 패널 — 필드 대체 규칙 ================= -->
+  <section class="doc-section" id="fielddefaults">
+    <h2 class="section-title"><span class="section-num">6</span><code>POST /projects</code> 서식 — 틀려도 반려되지 않는 칸들</h2>
+    <p class="lede"><b>1층.</b> 대부분의 칸은 규격이 어긋나면 반려 도장을 찍지만, 이 서식의 세 칸은 다르다. 칸을 비뚤게 써도 접수 담당자가 <b>알아서 표준 값으로 고쳐 적고</b> 그냥 접수해 준다.</p>
+
+    <div class="code-panel">
+      <pre>{
+  "name": "my-app",          <span style="color:var(--state-failed)">← PROJECT_NAME_RE, 틀리면 400 반려</span>
+  "imageRepo": "ghcr.io/owner/my-app",  <span style="color:var(--state-failed)">← 빈 문자열이면 400 반려</span>
+  "branch": "main",          <span style="color:var(--accent-ink)">← string 아니면 에러 없이 'main'으로 대체</span>
+  "containerPort": 3000,     <span style="color:var(--accent-ink)">← number 아니면 에러 없이 3000으로 대체</span>
+  "healthPath": "/",         <span style="color:var(--accent-ink)">← string 아니면 에러 없이 '/'로 대체</span>
+  "domain": "my-app.example.com" <span style="color:var(--state-failed)">← 미지정시 생성 후에도 HOSTNAME_RE로 검증, 틀리면 400</span>
+}</pre>
+    </div>
+    <div class="callout-row"><span class="tick">주의</span>동작은 <code>upsertProject</code> — 같은 <code>name</code>이 이미 있으면 새로 만들지 않고 <span class="gloss" tabindex="0">덮어쓴다(upsert)<span class="gloss-note">이미 있는 세대 카드면 내용을 고쳐 쓰고, 없으면 새로 만드는 접수 방식</span></span>(<code>ON CONFLICT(name) DO UPDATE</code>).</div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>왜 이 셋만 관대한가</summary>
+      <div class="layer2-body">
+        <p>원문은 <code>branch</code>/<code>containerPort</code>/<code>healthPath</code>를 "선택, 타입 아니면 기본값으로 대체(에러 아님)"이라고 명시한다. <code>name</code>·<code>imageRepo</code>·<code>domain</code>은 형식 오류 시 그대로 400을 낸다는 점에서 이 셋과 대조된다 — 서식 필드마다 엄격도가 다르다는 사실 자체가 이 문서의 정확성 함정 중 하나다.</p>
+        <span class="cite">근거: 04-API-명세서.md § POST /projects &gt; 필드별 규칙</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 7. env 서식 접수 절차 ================= -->
+  <section class="doc-section" id="envsteps">
+    <h2 class="section-title"><span class="section-num">7</span><code>PUT /env/:project</code> — 환경변수 서식 접수 절차</h2>
+    <p class="lede"><b>1층.</b> 이 창구만 장부(DB)가 아니라 <b>종이 파일</b>에 바로 적는다. 접수 순서가 있다 — 폴더를 만들고, 기존 내용을 읽고, 고칠 것을 반영하고, 지울 것을 지운 뒤, 전체를 다시 써서 잠근다.</p>
+
+    <div class="seq-steps">
+      <div class="seq-step"><div class="seq-step__dot">1</div><div class="seq-step__body"><h3>폴더 준비</h3><p><code>mkdirSync(envDir, &#123; recursive: true &#125;)</code></p></div></div>
+      <div class="seq-step"><div class="seq-step__dot">2</div><div class="seq-step__body"><h3>기존 서식 읽기</h3><p>파일이 있으면 줄 단위 <code>KEY=VALUE</code>로 파싱해 <code>Map</code>으로 올림(빈 줄·<code>#</code> 시작 줄 제외)</p></div></div>
+      <div class="seq-step"><div class="seq-step__dot">3</div><div class="seq-step__body"><h3><code>set</code> 반영</h3><p>키는 ENV_KEY_RE 검증, 값은 개행 문자 포함 시 400</p></div></div>
+      <div class="seq-step"><div class="seq-step__dot">4</div><div class="seq-step__body"><h3><code>remove</code> 반영</h3><p>존재 여부 확인 없이 무조건 삭제 시도</p></div></div>
+      <div class="seq-step"><div class="seq-step__dot">5</div><div class="seq-step__body"><h3>전체 재작성 + 권한 강제</h3><p><code>mode 0600</code>으로 새로 쓰고, 기존 파일이었다면 <code>chmodSync</code>로 0600을 다시 강제(신규 생성 시에만 <code>mode</code> 옵션이 적용되므로)</p></div></div>
+    </div>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>왜 DB가 아니라 파일인가</summary>
+      <div class="layer2-body">
+        <p><code>PUT /env/:project</code>는 <code>&lt;envDir&gt;/&lt;project&gt;.env</code> 파일을 직접 조작한다 — <code>projects</code>/<code>deployments</code> 테이블은 건드리지 않는다(테이블 접근 여부는 05번 DB 설계서의 접근 매트릭스에서 "무접근"으로 표시됨). 파일 경로의 컨테이너 내부/NAS 실제 위치 대응은 05번 문서에서 자세히 다룬다.</p>
+        <span class="cite">근거: 04-API-명세서.md § PUT /env/:project</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 8. 엔드포인트 9종 상세 서류철 ================= -->
+  <section class="doc-section" id="detail-cards">
+    <h2 class="section-title"><span class="section-num">8</span>엔드포인트 9종 상세 서류철</h2>
+    <p class="lede"><b>1층.</b> 위 왕복도가 <em>어떻게</em> 판정하는지 보여줬다면, 여기는 각 창구의 <em>정본 규정</em>이다 — 표로 남겨도 되는 항목들. 창구 이름 뒤에 붙는 <code>:project</code> 같은 칸은 <span class="gloss" tabindex="0">경로 변수(path param)<span class="gloss-note">봉투 겉면 주소칸에 직접 적어 넣는 값 — URL 경로 자체의 일부</span></span>, <code>?tail=</code>처럼 물음표 뒤에 붙는 칸은 <span class="gloss" tabindex="0">질의 변수(query param)<span class="gloss-note">주소 옆에 덧붙이는 선택 메모 — 없어도 기본값으로 처리된다</span></span>다. <code>GET /logs/:project</code>만 정해진 JSON 서식이 아니라 <span class="gloss" tabindex="0">text/plain 응답<span class="gloss-note">정해진 서식 칸이 아니라 편지지 그대로 돌려주는 응답</span></span>으로 돌아온다.</p>
+    <div id="detailCards"></div>
+
+    <div class="table-scroll" style="margin-top:var(--sp-5)">
+      <table>
+        <caption>전체 에러 코드 표 (13행) — 어느 라우트에서 언제 발생하는가</caption>
+        <thead><tr><th>HTTP</th><th>발생 조건</th><th>응답 형태</th></tr></thead>
+        <tbody>
+          <tr><td>400</td><td>body JSON 파싱 실패 (모든 body 있는 POST/PUT 공통)</td><td><code>&#123;"error":"invalid json"&#125;</code></td></tr>
+          <tr><td>400</td><td>프로젝트명이 PROJECT_NAME_RE 불일치 (전 라우트 공통)</td><td><code>&#123;"error":"invalid project name"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>POST /deploy</code>의 <code>image</code>/<code>sha</code>가 string 아님</td><td><code>&#123;"error":"invalid body"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>POST /projects</code>의 <code>imageRepo</code>가 string 아니거나 빈 문자열</td><td><code>&#123;"error":"invalid imageRepo"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>POST /projects</code>의 <code>domain</code>이 HOSTNAME_RE 불일치</td><td><code>&#123;"error":"invalid domain"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>PUT /env</code>의 <code>set</code>이 객체 아님/배열/null</td><td><code>&#123;"error":"invalid set"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>PUT /env</code>의 <code>set</code> 키가 ENV_KEY_RE 불일치</td><td><code>&#123;"error":"invalid env key: &lt;key&gt;"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>PUT /env</code>의 <code>set</code> 값이 string 아니거나 개행 포함</td><td><code>&#123;"error":"invalid env value for &lt;key&gt;"&#125;</code></td></tr>
+          <tr><td>400</td><td><code>PUT /env</code>의 <code>remove</code>가 string 배열 아님</td><td><code>&#123;"error":"invalid remove"&#125;</code></td></tr>
+          <tr><td>401</td><td>서명/타임스탬프 검증 실패(<code>/healthz</code> 제외 전 라우트)</td><td><code>&#123;"error":"invalid signature"&#125;</code></td></tr>
+          <tr><td>404</td><td><code>GET /status/:project</code> 대상 프로젝트 미존재</td><td><code>&#123;"error":"not found"&#125;</code></td></tr>
+          <tr><td>500</td><td><code>POST /deploy</code> 결과 <code>status === "failed"</code></td><td><code>&#123;"status":"failed","error":"..."&#125;</code></td></tr>
+          <tr><td>500</td><td><code>POST /rollback/:project</code> 결과 <code>status === "failed"</code></td><td><code>&#123;"status":"failed","error":"..."&#125;</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= 9. 말하지 않는 것 ================= -->
+  <section class="doc-section" id="not-said">
+    <h2 class="section-title"><span class="section-num">9</span>이 문서가 말하지 않는 것</h2>
+    <p class="lede"><b>1층.</b> 창구 규정집에 없는 항목은 "없다"고 우기지 않고, <b>"이 원문은 답하지 않는다"</b>고 빈 도장칸으로 남긴다.</p>
+
+    <div class="not-said-grid">
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>요청 빈도 제한(rate limit)</b> — 원문에 언급 없음</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>CORS 정책</b> — 원문에 언급 없음</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>API 버전 관리</b> — 엔드포인트에 버전 프리픽스 없음, 언급 없음</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>사람 사용자용 로그인/세션</b> — 없음. 인증은 기기 간 HMAC 서명뿐</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p><b>요청 크기 제한</b> — 원문에 언급 없음</p></div>
+    </div>
+    <p style="margin-top:var(--sp-4);font-size:.86rem;color:var(--ink-soft)">이 다섯 칸은 "곧 될 것"이 아니라 <b>이 문서(원문)가 다루지 않는 질문</b>이다. 확인되지 않은 것을 확인된 것처럼 채우지 않는다 — 01번 문서의 미구현 3건, 07번 문서의 잔여 위험 4건과 같은 원칙.</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/04-API-명세서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="03-상세-설계서.html">← 03 상세 설계서</a>
+        <a href="05-DB-설계서.html">05 DB 설계서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var ENDPOINTS = [
+    { id:"healthz", method:"GET", path:"/healthz", title:"상태 확인",
+      note:"인증 예외 창구 — 서명 없이도 항상 통과한다.",
+      gates:[ {kind:"fixed", id:"process", n:1, label:"처리", desc:"항상 정상 처리", http:200, body:'{ "ok": true }'} ] },
+
+    { id:"deploy", method:"POST", path:"/deploy", title:"배포 요청",
+      note:"가장 많은 관문을 가진 창구 — 배포 파이프라인의 입구.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"HMAC 서명 + 5분 오차", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"json", n:2, label:"JSON 파싱", small:"body가 올바른 JSON인가", failHttp:400, failBody:'{ "error": "invalid json" }'},
+        {kind:"toggle", id:"name", n:3, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"toggle", id:"fields", n:4, label:"필드 타입 검증", small:"image/sha가 string인가", failHttp:400, failBody:'{ "error": "invalid body" }'},
+        {kind:"select", id:"process", n:5, label:"처리(오케스트레이터 실행 결과)", small:"orchestrator.deploy() 반환값",
+          options:[
+            {key:"success", label:"성공(success)", style:"pass", http:200, body:'{ "status": "success" }'},
+            {key:"skipped", label:"스킵(skipped) — 새 deploy로 교체됨", style:"skipped", http:200, body:'{ "status": "skipped" }'},
+            {key:"failed", label:"실패(failed) — 예: 헬스체크 실패", style:"reject", http:500, body:'{ "status": "failed", "error": "health check failed" }'}
+          ]}
+      ] },
+
+    { id:"projects", method:"POST", path:"/projects", title:"프로젝트 등록/수정",
+      note:"upsert — 같은 이름이 있으면 덮어쓴다.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"HMAC 서명 + 5분 오차", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"json", n:2, label:"JSON 파싱", small:"body가 올바른 JSON인가", failHttp:400, failBody:'{ "error": "invalid json" }'},
+        {kind:"toggle", id:"name", n:3, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"toggle", id:"imageRepo", n:4, label:"imageRepo 검증", small:"string이며 빈 문자열 아님", failHttp:400, failBody:'{ "error": "invalid imageRepo" }'},
+        {kind:"toggle", id:"domain", n:5, label:"domain 검증", small:"지정/생성 값 모두 HOSTNAME_RE", failHttp:400, failBody:'{ "error": "invalid domain" }'},
+        {kind:"fixed", id:"process", n:6, label:"처리(upsert)", small:"ON CONFLICT(name) DO UPDATE", http:200, body:'{ "ok": true }'}
+      ] },
+
+    { id:"deleteProject", method:"DELETE", path:"/projects/:name", title:"프로젝트 삭제",
+      note:"등록 안 된 이름이어도 결과는 동일하게 200 — 아래 토글로 직접 확인.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"body는 빈 문자열로 서명", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"name", n:2, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"select", id:"exists", n:3, label:"등록 여부(참고용 — 결과에 영향 없음)", small:"docker stopAndRemove 후 removeProject 무조건 실행",
+          options:[
+            {key:"yes", label:"등록된 프로젝트", style:"pass", http:200, body:'{ "ok": true }'},
+            {key:"no", label:"미등록 프로젝트명", style:"pass", http:200, body:'{ "ok": true }  ← 여전히 200! 404 아님'}
+          ]}
+      ] },
+
+    { id:"status", method:"GET", path:"/status", title:"전체 프로젝트 목록",
+      note:"에러 응답이 정의돼 있지 않다 — 항상 200.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"body는 빈 문자열로 서명", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"select", id:"process", n:2, label:"처리(listProjects, 이름순 정렬)", small:"항상 200",
+          options:[
+            {key:"has", label:"등록된 프로젝트 있음", style:"pass", http:200, body:'[ { "name": "my-app", ... } ]'},
+            {key:"none", label:"등록된 프로젝트 없음", style:"pass", http:200, body:'[]'}
+          ]}
+      ] },
+
+    { id:"statusProject", method:"GET", path:"/status/:project", title:"프로젝트 상세 + 배포 이력",
+      note:"404가 등장하는 유일한 창구.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"body는 빈 문자열로 서명", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"name", n:2, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"select", id:"exists", n:3, label:"프로젝트 존재?", small:"getProject 조회",
+          options:[
+            {key:"yes", label:"존재함", style:"pass", http:200, body:'{ "name": "my-app", ..., "deployments": [ /* 최근 20건, id desc */ ] }'},
+            {key:"no", label:"존재하지 않음", style:"reject", http:404, body:'{ "error": "not found" }'}
+          ]}
+      ] },
+
+    { id:"logs", method:"GET", path:"/logs/:project", title:"컨테이너 로그",
+      note:"유일하게 JSON이 아니라 순수 텍스트로 응답한다.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"body는 빈 문자열로 서명", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"name", n:2, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"fixed", id:"process", n:3, label:"처리", small:"?tail= 기본 200줄", http:200, body:"(text/plain 원문 로그, JSON 아님)", raw:true}
+      ] },
+
+    { id:"rollback", method:"POST", path:"/rollback/:project", title:"직전 이미지로 롤백",
+      note:"직전 이미지가 없으면 실패.",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"HMAC 서명 + 5분 오차", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"name", n:2, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"select", id:"process", n:3, label:"처리(orchestrator.rollback)", small:"previousImage로 컨테이너 교체",
+          options:[
+            {key:"success", label:"성공(success)", style:"pass", http:200, body:'{ "status": "success" }'},
+            {key:"failed", label:"실패(failed) — 예: 직전 이미지 없음", style:"reject", http:500, body:'{ "status": "failed", "error": "no previous image" }'}
+          ]}
+      ] },
+
+    { id:"env", method:"PUT", path:"/env/:project", title:"환경변수 설정",
+      note:"DB가 아니라 파일을 직접 고친다(§7).",
+      gates:[
+        {kind:"toggle", id:"sig", n:1, label:"서명 검증", small:"HMAC 서명 + 5분 오차", failHttp:401, failBody:'{ "error": "invalid signature" }'},
+        {kind:"toggle", id:"json", n:2, label:"JSON 파싱", small:"body가 올바른 JSON인가", failHttp:400, failBody:'{ "error": "invalid json" }'},
+        {kind:"toggle", id:"name", n:3, label:"프로젝트명 정규식", small:"PROJECT_NAME_RE", failHttp:400, failBody:'{ "error": "invalid project name" }'},
+        {kind:"toggle", id:"set", n:4, label:"set 필드 검증", small:"객체 형태 + ENV_KEY_RE 키 + 개행없는 값", failHttp:400, failBody:'{ "error": "invalid set" }'},
+        {kind:"toggle", id:"remove", n:5, label:"remove 필드 검증", small:"string[] 이어야 함", failHttp:400, failBody:'{ "error": "invalid remove" }'},
+        {kind:"fixed", id:"process", n:6, label:"처리", small:"0600 재작성", http:200, body:'{ "ok": true, "keys": ["API_KEY", "OTHER_KEY"] }'}
+      ] }
+  ];
+
+  var byId = {}; ENDPOINTS.forEach(function(e){ byId[e.id]=e; });
+
+  var selectEl = document.getElementById("gwEndpointSelect");
+  var noteEl = document.getElementById("gwEndpointNote");
+  var gatesEl = document.getElementById("gwGates");
+  var verdictEl = document.getElementById("gwVerdict");
+  var state = {};
+
+  ENDPOINTS.forEach(function(ep){
+    var opt = document.createElement("option");
+    opt.value = ep.id;
+    opt.textContent = ep.method + " " + ep.path + " — " + ep.title;
+    selectEl.appendChild(opt);
+  });
+
+  function resetState(ep){
+    state = {};
+    ep.gates.forEach(function(g){
+      if (g.kind === "toggle") state[g.id] = "pass";
+      else if (g.kind === "select") state[g.id] = g.options[0].key;
+    });
+  }
+
+  function renderGates(ep){
+    gatesEl.innerHTML = "";
+    ep.gates.forEach(function(g){
+      var row = document.createElement("div");
+      row.className = "gw-gate";
+      row.setAttribute("data-gate", g.id);
+
+      var n = document.createElement("div");
+      n.className = "gw-gate__n"; n.textContent = "#"+g.n;
+      row.appendChild(n);
+
+      var label = document.createElement("div");
+      label.className = "gw-gate__label";
+      label.innerHTML = "<span>"+g.label+"</span>" + (g.small ? "<small>"+g.small+"</small>" : "");
+      row.appendChild(label);
+
+      var ctl = document.createElement("div");
+      ctl.className = "gw-gate__ctl";
+
+      if (g.kind === "toggle"){
+        var passBtn = document.createElement("button");
+        passBtn.type="button"; passBtn.className="gw-btn is-pass"; passBtn.textContent="정상 값";
+        passBtn.setAttribute("aria-pressed", state[g.id]==="pass" ? "true":"false");
+        passBtn.addEventListener("click", function(){ state[g.id]="pass"; renderGates(ep); computeVerdict(ep); });
+
+        var failBtn = document.createElement("button");
+        failBtn.type="button"; failBtn.className="gw-btn is-fail"; failBtn.textContent="결함 값";
+        failBtn.setAttribute("aria-pressed", state[g.id]==="fail" ? "true":"false");
+        failBtn.addEventListener("click", function(){ state[g.id]="fail"; renderGates(ep); computeVerdict(ep); });
+
+        ctl.appendChild(passBtn); ctl.appendChild(failBtn);
+      } else if (g.kind === "select"){
+        var sel = document.createElement("select");
+        sel.className = "gw-btn";
+        g.options.forEach(function(o){
+          var oo = document.createElement("option");
+          oo.value=o.key; oo.textContent=o.label;
+          if (state[g.id]===o.key) oo.selected=true;
+          sel.appendChild(oo);
+        });
+        sel.addEventListener("change", function(){ state[g.id]=sel.value; computeVerdict(ep); });
+        ctl.appendChild(sel);
+      } else {
+        var fixedNote = document.createElement("span");
+        fixedNote.style.fontSize=".78rem"; fixedNote.style.color="var(--ink-faint)";
+        fixedNote.textContent = "(고정 — 항상 통과)";
+        ctl.appendChild(fixedNote);
+      }
+      row.appendChild(ctl);
+
+      var stampzone = document.createElement("div");
+      stampzone.className = "gw-stampzone";
+      stampzone.id = "stamp-" + g.id;
+      row.appendChild(stampzone);
+
+      gatesEl.appendChild(row);
+    });
+  }
+
+  function computeVerdict(ep){
+    var finalResult = null;
+    var reachedFail = false;
+    ep.gates.forEach(function(g){
+      var zone = document.getElementById("stamp-"+g.id);
+      if (!zone) return;
+      if (reachedFail){
+        zone.innerHTML = '<span class="stamp stamp--pending">미도달</span>';
+        return;
+      }
+      if (g.kind === "toggle"){
+        if (state[g.id] === "fail"){
+          zone.innerHTML = '<span class="stamp stamp--reject">반려 · '+g.failHttp+'</span>';
+          finalResult = { http:g.failHttp, body:g.failBody };
+          reachedFail = true;
+        } else {
+          zone.innerHTML = '<span class="stamp stamp--pass">통과</span>';
+        }
+      } else if (g.kind === "select"){
+        var opt = g.options.filter(function(o){return o.key===state[g.id];})[0];
+        var cls = opt.style === "reject" ? "stamp--reject" : (opt.style === "skipped" ? "stamp--skipped" : "stamp--pass");
+        var label = opt.style === "reject" ? "판정: " : "판정: ";
+        zone.innerHTML = '<span class="stamp '+cls+'">'+label+opt.label+'</span>';
+        finalResult = { http:opt.http, body:opt.body };
+      } else if (g.kind === "fixed"){
+        zone.innerHTML = '<span class="stamp stamp--pass">통과</span>';
+        finalResult = { http:g.http, body:g.body };
+      }
+    });
+
+    if (finalResult){
+      var okClass = finalResult.http < 400 ? "ok" : "bad";
+      verdictEl.innerHTML =
+        '<div>최종 응답 — <span class="gw-verdict__http '+okClass+'">HTTP '+finalResult.http+'</span></div>' +
+        '<pre>'+ escapeHtml(finalResult.body) +'</pre>';
+    } else {
+      verdictEl.innerHTML = '';
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function selectEndpoint(id){
+    var ep = byId[id];
+    if (!ep) return;
+    selectEl.value = id;
+    noteEl.textContent = ep.note || "";
+    resetState(ep);
+    renderGates(ep);
+    computeVerdict(ep);
+  }
+
+  selectEl.addEventListener("change", function(){ selectEndpoint(selectEl.value); });
+
+  document.querySelectorAll("[data-goto]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-goto");
+      selectEndpoint(id);
+      document.getElementById("gw").scrollIntoView({behavior:"smooth", block:"center"});
+    });
+  });
+
+  // ---- 상세 서류철(정적 카드, JS 없이도 왕복도와 동일한 정보를 표로 제공) ----
+  var cardsRoot = document.getElementById("detailCards");
+  ENDPOINTS.forEach(function(ep){
+    var card = document.createElement("details");
+    card.className = "layer2";
+    card.style.marginBottom = "10px";
+    var summary = document.createElement("summary");
+    summary.innerHTML = '<span class="chip"><span class="method">'+ep.method+'</span>'+ep.path+'</span><span style="font-weight:400;color:var(--ink-soft);font-size:.82rem">'+ep.title+'</span>';
+    card.appendChild(summary);
+
+    var body = document.createElement("div");
+    body.className = "layer2-body";
+    var rows = ep.gates.map(function(g){
+      if (g.kind === "toggle"){
+        return "<tr><td>#"+g.n+" "+g.label+"</td><td>"+(g.small||"")+"</td><td>실패 시 "+g.failHttp+" — <code>"+escapeHtml(g.failBody)+"</code></td></tr>";
+      } else if (g.kind === "select"){
+        var opts = g.options.map(function(o){ return o.label+" → "+o.http; }).join(" / ");
+        return "<tr><td>#"+g.n+" "+g.label+"</td><td>"+(g.small||"")+"</td><td>"+opts+"</td></tr>";
+      } else {
+        return "<tr><td>#"+g.n+" "+g.label+"</td><td>"+(g.small||"")+"</td><td>"+g.http+" — <code>"+escapeHtml(g.body)+"</code></td></tr>";
+      }
+    }).join("");
+    body.innerHTML = '<div class="table-scroll"><table><thead><tr><th>관문</th><th>내용</th><th>결과</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    card.appendChild(body);
+    cardsRoot.appendChild(card);
+  });
+
+  selectEndpoint("deploy");
+})();
+</script>
+</body>
+</html>

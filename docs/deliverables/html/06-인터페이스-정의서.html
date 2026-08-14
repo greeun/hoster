@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06. 인터페이스 정의서 — hoster 산출물</title>
+<style>
+  :root{
+    --paper:#f3ecdb; --paper-deep:#e7ddc3; --paper-card:#faf6ea;
+    --ink:#241f16; --ink-soft:#5c5443; --ink-faint:#8b8271;
+    --rule:#c7bb9c; --rule-soft:#ded1ac; --rule-strong:#a89877;
+    --state-success:#2f5233; --state-success-bg:#e2e9df;
+    --state-failed:#b83a1f;  --state-failed-bg:#f2e0d8;
+    --state-pending:#8b8577; --state-pending-bg:#e6e2d6;
+    --state-rolledback:#8a5a2c; --state-rolledback-bg:#ecdfcb;
+    --state-skipped:#aca493; --state-skipped-bg:#eae5da;
+    --accent:#276f6d; --accent-ink:#153d3c; --accent-soft:#d8e9e6; --accent-line:#276f6d;
+    --accent-02:#2b5d88;
+    --ac-index:#241f16; --ac-01:#d9541f; --ac-02:#2b5d88; --ac-03:#a35a1c; --ac-04:#1f8f5c;
+    --ac-05:#5b4530; --ac-06:#276f6d; --ac-07:#7a1f2b; --ac-08:#7c7a2c; --ac-09:#c0851d; --ac-10:#5b9bd8;
+    --ff-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --ff-title: "AppleMyungjo", "Apple SD Gothic Neo", "Batang", "New Batang", "Noto Serif KR", serif;
+    --ff-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "D2Coding", monospace;
+    --fs-doctitle: clamp(1.7rem, 1.35rem + 1.4vw, 2.3rem);
+    --fs-section: clamp(1.2rem, 1.05rem + .6vw, 1.5rem);
+    --fs-sub: 1.08rem;
+    --fs-body: 1rem;
+    --fs-caption: .8125rem;
+    --fs-code: .875rem;
+    --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2rem; --sp-7:3rem; --sp-8:4rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--ff-body);
+    font-size:var(--fs-body); line-height:1.62; overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-attachment:local;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 var(--sp-5);}
+  a{color:var(--accent-ink)}
+  a:not(.tab):not(.crumb-link){text-underline-offset:2px}
+  h1,h2,h3,h4{font-family:var(--ff-title); font-weight:700; margin:0 0 var(--sp-3); color:var(--ink)}
+  p{margin:0 0 var(--sp-4)}
+  code, pre, .mono{font-family:var(--ff-mono)}
+  svg text{font-family:var(--ff-body)}
+  :focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+
+  /* ---------- 헤더 + 색인 탭 (시리즈 공통 — 08~10/index와 동일) ---------- */
+  .site-header{
+    position:sticky;top:0;z-index:100;
+    background:var(--paper);
+    border-bottom:2px solid var(--ink);
+  }
+  .header-top{
+    max-width:1180px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+    padding:var(--sp-4) var(--sp-5) var(--sp-2);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:var(--sp-3);}
+  .brand-mark{
+    width:2.2rem;height:2.2rem;border:2px solid var(--ink);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-family:var(--ff-title);
+    font-size:1.1rem;flex:none;
+  }
+  .brand-kicker{margin:0;font-size:var(--fs-caption);color:var(--ink-soft);letter-spacing:0.08em;}
+  .brand-title{margin:0;font-size:1.15rem;}
+  .doc-meta-chip{
+    margin:0;font-size:var(--fs-caption);color:var(--ink-soft);
+    border:1px solid var(--rule-strong);padding:var(--sp-1) var(--sp-3);border-radius:2px;background:var(--paper-card);
+    white-space:nowrap;
+  }
+  .index-tabs{
+    max-width:1180px;margin:0 auto;
+    display:flex;gap:2px;overflow-x:auto;padding:0 var(--sp-5) 0;
+    scrollbar-width:thin;
+  }
+  .tab{
+    --tab-ac:var(--ink);
+    flex:none;
+    font-size:0.78rem;font-weight:600;text-decoration:none;color:var(--ink-soft);
+    padding:var(--sp-2) var(--sp-3) var(--sp-2);
+    background:var(--paper-deep);
+    border:1px solid var(--rule-strong);border-bottom:none;
+    clip-path:polygon(6% 0,94% 0,100% 100%,0% 100%);
+    transform:translateY(3px);
+    transition:transform .12s ease;
+    white-space:nowrap;
+  }
+  .tab:hover{transform:translateY(0);color:var(--ink);}
+  .tab--current{
+    background:var(--paper);
+    color:var(--ink);
+    border-color:var(--ink);
+    border-bottom:3px solid var(--tab-ac);
+    transform:translateY(0);
+    font-weight:800;
+  }
+  .tab-swatch{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tab-ac);margin-right:5px;}
+
+  /* ---------- hero / meta ---------- */
+  .doc-hero{padding:var(--sp-6) 0 var(--sp-5); border-bottom:1px dashed var(--rule);}
+  .doc-kicker{font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; margin-bottom:6px;}
+  .doc-title{font-size:var(--fs-doctitle); margin-bottom:var(--sp-2); line-height:1.25;}
+  .doc-anchor{font-size:var(--fs-sub); color:var(--ink-soft); max-width:62ch; margin-bottom:var(--sp-3)}
+  .meta-line{font-size:var(--fs-caption); color:var(--ink-faint); border-top:1px solid var(--rule-soft); padding-top:var(--sp-2); display:flex; flex-wrap:wrap; gap:4px 14px;}
+  .meta-line code{color:var(--ink-soft)}
+
+  /* ---------- locator (shared site-plan reuse) ---------- */
+  .locator{display:flex; gap:var(--sp-5); align-items:center; flex-wrap:wrap; margin:var(--sp-5) 0 0; padding:var(--sp-4); background:var(--paper-card); border:1px solid var(--rule); border-radius:4px;}
+  .locator__map{flex:0 0 auto; width:min(340px,100%);}
+  .locator__cap{flex:1 1 240px; font-size:var(--fs-caption); color:var(--ink-soft);}
+  .locator__cap strong{color:var(--ink); font-family:var(--ff-title)}
+
+  /* ---------- sections ---------- */
+  main{padding-bottom:var(--sp-8)}
+  section.doc-section{padding:var(--sp-7) 0; border-bottom:1px dashed var(--rule-soft);}
+  section.doc-section:last-of-type{border-bottom:none}
+  .section-num{display:inline-block; font-family:var(--ff-mono); font-size:var(--fs-caption); color:var(--paper); background:var(--ink); padding:2px 7px; border-radius:2px; margin-right:8px; vertical-align:2px;}
+  .section-title{font-size:var(--fs-section);}
+  h3.sub{font-size:var(--fs-sub); margin-top:var(--sp-6);}
+  .lede{font-size:var(--fs-sub); color:var(--ink-soft); max-width:74ch; margin-bottom:var(--sp-5); position:relative; padding-left:16px; border-left:3px solid var(--accent);}
+  .lede b{color:var(--ink)}
+
+  /* ---------- gloss (always-visible inline note, no JS needed) ---------- */
+  .gloss{border-bottom:1px dotted var(--ink-faint); cursor:help; position:relative;}
+  .gloss-note{display:inline; font-size:.94em; color:var(--ink-soft); background:var(--accent-soft); padding:1px 6px; border-radius:3px; margin:0 2px;}
+
+  /* ---------- disclosure / two-layer ---------- */
+  details.layer2{margin-top:var(--sp-4); border:1px solid var(--rule); border-radius:4px; background:var(--paper-card);}
+  details.layer2>summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:var(--fs-caption); font-weight:700; color:var(--accent-ink); display:flex; align-items:center; gap:8px; user-select:none;}
+  details.layer2>summary::-webkit-details-marker{display:none}
+  details.layer2>summary:before{content:"▸"; display:inline-block; transition:transform .15s;}
+  details.layer2[open]>summary:before{transform:rotate(90deg);}
+  details.layer2>summary .layer2-label{text-transform:uppercase; letter-spacing:.05em; font-size:.72rem; color:var(--ink-faint); font-weight:700;}
+  .layer2-body{padding:0 16px 16px; font-size:.94rem; color:var(--ink-soft);}
+  .layer2-body table{margin-top:6px}
+  .layer2-body code{background:var(--paper-deep); padding:1px 5px; border-radius:3px; color:var(--ink)}
+  .cite{display:inline-block; font-family:var(--ff-mono); font-size:.72rem; color:var(--ink-faint); background:var(--paper-deep); padding:1px 6px; border-radius:3px; margin-top:6px;}
+
+  /* ---------- tables ---------- */
+  table{border-collapse:collapse; width:100%; font-size:.92rem;}
+  caption{caption-side:top; text-align:left; font-size:var(--fs-caption); color:var(--ink-faint); margin-bottom:4px; font-style:normal;}
+  th,td{border:1px solid var(--rule); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--paper-deep); font-weight:700; font-size:.85rem;}
+  td code{font-size:.82em}
+  .table-scroll{overflow-x:auto; border-radius:4px;}
+
+  /* ---------- chips / stamps ---------- */
+  .chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--ff-mono); font-size:.78rem; background:var(--paper); border:1px solid var(--ink-soft); border-radius:3px; padding:3px 8px; color:var(--ink);}
+  .chip .method{font-weight:800; color:var(--accent-ink)}
+  .chip.chip--btn{cursor:pointer;}
+  .chip.chip--btn:hover{background:var(--accent-soft); border-color:var(--accent)}
+  .chip-accent{display:inline-block; font-family:var(--ff-title); font-weight:700; font-size:.82rem; background:var(--accent-soft); color:var(--accent-ink); border:1px solid var(--accent); border-radius:3px; padding:3px 10px;}
+
+  .stamp{display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:.78rem; padding:4px 10px; border-radius:3px; letter-spacing:.02em; white-space:nowrap;}
+  .stamp--pass{color:var(--state-success); background:var(--state-success-bg); border:2px double var(--state-success);}
+  .stamp--reject{color:var(--state-failed); background:var(--state-failed-bg); border:2px double var(--state-failed);}
+  .stamp--pending{color:var(--state-pending); background:var(--state-pending-bg); border:2px dashed var(--state-pending);}
+  .stamp--rolledback{color:var(--state-rolledback); background:var(--state-rolledback-bg); border:2px double var(--state-rolledback);}
+  .stamp--skipped{color:var(--state-skipped); background:var(--state-skipped-bg); border:2px dashed var(--state-skipped); text-decoration:line-through;}
+  .stamp--info{color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent);}
+
+  /* ---------- panels ---------- */
+  .code-panel{background:#efe6cf; border:1px solid var(--rule); border-radius:4px; padding:var(--sp-4); position:relative; overflow-x:auto;}
+  .code-panel pre{margin:0; font-size:var(--fs-code); line-height:1.55; overflow-x:auto; color:var(--ink);}
+  .callout-legend{list-style:none; margin:10px 0 0; padding:10px 0 0; border-top:1px dashed var(--rule-soft); font-size:.85rem;}
+  .callout-legend li{margin-bottom:8px; padding-left:26px; position:relative;}
+  .callout-legend b.n{position:absolute; left:0; top:0; background:var(--accent); color:var(--paper); font-family:var(--ff-mono); font-size:.7rem; width:18px; height:18px; border-radius:2px; display:flex; align-items:center; justify-content:center;}
+  mark.callout{background:var(--accent-soft); color:var(--ink); border-bottom:2px solid var(--accent); padding:0 .1rem; font-weight:600;}
+
+  /* ---------- grid utilities ---------- */
+  .diagram-wrap{overflow-x:auto; overflow-y:visible; padding:4px 2px 10px;}
+  .diagram-wrap svg{display:block; min-width:560px; width:100%; height:auto;}
+  figure{margin:0}
+  figcaption{font-size:var(--fs-caption); color:var(--ink-faint); margin-top:6px;}
+
+  /* ---------- interface interlock cards (06 signature) ---------- */
+  .iface-grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);}
+  .iface-card{border:1.6px solid var(--ink); border-radius:5px; background:var(--paper);}
+  .iface-card__head{display:flex; align-items:center; gap:.5rem; padding:8px 14px; background:var(--accent-soft); border-bottom:1.6px solid var(--ink); border-radius:3px 3px 0 0;}
+  .iface-card__num{font-family:var(--ff-title); font-weight:700; font-size:1.05rem; color:var(--accent-ink); border:2px solid var(--accent); border-radius:50%; width:1.7rem; height:1.7rem; display:flex; align-items:center; justify-content:center; flex:none; background:var(--paper);}
+  .iface-card__title{font-family:var(--ff-title); font-weight:700; font-size:.98rem;}
+  .iface-body{padding:12px 14px; display:grid; gap:8px;}
+  .iface-row{display:grid; grid-template-columns:5.4rem 1fr; gap:8px; font-size:.86rem; align-items:start;}
+  .iface-row dt{color:var(--ink-faint); font-size:.72rem; padding-top:2px; margin:0;}
+  .iface-row dd{margin:0;}
+  .iface-bridge{
+    margin-top:4px; padding:8px 10px; border:1.6px dashed var(--accent); border-radius:4px;
+    background:repeating-linear-gradient(135deg, var(--accent-soft) 0 6px, transparent 6px 12px);
+    display:flex; align-items:flex-start; gap:8px; font-size:.82rem;
+  }
+  .iface-bridge .eq{font-family:var(--ff-title); font-weight:700; color:var(--accent-ink); font-size:1.1rem; line-height:1;}
+
+  /* ---------- axis lanes (CLI 커맨드 지형) ---------- */
+  .axis-map{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4);}
+  .axis-lane{border:1px solid var(--rule); border-radius:5px; padding:12px; background:var(--paper-card);}
+  .axis-lane__title{font-family:var(--ff-mono); font-size:.74rem; letter-spacing:.02em; color:var(--ink-soft); margin:0 0 4px; font-weight:700;}
+  .axis-lane__note{font-size:.72rem; color:var(--ink-faint); margin-bottom:8px;}
+  .chip-cmd{display:inline-flex; align-items:center; gap:5px; background:var(--paper); border:1px solid var(--ink-soft); border-radius:3px; padding:4px 8px; margin:2px 4px 2px 0; font-family:var(--ff-mono); font-size:.82rem;}
+  .chip-cmd--ro{border-color:var(--state-pending); color:var(--state-pending);}
+  .chip-group{border:1px dashed var(--ink-soft); border-radius:4px; padding:6px; display:inline-flex; flex-wrap:wrap; align-items:center; gap:4px; margin:4px 0;}
+  .chip-group__label{font-size:.68rem; color:var(--ink-faint); width:100%;}
+
+  /* ---------- timeline lanes (Cloudflare 호출) ---------- */
+  .cf-timeline{display:grid; gap:var(--sp-4);}
+  .cf-lane{display:grid; grid-template-columns:6rem 1fr; gap:var(--sp-3); align-items:center;}
+  .cf-lane__label{font-family:var(--ff-mono); font-weight:700; font-size:.82rem; color:var(--accent-ink);}
+  .cf-track{display:flex; align-items:center; gap:0; overflow-x:auto; padding:8px 0;}
+  .cf-step{flex:none; display:flex; flex-direction:column; align-items:center; min-width:8.4rem; position:relative;}
+  .cf-step__dot{width:.8rem; height:.8rem; border-radius:50%; background:var(--accent); border:2px solid var(--ink);}
+  .cf-step__name{font-family:var(--ff-mono); font-size:.72rem; text-align:center; margin-top:6px; max-width:8rem;}
+  .cf-step__conn{position:absolute; top:.35rem; left:-4.2rem; width:4.2rem; height:2px; background:var(--ink-soft);}
+  .cf-step:first-child .cf-step__conn{display:none;}
+
+  /* ---------- pipe / byte schematic ---------- */
+  .pipe-row{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:var(--sp-3); margin:8px 0;}
+  .pipe-box{border:1px solid var(--ink-soft); border-radius:4px; padding:10px 12px; background:var(--paper-card); font-size:.85rem;}
+  .pipe-arrow{font-family:var(--ff-mono); color:var(--accent-ink); font-size:1.3rem; text-align:center;}
+  .byte-strip{display:flex; gap:2px; margin:4px 0; flex-wrap:wrap;}
+  .byte{width:1.7rem; height:1.7rem; display:flex; align-items:center; justify-content:center; font-family:var(--ff-mono); font-size:.62rem; border:1px solid var(--rule); background:var(--paper);}
+  .byte--danger{border-color:var(--state-failed); color:var(--state-failed); background:var(--state-failed-bg);}
+  .byte--safe{border-color:var(--state-success); color:var(--state-success); background:var(--state-success-bg);}
+
+  /* ---------- sequence ---------- */
+  .seq-steps{display:flex; flex-direction:column; gap:0; counter-reset:step;}
+  .seq-step{display:grid; grid-template-columns:34px 1fr; gap:12px; position:relative; padding-bottom:var(--sp-4);}
+  .seq-step:not(:last-child):before{content:""; position:absolute; left:16px; top:34px; bottom:0; width:2px; background:var(--rule);}
+  .seq-step__dot{width:34px; height:34px; border-radius:50%; border:2px solid var(--ink); background:var(--paper); display:flex; align-items:center; justify-content:center; font-family:var(--ff-mono); font-weight:800; z-index:1; font-size:.78rem;}
+  .seq-step__body{padding-top:4px;}
+  .seq-step__body .step-title{margin:0 0 4px; font-size:.94rem; font-family:var(--ff-body); font-weight:700;}
+  .seq-step__body p{margin:0; font-size:.88rem; color:var(--ink-soft);}
+
+  /* ---------- branch / decision tree ---------- */
+  .branch{display:flex; flex-direction:column; gap:10px; align-items:center;}
+  .branch__diamond{width:min(340px,96%); text-align:center; padding:10px 14px; border:1.6px solid var(--ink); background:var(--paper-card); border-radius:4px; font-size:.88rem;}
+  .branch__row{display:flex; gap:var(--sp-4); justify-content:center; width:100%; flex-wrap:wrap;}
+  .branch__out{display:flex; flex-direction:column; align-items:center; gap:6px; min-width:9rem;}
+  .branch__out .arrow-lbl{font-family:var(--ff-mono); font-size:.72rem; color:var(--ink-faint);}
+
+  /* ---------- not-said ---------- */
+  .not-said-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--sp-3); margin-top:var(--sp-4);}
+  .not-said{border:2px dashed var(--ink-faint); border-radius:6px; padding:var(--sp-3); background:var(--paper);}
+  .not-said .stampmark{display:block; font-family:var(--ff-title); font-size:.72rem; color:var(--ink-faint); letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px;}
+  .not-said p{margin:0; font-size:.88rem; color:var(--ink-soft);}
+
+  /* ---------- 푸터 (시리즈 공통) ---------- */
+  .site-footer{border-top:2px solid var(--ink);background:var(--paper-deep);padding:var(--sp-6) var(--sp-5);}
+  .footer-inner{max-width:1180px;margin:0 auto;}
+  .footer-row{display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;font-size:var(--fs-caption);color:var(--ink-soft);}
+  .footer-prevnext{display:flex;gap:var(--sp-4);}
+  .footer-prevnext a{font-weight:700;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong);}
+  .footer-source{margin-top:var(--sp-3);font-family:var(--ff-mono);font-size:0.76rem;color:var(--ink-faint);}
+  .footer-truth{margin-top:var(--sp-2);font-size:0.78rem;font-style:italic;color:var(--ink-faint);}
+
+  @media (max-width:900px){
+    .iface-grid{grid-template-columns:1fr;}
+    .axis-map{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 var(--sp-4)}
+    .iface-row{grid-template-columns:1fr;}
+    .cf-lane{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div class="brand-text">
+        <p class="brand-kicker">관리사무소 서식철</p>
+        <p class="brand-title">hoster 산출물</p>
+      </div>
+    </div>
+    <p class="doc-meta-chip">06 · 인터페이스 정의서 · v1.0 · 2026-08-13</p>
+  </div>
+  <nav class="index-tabs" aria-label="11개 문서 색인">
+    <a href="index.html" class="tab" style="--tab-ac:var(--ac-index)"><span class="tab-swatch"></span>색인</a>
+    <a href="01-요구사항-정의서.html" class="tab" style="--tab-ac:var(--ac-01)"><span class="tab-swatch"></span>01 요구사항</a>
+    <a href="02-아키텍처-설계서.html" class="tab" style="--tab-ac:var(--ac-02)"><span class="tab-swatch"></span>02 아키텍처</a>
+    <a href="03-상세-설계서.html" class="tab" style="--tab-ac:var(--ac-03)"><span class="tab-swatch"></span>03 상세설계</a>
+    <a href="04-API-명세서.html" class="tab" style="--tab-ac:var(--ac-04)"><span class="tab-swatch"></span>04 API</a>
+    <a href="05-DB-설계서.html" class="tab" style="--tab-ac:var(--ac-05)"><span class="tab-swatch"></span>05 DB</a>
+    <a href="06-인터페이스-정의서.html" class="tab tab--current" aria-current="page" style="--tab-ac:var(--ac-06)"><span class="tab-swatch"></span>06 인터페이스</a>
+    <a href="07-보안-설계서.html" class="tab" style="--tab-ac:var(--ac-07)"><span class="tab-swatch"></span>07 보안</a>
+    <a href="08-테스트-결과-보고서.html" class="tab" style="--tab-ac:var(--ac-08)"><span class="tab-swatch"></span>08 테스트</a>
+    <a href="09-설치-운영-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-09)"><span class="tab-swatch"></span>09 설치운영</a>
+    <a href="10-사용자-매뉴얼.html" class="tab" style="--tab-ac:var(--ac-10)"><span class="tab-swatch"></span>10 사용자</a>
+  </nav>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <div class="doc-kicker">회사끼리 주고받는 업무 협약서 · 케이블 청록</div>
+    <h1 class="doc-title">06. 인터페이스 정의서</h1>
+    <p class="doc-anchor">hoster가 바깥 네 곳과 주고받는 <span class="gloss" tabindex="0">업무 협약서와 양식 규격<span class="gloss-note">회사 두 곳이 거래를 트기 전에 정해 두는, 서로 무엇을 주고받을지·어떻게 증명할지 적은 문서</span></span>이다. 칸이 하나라도 어긋나면 접수 자체가 안 된다 — 이 문서는 그 네 협약서를 한 장씩 편다.</p>
+    <div class="meta-line">
+      <span>대상: <code>packages/cli</code>, <code>templates/workflow.yml.tpl</code>, Cloudflare API, NAS SSH</span>
+      <span>버전 1.0</span>
+      <span>작성일 2026-08-13</span>
+      <span>원문: <code>docs/deliverables/06-인터페이스-정의서.md</code></span>
+    </div>
+
+    <div class="locator">
+      <svg class="locator__map" viewBox="0 0 320 170" role="img" aria-labelledby="locatorTitle06">
+        <title id="locatorTitle06">단지 배치도 축약판 — 접점 4곳 강조</title>
+        <rect x="0" y="0" width="320" height="170" fill="#efe6cf" rx="4"/>
+        <rect x="8" y="16" width="60" height="26" fill="none" stroke="#8b8271" stroke-width="1.3" stroke-dasharray="2 2" rx="3"/>
+        <text x="38" y="33" font-size="7.5" fill="#8b8271" text-anchor="middle">로컬 CLI</text>
+        <rect x="8" y="52" width="60" height="26" fill="none" stroke="#8b8271" stroke-width="1.3" stroke-dasharray="2 2" rx="3"/>
+        <text x="38" y="69" font-size="7.5" fill="#8b8271" text-anchor="middle">Actions</text>
+        <rect x="8" y="88" width="60" height="26" fill="none" stroke="#8b8271" stroke-width="1.3" stroke-dasharray="2 2" rx="3"/>
+        <text x="38" y="105" font-size="7.5" fill="#8b8271" text-anchor="middle">Cloudflare</text>
+        <path d="M68 29 C120 29,150 60,186 78" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#loc06arrow)"/>
+        <path d="M68 65 C120 65,150 72,186 82" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#loc06arrow)"/>
+        <path d="M68 101 C120 101,150 92,186 86" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#loc06arrow)"/>
+        <path d="M38 88 C20 130,60 150,186 140" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="3 2" marker-end="url(#loc06arrow)"/>
+        <text x="30" y="128" font-size="7" fill="var(--accent-ink)">④ SSH(2222)</text>
+        <rect x="188" y="60" width="112" height="70" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5" rx="4"/>
+        <text x="244" y="80" font-size="9" fill="var(--accent-ink)" text-anchor="middle" font-weight="700">관리사무소</text>
+        <text x="244" y="93" font-size="7.5" fill="var(--accent-ink)" text-anchor="middle">(NAS · deployer)</text>
+        <text x="244" y="107" font-size="7" fill="var(--accent-ink)" text-anchor="middle">① ② HTTP 접수대 ← 지금 여기</text>
+        <text x="244" y="120" font-size="7" fill="var(--accent-ink)" text-anchor="middle">④ SSH 통용문</text>
+        <defs><marker id="loc06arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+      </svg>
+      <div class="locator__cap"><strong>지금 보고 있는 곳:</strong> 단지 배치도(02번 문서 자산의 축약판) 밖에서 관리사무소로 이어지는 <strong>네 개의 화살표</strong> — 로컬 CLI·GitHub Actions·Cloudflare·NAS SSH 각각이 관리사무소(deployer)와 맺는 협약이 이 문서의 대상이다.</div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ================= 시그니처: 접점 계약 매트릭스 ================= -->
+  <section class="doc-section" id="matrix-sig">
+    <h2 class="section-title"><span class="section-num">시그니처</span>접점 계약 매트릭스 — 4장의 업무 협약서</h2>
+    <p class="lede"><b>1층.</b> 회사 두 곳이 거래를 트려면 무엇을 주고받을지, 신분을 어떻게 증명할지, 서류가 틀리면 어떻게 되는지를 협약서 한 장에 정해 둔다. 그리고 <b>양쪽 서식의 어느 칸이 토씨 하나까지 같아야 접수되는지</b>도 못박아 둔다. hoster의 4개 접점도 마찬가지다 — 카드 하단 점선 칸(<span class="chip-accent">≡ 원문 일치</span>)이 그 칸이다.</p>
+
+    <figure class="visual">
+      <div class="iface-grid">
+        <div class="iface-card">
+          <div class="iface-card__head"><span class="iface-card__num">①</span><span class="iface-card__title">로컬 CLI ↔ deployer (HTTP)</span></div>
+          <div class="iface-body">
+            <dl class="iface-row"><dt>주고받는 것</dt><dd>JSON 요청·응답. <code>ls/status/logs/rollback/env/remove/doctor</code> 등이 이 통로로 9개 엔드포인트를 호출</dd></dl>
+            <dl class="iface-row"><dt>신분 증명</dt><dd><code>x-hoster-timestamp</code> + <code>x-hoster-signature</code> 헤더(<span class="gloss" tabindex="0">HMAC<span class="gloss-note">우리 둘만 아는 인주로 찍은 도장 — 계산식은 07번 문서</span></span>)</dd></dl>
+            <dl class="iface-row"><dt>어긋나면</dt><dd>401 서명 불일치 / 400 검증 실패 / 500 처리 실패</dd></dl>
+            <div class="iface-bridge"><span class="eq">≡</span><span><code>PROJECT_NAME_RE</code> 정규식 원문이 <code>cli/src/repo.ts</code>와 <code>deployer/src/app.ts</code> 양쪽에 <b>문자 그대로</b> 동일해야 함</span></div>
+          </div>
+        </div>
+
+        <div class="iface-card">
+          <div class="iface-card__head"><span class="iface-card__num">②</span><span class="iface-card__title">GitHub Actions ↔ deployer (HTTP)</span></div>
+          <div class="iface-body">
+            <dl class="iface-row"><dt>주고받는 것</dt><dd><code>POST /deploy</code> 한 통 — project/image/sha가 담긴 접수 서식</dd></dl>
+            <dl class="iface-row"><dt>신분 증명</dt><dd>워크플로 셸에서 <code>openssl dgst -hmac</code>으로 직접 도장을 찍어 동일 헤더로 전송</dd></dl>
+            <dl class="iface-row"><dt>어긋나면</dt><dd>응답 코드가 정확히 200이 아니면 워크플로 자체가 <span class="gloss" tabindex="0">종료 코드(exit code)<span class="gloss-note">프로그램이 끝날 때 운영체제에 남기는 성적표 숫자 — 0은 정상, 그 외(예: 1)는 실패라는 뜻</span></span> <code>1</code>로 끝남(<code>exit 1</code>)</dd></dl>
+            <div class="iface-bridge"><span class="eq">≡</span><span><span class="gloss" tabindex="0">레포 시크릿<span class="gloss-note">GitHub 저장소(레포)에 암호화해 보관하는 비밀값 — 워크플로 실행 중에만 꺼내 쓰고 로그에는 안 찍힌다</span></span> <code>HOSTER_DEPLOY_SECRET</code> 값이 NAS deployer의 <code>HMAC_SECRET</code> 환경변수와 <b>토씨까지</b> 같아야 함(<code>HOSTER_DEPLOY_URL</code>도 실제 접수처 주소와 일치)</span></div>
+          </div>
+        </div>
+
+        <div class="iface-card">
+          <div class="iface-card__head"><span class="iface-card__num">③</span><span class="iface-card__title">CLI ↔ Cloudflare REST</span></div>
+          <div class="iface-body">
+            <dl class="iface-row"><dt>주고받는 것</dt><dd>터널 생성·토큰조회·인그레스설정·DNS 조회/생성/갱신/삭제 — 7개 호출</dd></dl>
+            <dl class="iface-row"><dt>신분 증명</dt><dd><code>Authorization: Bearer &lt;apiToken&gt;</code> 헤더 하나로 모든 호출을 증명</dd></dl>
+            <dl class="iface-row"><dt>어긋나면</dt><dd><code>{success:false, errors:[...]}</code> → 예외, JSON 파싱 실패 시 별도 예외</dd></dl>
+            <div class="iface-bridge"><span class="eq">≡</span><span>토큰에 <code>Zone.DNS Edit</code> + <code>Account.Cloudflare Tunnel Edit</code> 두 권한이 <b>모두</b> 있어야 접수 — 하나라도 빠지면 해당 호출에서 반려</span></div>
+          </div>
+        </div>
+
+        <div class="iface-card">
+          <div class="iface-card__head"><span class="iface-card__num">④</span><span class="iface-card__title">CLI ↔ NAS SSH</span></div>
+          <div class="iface-body">
+            <dl class="iface-row"><dt>주고받는 것</dt><dd>원격 셸 명령 결과(stdout/stderr/code), <code>tar</code> 스트림</dd></dl>
+            <dl class="iface-row"><dt>신분 증명</dt><dd>SSH 키 접속(포트·사용자는 <code>HOSTER_NAS_PORT</code>/<code>HOSTER_NAS_USER</code>로 지정, 미지정 시 예시값 <code>22</code>/<code>admin</code>) + NAS의 <span class="gloss" tabindex="0">NOPASSWD sudo<span class="gloss-note">관리자 권한 명령을 실행할 때마다 암호를 다시 묻지 않고 바로 통과시켜 주는 등록 — 자동화 스크립트가 멈추지 않고 돌게 해 준다</span></span> 등록</dd></dl>
+            <dl class="iface-row"><dt>어긋나면</dt><dd><code>code !== 0</code> → <code>ssh 실패 (&lt;code&gt;): &lt;stderr|stdout&gt;</code> 예외</dd></dl>
+            <div class="iface-bridge"><span class="eq">≡</span><span>CLI가 접속하는 포트 <code>2222</code>와 <code>sudo -n /usr/local/bin/docker</code> 절대경로가 NAS 설정과 <b>정확히</b> 같아야 함(2022는 배너만 응답)</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption>회사끼리 계약서를 주고받을 때 <b>도장란·서명란</b>이 하나라도 다르면 접수 자체가 안 되는 것과 같다 — hoster의 4개 접점도 "양쪽이 물리적으로 맞물려야 하는 칸"을 각자 갖고 있다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>레포 시크릿 2종 · 토큰 권한</summary>
+      <div class="layer2-body">
+        <ul>
+          <li>레포 시크릿은 <code>HOSTER_DEPLOY_URL</code>(값: <code>config.deployerUrl</code> = <code>https://hoster.&lt;baseDomain&gt;</code>)과 <code>HOSTER_DEPLOY_SECRET</code>(값: <code>config.hmacSecret</code>) <b>2종뿐</b>이다.</li>
+          <li>워크플로 내부의 <code>secrets.GITHUB_TOKEN</code>(GHCR 로그인용)은 Actions가 자동 제공하는 값이라 <code>gh secret set</code> 대상이 <b>아니다</b>.</li>
+          <li>Cloudflare 토큰 요구 권한(README.md): <code>Zone.DNS Edit</code>, <code>Account.Cloudflare Tunnel Edit</code>.</li>
+        </ul>
+        <span class="cite">근거: 06-인터페이스-정의서.md § GitHub Actions 연동 계약, § Cloudflare API 사용 명세</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 1. CLI 커맨드 9종 지형 ================= -->
+  <section class="doc-section" id="commands">
+    <h2 class="section-title"><span class="section-num">1</span>CLI 커맨드 9종의 지형 — 무엇을 바꾸는가</h2>
+    <p class="lede"><b>1층.</b> 9개 커맨드를 같은 크기 카드로 나란히 세우면 성격이 안 보인다. "실행하면 무엇이 바뀌는가" 축으로 세 칸에 나눈다. <code>init</code>은 단지 전체를 처음 여는 <span class="gloss" tabindex="0">부트스트랩<span class="gloss-note">아무것도 없는 상태에서 시스템이 스스로 일어서게 만드는 첫 시동 절차 — 여기서는 터널·네트워크·NAS 설정을 한 번에 만드는 것</span></span> 커맨드이며, 대부분의 커맨드에 <span class="gloss" tabindex="0">플래그<span class="gloss-note">커맨드 뒤에 붙여 동작을 살짝 바꾸는 옵션 스위치, 예: <code>--dry-run</code></span></span>가 있다. <code>--dry-run</code>은 실제로 저지르지 않고 계획표만 보여주는 <span class="gloss" tabindex="0">드라이런<span class="gloss-note">"이렇게 될 것이다"만 미리 보여주고 실제로는 아무것도 바꾸지 않는 예행연습</span></span> 스위치다. <code>doctor</code>는 무엇도 바꾸지 않고 점검만 하고, <code>env</code>는 <code>set</code>/<code>rm</code> 두 하위 커맨드를 거느린 묶음이다.</p>
+
+    <figure class="visual">
+      <div class="axis-map">
+        <div class="axis-lane">
+          <p class="axis-lane__title">읽기 전용 — 아무것도 안 바뀜</p>
+          <p class="axis-lane__note">서류를 열람만 하고 도로 덮는다.</p>
+          <span class="chip-cmd chip-cmd--ro">ls</span>
+          <span class="chip-cmd chip-cmd--ro">status &lt;project&gt;</span>
+          <span class="chip-cmd chip-cmd--ro">logs &lt;project&gt;</span>
+          <span class="chip-cmd chip-cmd--ro">doctor</span>
+        </div>
+        <div class="axis-lane">
+          <p class="axis-lane__title">로컬 서류부터 남긴다</p>
+          <p class="axis-lane__note">이 컴퓨터·레포에 먼저 흔적을 남긴 뒤 바깥까지 나간다.</p>
+          <span class="chip-cmd">init</span>
+          <span class="chip-cmd">add</span>
+        </div>
+        <div class="axis-lane">
+          <p class="axis-lane__title">원격 대장까지 바뀐다</p>
+          <p class="axis-lane__note">로컬엔 새 파일을 안 남기고 관리사무소·외부기관 장부만 바꾼다.</p>
+          <span class="chip-cmd">rollback &lt;project&gt;</span>
+          <div class="chip-group"><span class="chip-group__label">env — 하위 커맨드 묶음</span><span class="chip-cmd">env set</span><span class="chip-cmd">env rm</span></div>
+          <span class="chip-cmd">remove &lt;project&gt;</span>
+        </div>
+      </div>
+      <figcaption>관리사무소 창구에서 <b>열람만 하는 민원</b>, <b>내 서류부터 작성하는 민원</b>, <b>바로 장부를 고치는 민원</b>이 서 있는 줄이 다른 것과 같다. 위치 자체가 "이 커맨드가 무엇을 건드리는가"를 말한다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>커맨드별 플래그 표</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <caption>9개 커맨드의 형식·플래그·종료 조건 (packages/cli/src/commands/*.ts)</caption>
+            <thead><tr><th>커맨드</th><th>형식</th><th>주요 플래그</th><th>대표 종료 조건</th></tr></thead>
+            <tbody>
+              <tr><td>init</td><td>hoster init [options]</td><td>--dry-run, --stack-dir, --reuse-tunnel</td><td>ssh-docker-precheck~healthz 중 실패 시 예외; network-diagnostic 실패는 경고만</td></tr>
+              <tr><td>add</td><td>hoster add [options]</td><td>--branch, --project, --dry-run, --force</td><td>SAFE_BRANCH_RE/PROJECT_NAME_RE 불일치 시 예외</td></tr>
+              <tr><td>ls</td><td>hoster ls</td><td>(없음)</td><td>API 실패 시 exitCode=1</td></tr>
+              <tr><td>status</td><td>hoster status &lt;project&gt;</td><td>(없음)</td><td>미등록 시 서버 404 → 예외</td></tr>
+              <tr><td>logs</td><td>hoster logs [options] &lt;project&gt;</td><td>--tail (기본 200)</td><td>API 실패 시 exitCode=1</td></tr>
+              <tr><td>rollback</td><td>hoster rollback &lt;project&gt;</td><td>(없음)</td><td>500 실패 시 "롤백 실패: &lt;message&gt;"</td></tr>
+              <tr><td>env</td><td>hoster env set/rm […]</td><td>--project, --redeploy(set 전용)</td><td>KEY=VALUE 형식 아니면 예외; --redeploy인데 currentImage 없으면 예외</td></tr>
+              <tr><td>remove</td><td>hoster remove &lt;project&gt;</td><td>(없음)</td><td>DELETE 성공 후 DNS 삭제 실패 시 예외(부분 완료 안내)</td></tr>
+              <tr><td>doctor</td><td>hoster doctor</td><td>(없음)</td><td>network-diagnostic 실패는 경고만, 정상 종료</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: 06-인터페이스-정의서.md § CLI 커맨드 명세</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 2. GitHub Actions 연동 계약 ================= -->
+  <section class="doc-section" id="actions">
+    <h2 class="section-title"><span class="section-num">2</span>GitHub Actions 연동 계약 — 서식 인쇄와 서명</h2>
+    <p class="lede"><b>1층.</b> <span class="gloss" tabindex="0">템플릿 토큰 치환<span class="gloss-note">서식의 빈칸에 실제 값을 인쇄해 채우는 것</span></span> — <code>templates/workflow.yml.tpl</code>의 <code>{{...}}</code> 빈칸을 <code>hoster add</code>가 실제 값으로 채운 뒤 레포에 <code>.github/workflows/hoster-deploy.yml</code>로 찍어 낸다. 남은 빈칸이 있으면 "템플릿 토큰 미지정" 예외로 인쇄 자체를 거부한다.</p>
+
+    <figure class="visual">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 700 210" role="img" aria-labelledby="tok06title">
+          <title id="tok06title">템플릿 빈칸이 실물 값으로 치환되는 전/후 대응</title>
+          <defs><marker id="tok06arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+          <text x="10" y="18" font-size="10.5" fill="var(--ink-faint)">치환 전 — templates/workflow.yml.tpl</text>
+          <rect x="10" y="28" width="200" height="34" rx="4" fill="var(--paper-deep)" stroke="var(--ink-soft)" stroke-dasharray="3 2"/>
+          <text x="110" y="50" text-anchor="middle" font-size="12" fill="var(--ink)">{{BRANCH}}</text>
+          <rect x="10" y="72" width="200" height="34" rx="4" fill="var(--paper-deep)" stroke="var(--ink-soft)" stroke-dasharray="3 2"/>
+          <text x="110" y="94" text-anchor="middle" font-size="12" fill="var(--ink)">{{PROJECT}}</text>
+          <rect x="10" y="116" width="200" height="34" rx="4" fill="var(--paper-deep)" stroke="var(--ink-soft)" stroke-dasharray="3 2"/>
+          <text x="110" y="138" text-anchor="middle" font-size="12" fill="var(--ink)">{{IMAGE_REPO}}</text>
+
+          <path d="M212,45 H288" stroke="var(--accent)" stroke-width="2" marker-end="url(#tok06arrow)"/>
+          <text x="250" y="38" text-anchor="middle" font-size="8.5" fill="var(--accent-ink)">opts.branch</text>
+          <path d="M212,89 H288" stroke="var(--accent)" stroke-width="2" marker-end="url(#tok06arrow)"/>
+          <text x="250" y="82" text-anchor="middle" font-size="8.5" fill="var(--accent-ink)">projectName</text>
+          <path d="M212,133 H288" stroke="var(--accent)" stroke-width="2" marker-end="url(#tok06arrow)"/>
+          <text x="250" y="126" text-anchor="middle" font-size="8.5" fill="var(--accent-ink)">imageRepoOf(owner,repo)</text>
+
+          <text x="300" y="18" font-size="10.5" fill="var(--ink-faint)">치환 후 — 실제 레포에 찍힌 값</text>
+          <rect x="300" y="28" width="220" height="34" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="410" y="50" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-ink)">main</text>
+          <rect x="300" y="72" width="220" height="34" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="410" y="94" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-ink)">my-app</text>
+          <rect x="300" y="116" width="220" height="34" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="410" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-ink)">ghcr.io/owner/my-app</text>
+
+          <rect x="10" y="168" width="510" height="30" rx="4" fill="var(--paper)" stroke="var(--rule)"/>
+          <text x="20" y="188" font-size="9.5" fill="var(--ink-soft)">치환 뒤 트리거도 함께 확정: on: push: branches: ["{{BRANCH}}"] → branches: ["main"]</text>
+        </svg>
+      </div>
+      <p style="margin-top:10px;font-size:.88rem;">권한은 토큰을 쓰지 않는 고정 서식: <code>permissions: contents: read, packages: write</code>.</p>
+      <figcaption>빈칸 서식을 인쇄소에 보내면 담당자 이름·부서만 바뀌고 서식 틀은 그대로인 것과 같다 — 틀(워크플로 구조)은 고정, 빈칸(토큰)만 프로젝트마다 채워진다.</figcaption>
+    </figure>
+
+    <div class="code-panel" style="margin-top:var(--sp-4)">
+      <pre>BODY=$(printf '{"project":"%s","image":"%s","sha":"%s"}' \
+  "{{PROJECT}}" \
+  "{{IMAGE_REPO}}:${{ github.sha }}" \
+  "${{ github.sha }}")
+TS=<mark class="callout">$(date +%s000)</mark>
+SIG=<mark class="callout">$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$DEPLOY_SECRET" -hex | awk '{print $NF}')</mark>
+HTTP_CODE=$(curl -s -o /tmp/resp.txt -w '%{http_code}' -X POST "$DEPLOY_URL/deploy" \
+  -H "content-type: application/json" \
+  -H "x-hoster-timestamp: $TS" \
+  -H "x-hoster-signature: $SIG" \
+  -d "$BODY" --max-time 300)
+cat /tmp/resp.txt
+<mark class="callout">[ "$HTTP_CODE" = "200" ] || exit 1</mark></pre>
+      <ul class="callout-legend">
+        <li><b class="n">1</b><code>date +%s000</code> — 초 단위 epoch에 문자열 <code>000</code>을 이어붙인 <b>ms 근사값</b>(실제 밀리초 정밀도 아님)</li>
+        <li><b class="n">2</b> 서명 대상 문자열은 <code>&lt;TS&gt;.&lt;BODY&gt;</code> — 07번 문서 도장 실습기와 <b>같은 공식</b>. <code>$DEPLOY_SECRET</code> = <code>secrets.HOSTER_DEPLOY_SECRET</code></li>
+        <li><b class="n">3</b> 응답 코드가 정확히 <code>"200"</code>이 아니면 워크플로가 <code>exit 1</code></li>
+      </ul>
+    </div>
+    <figcaption style="margin-top:6px">택배 접수증에 직접 도장을 찍어 보내는 것과 같다 — 셸 스크립트가 openssl로 자기 손에 인주를 묻혀 서명하고, 접수처(deployer)가 같은 인주로 대조한다.</figcaption>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>이미지 태그 규칙</summary>
+      <div class="layer2-body">
+        <p>SHA 태그와 <code>latest</code> 태그를 동시에 push한다:</p>
+        <div class="code-panel"><pre>tags: |
+  {{IMAGE_REPO}}:${{ github.sha }}
+  {{IMAGE_REPO}}:latest</pre></div>
+        <span class="cite">근거: 06-인터페이스-정의서.md § GitHub Actions 연동 계약</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 3. Cloudflare API 7개 호출 지도 ================= -->
+  <section class="doc-section" id="cloudflare">
+    <h2 class="section-title"><span class="section-num">3</span>Cloudflare API 7개 호출 지도 — 언제 어떤 전화를 거는가</h2>
+    <p class="lede"><b>1층.</b> Cloudflare는 <span class="gloss" tabindex="0">터널<span class="gloss-note">정문을 열지 않고 안에서 밖으로 미리 뚫어 둔 전용 통로</span></span>과 <span class="gloss" tabindex="0">DNS/CNAME<span class="gloss-note">도메인 이름표를 실제 위치로 잇는 장부</span></span>을 관리하는 외부 기관이다. hoster는 이 기관에 7가지 전화를 걸며, 어느 커맨드가 언제 어떤 전화를 거는지가 다르다.</p>
+
+    <figure class="visual">
+      <div class="cf-timeline">
+        <div class="cf-lane"><span class="cf-lane__label">init</span>
+          <div class="cf-track">
+            <div class="cf-step"><span class="cf-step__dot"></span><span class="cf-step__name">createTunnel<br><span class="chip">POST cfd_tunnel</span></span></div>
+            <div class="cf-step"><span class="cf-step__conn"></span><span class="cf-step__dot"></span><span class="cf-step__name">getTunnelToken<br><span class="chip">GET …/token</span></span></div>
+            <div class="cf-step"><span class="cf-step__conn"></span><span class="cf-step__dot"></span><span class="cf-step__name">setTunnelIngress<br><span class="chip">PUT …/configurations</span></span></div>
+            <div class="cf-step"><span class="cf-step__conn"></span><span class="cf-step__dot"></span><span class="cf-step__name">upsertDnsCname<br><span class="chip">hoster.&lt;baseDomain&gt;</span></span></div>
+          </div>
+        </div>
+        <div class="cf-lane"><span class="cf-lane__label">add</span>
+          <div class="cf-track"><div class="cf-step"><span class="cf-step__dot"></span><span class="cf-step__name">upsertDnsCname<br><span class="chip">&lt;project&gt;.&lt;baseDomain&gt;</span></span></div></div>
+        </div>
+        <div class="cf-lane"><span class="cf-lane__label">remove</span>
+          <div class="cf-track"><div class="cf-step"><span class="cf-step__dot"></span><span class="cf-step__name">deleteDnsRecord<br><span class="chip">CNAME만 지정</span></span></div></div>
+        </div>
+      </div>
+      <figcaption>개통 때는(init) 통로 자체를 뚫고 이름표를 처음 붙이느라 전화를 여러 통 걸고, 세대가 추가될 땐(add) 이름표 하나만 새로 붙이고, 세대가 빠질 땐(remove) 이름표만 뗀다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>Cloudflare 엔드포인트 전체 표</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <caption>Base URL: https://api.cloudflare.com/client/v4 (packages/cli/src/cloudflare.ts)</caption>
+            <thead><tr><th>메서드</th><th>경로</th><th>용도</th><th>호출 함수</th></tr></thead>
+            <tbody>
+              <tr><td>POST</td><td>/accounts/{accountId}/cfd_tunnel</td><td>터널 생성</td><td>createTunnel</td></tr>
+              <tr><td>GET</td><td>/accounts/{accountId}/cfd_tunnel/{tunnelId}/token</td><td>터널 토큰 조회</td><td>getTunnelToken</td></tr>
+              <tr><td>PUT</td><td>/accounts/{accountId}/cfd_tunnel/{tunnelId}/configurations</td><td>인그레스 규칙 설정</td><td>setTunnelIngress</td></tr>
+              <tr><td>GET</td><td>/zones/{zoneId}/dns_records?name=…</td><td>DNS 레코드 정확 일치 조회</td><td>findDnsRecord (private)</td></tr>
+              <tr><td>PUT</td><td>/zones/{zoneId}/dns_records/{id}</td><td>기존 레코드 갱신</td><td>upsertDnsCname (존재 시)</td></tr>
+              <tr><td>POST</td><td>/zones/{zoneId}/dns_records</td><td>신규 레코드 생성</td><td>upsertDnsCname (없을 시)</td></tr>
+              <tr><td>DELETE</td><td>/zones/{zoneId}/dns_records/{id}</td><td>레코드 삭제</td><td>deleteDnsRecord</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><code>findDnsRecord</code>는 <code>type</code> 지정 시(upsert/delete 모두 CNAME으로 좁힘) 결과가 항상 0건 또는 1건이다 — <span class="gloss" tabindex="0">exact 이름 조회<span class="gloss-note">비슷한 이름이 아니라 정확히 일치하는 이름 하나만 찾는 방식</span></span>.</p>
+        <span class="cite">근거: 06-인터페이스-정의서.md § Cloudflare API 사용 명세</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 4. NAS SSH 인터페이스 ================= -->
+  <section class="doc-section" id="nas-ssh">
+    <h2 class="section-title"><span class="section-num">4</span>NAS SSH 인터페이스 — 전용 통로로 상자를 옮기는 법</h2>
+    <p class="lede"><b>1층.</b> hoster는 파일을 옮길 때 SFTP/SCP를 쓸 수 없다. 대신 <span class="gloss" tabindex="0">tar over ssh<span class="gloss-note">디렉터리를 tar로 묶어 SSH 연결의 표준입력으로 그대로 흘려보내고, 반대편에서 다시 풀어내는 방식</span></span> — 로컬에서 <code>tar</code>로 묶어 SSH stdin으로 흘려보내고, NAS 쪽에서 받아 다시 풀어낸다.</p>
+
+    <figure class="visual">
+      <div class="pipe-row">
+        <div class="pipe-box"><b>로컬</b><br><code>tar -cf - -C &lt;parent&gt; &lt;name&gt;</code><br><span style="font-size:.78rem;color:var(--ink-faint)">stdout을 <b>Buffer</b>로 직접 수신</span></div>
+        <span class="pipe-arrow">━▶</span>
+        <div class="pipe-box"><b>원격(NAS)</b><br><code>tar -C &lt;remoteParent&gt; -xf -</code><br><span style="font-size:.78rem;color:var(--ink-faint)">tar Buffer를 stdin으로 전달</span></div>
+      </div>
+      <p style="font-size:.85rem;margin-top:10px">왜 <b>Buffer</b>를 고집하는가 — 문자열로 왕복시키면 <code>0x80</code> 이상 바이트가 인코딩 변환 중 깨진다:</p>
+      <div style="display:grid;gap:6px">
+        <div><span style="font-size:.72rem;color:var(--state-success);font-weight:700;">Buffer 그대로 전달 — 안전</span>
+          <div class="byte-strip"><span class="byte byte--safe">0x1F</span><span class="byte byte--safe">0x8B</span><span class="byte byte--safe">0xEA</span><span class="byte byte--safe">0xFF</span><span class="byte byte--safe">0x00</span><span class="pipe-arrow" style="font-size:1rem">→</span><span class="byte byte--safe">0x1F</span><span class="byte byte--safe">0x8B</span><span class="byte byte--safe">0xEA</span><span class="byte byte--safe">0xFF</span><span class="byte byte--safe">0x00</span></div>
+        </div>
+        <div><span style="font-size:.72rem;color:var(--state-failed);font-weight:700;">문자열 변환 경유 — 손상 위험</span>
+          <div class="byte-strip"><span class="byte byte--safe">0x1F</span><span class="byte byte--safe">0x8B</span><span class="byte byte--danger">0xEA</span><span class="byte byte--danger">0xFF</span><span class="byte byte--safe">0x00</span><span class="pipe-arrow" style="font-size:1rem">→</span><span class="byte byte--safe">0x1F</span><span class="byte byte--safe">0x8B</span><span class="byte byte--danger">0x3F</span><span class="byte byte--danger">0x3F</span><span class="byte byte--safe">0x00</span></div>
+        </div>
+      </div>
+      <figcaption>종이 상자를 트럭에 실을 때 내용물을 다른 봉투로 옮겨 담지 않고 <b>상자째로</b> 싣는 것과 같다 — 봉투를 바꾸면(문자열 변환) 안의 물건 일부가 찌그러질 수 있다.</figcaption>
+    </figure>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>shQuote 인용 규칙 · 전송 절차</summary>
+      <div class="layer2-body">
+        <div class="code-panel"><pre>export function shQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}</pre></div>
+        <p>packages/cli/src/shell.ts — 값을 작은따옴표로 감싸고, 내부의 작은따옴표는 <code>'\''</code>(닫는 따옴표+이스케이프된 리터럴 따옴표+여는 따옴표)로 치환하는 <span class="gloss" tabindex="0">POSIX 인용<span class="gloss-note">셸에 값을 안전하게 넘기려고 따옴표로 감싸는 표준 방식</span></span> 기법.</p>
+        <ul>
+          <li>적용 원칙(commands/init.ts 주석): NAS/로컬 셸 명령에 보간되는 <b>모든</b> 값(NAS host/user/port 포함)이 예외 없이 <code>shQuote</code>를 거친다.</li>
+          <li><code>substitutePlaceholders(template, values)</code>는 <code>${KEY}</code> 형태 자리를 <code>shQuote(value)</code>로 치환하되, <code>String.replaceAll</code> 대신 <code>split/join</code>을 써서 교체 문자열의 <code>$&amp;</code>/<code>$$</code>가 특수 패턴으로 해석되는 것을 막는다.</li>
+          <li>init에서는 <code>STATE_DIR_CMD</code>(<code>mkdir -p /volume1/docker/hoster/state/env</code>) 실행 후 <code>stack/</code>를 <code>/volume1/docker/hoster-tmp</code>로 전송, 이어 <code>cp -a</code> + <code>rm -rf</code>로 최종 위치(<code>/volume1/docker/hoster</code>)에 반영한다.</li>
+        </ul>
+        <span class="cite">근거: 06-인터페이스-정의서.md § NAS SSH 인터페이스</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 5. 입력 검증 규칙 5종 적용 지점 지도 ================= -->
+  <section class="doc-section" id="validation-map">
+    <h2 class="section-title"><span class="section-num">5</span>입력 검증 규칙 5종 — 어디서 막는가</h2>
+    <p class="lede"><b>1층.</b> 정규식 자체의 해부(어떤 문자를 허용/거부하는가)는 03번 문서의 몫이다. 여기서는 <b>같은 이름의 값이 CLI 파일과 deployer 파일 중 어디서 검사되는지</b>, 그리고 <b>양쪽 모두에서 검사되어야 하는 값</b>이 무엇인지에 집중한다.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 340" role="img" aria-labelledby="valmap06title valmap06desc">
+        <title id="valmap06title">입력 검증 규칙 5종의 적용 지점</title>
+        <desc id="valmap06desc">PROJECT_NAME_RE는 CLI와 deployer 양쪽에서 검증되고, 나머지 4종은 한쪽에서만 검증된다.</desc>
+        <defs>
+          <marker id="v06arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+        <rect x="20" y="20" width="220" height="300" rx="6" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.4"/>
+        <text x="130" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">CLI 파일</text>
+        <text x="130" y="60" text-anchor="middle" font-size="10" fill="var(--ink-faint)">packages/cli/src/repo.ts</text>
+
+        <rect x="520" y="20" width="220" height="300" rx="6" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.4"/>
+        <text x="630" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">deployer 파일</text>
+        <text x="630" y="60" text-anchor="middle" font-size="10" fill="var(--ink-faint)">packages/deployer/src/app.ts</text>
+
+        <rect x="290" y="34" width="180" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+        <text x="380" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent-ink)">PROJECT_NAME_RE</text>
+
+        <rect x="290" y="90" width="180" height="30" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+        <text x="380" y="110" text-anchor="middle" font-size="11" fill="var(--ink)">HOSTNAME_RE</text>
+
+        <rect x="290" y="146" width="180" height="30" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+        <text x="380" y="166" text-anchor="middle" font-size="11" fill="var(--ink)">ENV_KEY_RE</text>
+
+        <rect x="290" y="202" width="180" height="30" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+        <text x="380" y="222" text-anchor="middle" font-size="11" fill="var(--ink)">SAFE_BRANCH_RE</text>
+
+        <rect x="290" y="258" width="180" height="30" rx="4" fill="var(--paper-card)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+        <text x="380" y="278" text-anchor="middle" font-size="11" fill="var(--ink)">GITHUB_SEGMENT_RE</text>
+
+        <g class="edges">
+          <path d="M240,49 L290,49" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#v06arrow)"/>
+          <path d="M470,49 L520,49" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#v06arrow)"/>
+          <path d="M470,105 L520,105" stroke="var(--ink-soft)" stroke-width="1.6" fill="none" marker-end="url(#v06arrow)"/>
+          <path d="M470,161 L520,161" stroke="var(--ink-soft)" stroke-width="1.6" fill="none" marker-end="url(#v06arrow)"/>
+          <path d="M240,217 L290,217" stroke="var(--ink-soft)" stroke-width="1.6" fill="none" marker-end="url(#v06arrow)"/>
+          <path d="M240,273 L290,273" stroke="var(--ink-soft)" stroke-width="1.6" fill="none" marker-end="url(#v06arrow)"/>
+        </g>
+        <rect x="248" y="15" width="44" height="18" rx="3" fill="var(--paper)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="270" y="28" text-anchor="middle" font-size="10" fill="var(--accent-ink)" font-weight="700">동일</text>
+
+        <text x="380" y="316" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">가운데 열 = 정규식 5종, 좌우 화살표 = 어느 파일에서 검증되는가</text>
+      </svg>
+    </div>
+    <figcaption><code>PROJECT_NAME_RE</code>만 <b>양쪽 서류철</b>에 나란히 꽂혀 있고, 나머지 넷은 각자의 서류철 한 곳에만 꽂혀 있다 — 양쪽에 꽂힌 서류는 내용이 한 글자라도 다르면 접수 창구마다 판정이 갈리는 사고로 이어진다.</figcaption>
+
+    <details class="layer2">
+      <summary><span class="layer2-label">2층 · 기술 상세</span>정규식 5종 원문 표</summary>
+      <div class="layer2-body">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>대상</th><th>정규식(원문)</th><th>적용 지점</th></tr></thead>
+            <tbody>
+              <tr><td>프로젝트명</td><td>/^[a-z0-9][a-z0-9-]{0,62}$/</td><td>deployer app.ts <b>+</b> cli repo.ts (동일해야 함)</td></tr>
+              <tr><td>도메인(hostname)</td><td>/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i</td><td>deployer app.ts (POST /projects의 domain)</td></tr>
+              <tr><td>브랜치명</td><td>/^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/ +규칙</td><td>cli repo.ts (hoster add --branch)</td></tr>
+              <tr><td>GitHub owner/repo</td><td>/^[A-Za-z0-9._-]+$/</td><td>cli repo.ts (parseGitHubRepo)</td></tr>
+              <tr><td>env 키</td><td>/^[A-Za-z_][A-Za-z0-9_]*$/</td><td>deployer app.ts (PUT /env/:project)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="cite">근거: 06-인터페이스-정의서.md § 입력 검증 규칙 표</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 6. hoster add 실행 시퀀스 ================= -->
+  <section class="doc-section" id="add-sequence">
+    <h2 class="section-title"><span class="section-num">6</span>실제 예시 — <code>hoster add</code> 한 번이 접점 몇 개를 건드리나</h2>
+    <p class="lede"><b>1층.</b> 지금까지 본 4개 접점과 검증 지점이 실제로 어떻게 이어지는지, 커맨드 하나를 처음부터 끝까지 따라간다.</p>
+
+    <figure class="visual">
+      <div class="seq-steps">
+        <div class="seq-step"><div class="seq-step__dot">1</div><div class="seq-step__body"><p class="step-title">로컬 · 검증</p><p>git remote 파싱 → owner/repo에 GITHUB_SEGMENT_RE, 프로젝트명에 PROJECT_NAME_RE, 브랜치에 SAFE_BRANCH_RE 적용</p></div></div>
+        <div class="seq-step"><div class="seq-step__dot">2</div><div class="seq-step__body"><p class="step-title">로컬 · 파일 생성</p><p>Dockerfile(Next.js 감지 시) + .github/workflows/hoster-deploy.yml 렌더링 — §2의 토큰 치환</p></div></div>
+        <div class="seq-step"><div class="seq-step__dot">3</div><div class="seq-step__body"><p class="step-title">GitHub <span class="chip">gh CLI 경유</span></p><p>gh secret set HOSTER_DEPLOY_URL, gh secret set HOSTER_DEPLOY_SECRET — 값은 <span class="gloss" tabindex="0">stdin<span class="gloss-note">명령어 뒤에 값을 바로 적는 게 아니라, 별도 통로로 조용히 흘려 넣는 방식 — 지나가던 사람이 명령 이력을 봐도 값이 안 보인다</span></span>으로 전달(<span class="gloss" tabindex="0">argv<span class="gloss-note">명령어 뒤에 그대로 적는 인자 — 프로세스 목록(ps)에 그대로 노출될 수 있어 비밀값에는 안 쓴다</span></span> 미사용)</p></div></div>
+        <div class="seq-step"><div class="seq-step__dot">4</div><div class="seq-step__body"><p class="step-title">Cloudflare <span class="chip-accent">접점 ③</span></p><p>DNS CNAME upsert — &lt;project&gt;.&lt;baseDomain&gt; → &lt;tunnelId&gt;.cfargotunnel.com</p></div></div>
+        <div class="seq-step"><div class="seq-step__dot">5</div><div class="seq-step__body"><p class="step-title">deployer <span class="chip-accent">접점 ①</span></p><p>registerProject 호출 — HTTP + HMAC 서명(시그니처 협약서 ①)으로 접수</p></div></div>
+      </div>
+      <figcaption><code>hoster add</code> 한 번이 4개 접점 중 두 곳(①③)을 직접 건드리고, 공식 접점은 아니지만 gh CLI를 거쳐 GitHub API에도 다녀온다 — 서류 하나 접수하려고 관리사무소·구청·외부기관을 순서대로 도는 것과 같다.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 7. GitHub Actions 실패 판정 분기 ================= -->
+  <section class="doc-section" id="actions-fail">
+    <h2 class="section-title"><span class="section-num">7</span>GitHub Actions 실패 판정 분기</h2>
+    <p class="lede"><b>1층.</b> 워크플로가 언제 초록불(성공)이고 언제 빨간불(실패)인지는 두 갈래로 갈린다.</p>
+
+    <figure class="visual">
+      <div class="branch">
+        <div class="branch__diamond">docker/build-push-action 빌드·push</div>
+        <div class="branch__row">
+          <div class="branch__out"><span class="arrow-lbl">실패</span><span class="stamp stamp--reject">job 실패</span></div>
+          <div class="branch__out" style="min-width:16rem"><span class="arrow-lbl">성공</span><div class="branch__diamond" style="width:100%">curl -X POST …/deploy --max-time 300</div></div>
+        </div>
+        <div class="branch__row">
+          <div class="branch__out"><span class="arrow-lbl">300초 초과</span><span class="stamp stamp--reject">curl 비정상 종료</span></div>
+          <div class="branch__out"><span class="arrow-lbl">HTTP_CODE ≠ "200"</span><span class="stamp stamp--reject">exit 1</span></div>
+          <div class="branch__out"><span class="arrow-lbl">HTTP_CODE = "200"</span><span class="stamp stamp--pass">job 성공</span></div>
+        </div>
+      </div>
+      <figcaption>택배 접수처가 "정확히 접수증 200번 도장"을 보여주지 않으면, 접수증이 있어도 실패로 되돌린다 — 애매한 응답을 성공으로 봐주지 않는다.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 8. 말하지 않는 것 ================= -->
+  <section class="doc-section" id="not-said">
+    <h2 class="section-title"><span class="section-num">8</span>이 문서가 말하지 않는 것 / 확인 못 한 것</h2>
+    <p class="lede"><b>1층.</b> 협약서 규정집에 없는 항목은 "없다"고 우기지 않고, <b>"이 원문은 답하지 않는다"</b>고 빈 도장칸으로 남긴다.</p>
+    <div class="not-said-grid">
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p>각 커맨드의 표준출력 <b>정확한 포맷 문자열</b>(줄바꿈·공백 등)은 다루지 않는다 — 판정 흐름과 필드만 다룬다.</p></div>
+      <div class="not-said"><span class="stampmark">빈 도장칸</span><p>Cloudflare 응답 스키마의 전체 필드 목록은 다루지 않는다. success/result/errors 등 판정에 필요한 부분만 옮겼다.</p></div>
+      <div class="not-said"><span class="stampmark">확인 못 함</span><p><code>env --redeploy</code>가 <code>POST /deploy</code>를 직접 호출하는 것 외에, CLI가 배포를 직접 트리거하는 다른 경로는 원문에 없다. "CLI로 수동 배포"가 더 있는 것처럼 단정하지 않았다.</p></div>
+      <div class="not-said"><span class="stampmark">다른 문서 몫</span><p>서명 검증의 내부 순서(길이 비교 우선·timingSafeEqual·5분 허용 오차)는 07번이, 정규식 5종의 문자 단위 해부는 03번이 다룬다.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div>
+        <div class="footer-source">원본: docs/deliverables/06-인터페이스-정의서.md · 버전 1.0 · 작성일 2026-08-13</div>
+        <p class="footer-truth">이 페이지의 사실 원천은 위 마크다운 원문입니다.</p>
+      </div>
+      <div class="footer-prevnext">
+        <a href="05-DB-설계서.html">← 05 DB 설계서</a>
+        <a href="07-보안-설계서.html">07 보안 설계서 →</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
