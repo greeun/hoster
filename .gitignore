@@ -1,0 +1,38 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# env files
+.env*
+!.env*.example
+!.env*.template
+
+# build output
+*.tsbuildinfo
+coverage/
+
+# package manager
+.npmrc
+.pnpm-store/
+*.tgz
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+
+# local deployer state (STATE_DIR outside the container)
+state/
+*.db
+*.db-wal
+*.db-shm
+
+# local agent/tooling state
+.claude/
+.axt-profile.json
+.axt-profile.json.*
+docs/superpowers/

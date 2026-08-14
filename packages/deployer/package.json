@@ -1,0 +1,21 @@
+{
+  "name": "@hoster/deployer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "@hono/node-server": "^1.13.0",
+    "dockerode": "^4.0.2",
+    "better-sqlite3": "^11.5.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.31",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.0.0"
+  }
+}

@@ -1,0 +1,42 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: hoster-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks: [hoster-net]
+
+  traefik:
+    image: traefik:v3.2
+    container_name: hoster-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=hoster-net
+      - --entrypoints.web.address=:80
+      - --log.level=INFO
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [hoster-net]
+
+  deployer:
+    image: hoster-deployer:latest
+    container_name: hoster-deployer
+    restart: unless-stopped
+    environment:
+      - HMAC_SECRET=${HMAC_SECRET}
+      - GHCR_PAT=${GHCR_PAT}
+      - BASE_DOMAIN=${BASE_DOMAIN}
+      - STATE_DIR=/state
+      - DOCKER_NETWORK=hoster-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /volume1/docker/hoster/state:/state
+    networks: [hoster-net]
+
+networks:
+  hoster-net:
+    external: true
