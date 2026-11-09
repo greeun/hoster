@@ -36,3 +36,6 @@ state/
 .axt-profile.json
 .axt-profile.json.*
 docs/superpowers/
+
+# Synology links restored by mac-setup (lists/project-links.txt)
+/docs/superpowers
